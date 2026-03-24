@@ -1,0 +1,2559 @@
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+const MAP_SIZE    = 30;
+const CELL_SIZE   = 34;
+const MAX_TURNS   = 200;
+const MAX_ACTIONS = 30;
+const TURN_TIME   = 120;
+const KILL_GOLD   = 200;
+const PASSIVE_GOLD = 200;
+const ZONE_GOLD   = 500;
+const START_GOLD  = 500;
+
+function buildZoneCells(x1, y1, x2, y2) {
+  const cells = [];
+  for (let x = x1; x <= x2; x++)
+    for (let y = y1; y <= y2; y++)
+      cells.push({ x, y });
+  return cells;
+}
+
+const ZONES = [
+  // Nord: cols 10-19, rows 1-3 (centered on a 30-wide map)
+  { id: 'N', name: 'Zone Nord',   cells: buildZoneCells(10, 1, 19, 3) },
+  // Centre: diamond shape centered at (14.5, 14.5)
+  { id: 'C', name: 'Zone Centre', cells: [
+    {x:14,y:11},{x:15,y:11},
+    {x:13,y:12},{x:14,y:12},{x:15,y:12},{x:16,y:12},
+    {x:12,y:13},{x:13,y:13},{x:14,y:13},{x:15,y:13},{x:16,y:13},{x:17,y:13},
+    {x:12,y:14},{x:13,y:14},{x:14,y:14},{x:15,y:14},{x:16,y:14},{x:17,y:14},
+    {x:12,y:15},{x:13,y:15},{x:14,y:15},{x:15,y:15},{x:16,y:15},{x:17,y:15},
+    {x:12,y:16},{x:13,y:16},{x:14,y:16},{x:15,y:16},{x:16,y:16},{x:17,y:16},
+    {x:13,y:17},{x:14,y:17},{x:15,y:17},{x:16,y:17},
+    {x:14,y:18},{x:15,y:18}
+  ]},
+  // Sud: mirror of Nord
+  { id: 'S', name: 'Zone Sud',    cells: buildZoneCells(10, 26, 19, 28) }
+];
+
+const ZONE_CELL_SET = new Set();
+ZONES.forEach(z => z.cells.forEach(c => ZONE_CELL_SET.add(`${c.x},${c.y}`)));
+
+function inZone(zone, pos) {
+  return zone.cells.some(c => c.x === pos.x && c.y === pos.y);
+}
+
+// ============================================================
+// MAP — WALLS, SPAWNS, DECORATIVE AREAS
+// ============================================================
+
+function buildWallSet() {
+  const set = new Set();
+  // Outer border
+  for (let i = 0; i < MAP_SIZE; i++) {
+    set.add(`${i},0`); set.add(`${i},${MAP_SIZE - 1}`);
+    set.add(`0,${i}`); set.add(`${MAP_SIZE - 1},${i}`);
+  }
+  // Internal walls — symmetric left-right (x → 29-x) and top-bottom (y → 29-y)
+  [
+    // Top arch below Zone Nord (narrows passage to x=11-18)
+    {x:10,y:5},{x:19,y:5},
+    {x:9,y:6},{x:10,y:6},{x:19,y:6},{x:20,y:6},
+    // Bottom arch (mirror)
+    {x:10,y:24},{x:19,y:24},
+    {x:9,y:23},{x:10,y:23},{x:19,y:23},{x:20,y:23},
+    // Left outer-top diagonal
+    {x:6,y:7},{x:7,y:8},
+    // Left vertical wall — wide gap between wall (x=5) and centre zone (x=12)
+    {x:5,y:9},{x:5,y:10},{x:5,y:11},{x:5,y:12},{x:5,y:13},
+    {x:5,y:14},{x:5,y:15},{x:5,y:16},{x:5,y:17},{x:5,y:18},{x:5,y:19},{x:5,y:20},
+    // Left outer-bottom diagonal
+    {x:7,y:21},{x:6,y:22},
+    // Right outer-top diagonal (mirror: 29-x)
+    {x:23,y:7},{x:22,y:8},
+    // Right vertical wall
+    {x:24,y:9},{x:24,y:10},{x:24,y:11},{x:24,y:12},{x:24,y:13},
+    {x:24,y:14},{x:24,y:15},{x:24,y:16},{x:24,y:17},{x:24,y:18},{x:24,y:19},{x:24,y:20},
+    // Right outer-bottom diagonal
+    {x:22,y:21},{x:23,y:22},
+  ].forEach(({x, y}) => set.add(`${x},${y}`));
+  return set;
+}
+const WALL_SET = buildWallSet();
+function isWall(x, y) { return WALL_SET.has(`${x},${y}`); }
+
+// Starting positions per player — order matches roleOrder: [Solo, Roam, Mage, DPT, Support]
+// Solo & Roam: top area, colonnes séparées (Solo joue avant Roam, pas de blocage)
+// Mage: couloir gauche/droit proche de la zone centre
+// DPT & Support: bas, colonnes séparées (DPT joue avant Support, pas de blocage)
+const SPAWN_POSITIONS = [
+  // Player 0 (P1) — côté gauche
+  [{x:3,y:2},{x:1,y:2},{x:8,y:14},{x:3,y:26},{x:1,y:26}],
+  // Player 1 (P2) — côté droit (miroir)
+  [{x:26,y:2},{x:28,y:2},{x:21,y:14},{x:26,y:26},{x:28,y:26}]
+];
+
+const SPAWN_CELL_SET = [
+  new Set(SPAWN_POSITIONS[0].map(c => `${c.x},${c.y}`)),
+  new Set(SPAWN_POSITIONS[1].map(c => `${c.x},${c.y}`))
+];
+
+// ============================================================
+// DRAFT CONFIGURATION
+// ============================================================
+
+// Ban order: alternating, P1 first  (6 bans total)
+const BAN_ORDER = [0, 1, 0, 1, 0, 1];
+
+// Pick order: 1-2-2-2-2-1  (10 picks total, 5 each)
+const PICK_SEQUENCE = [
+  { p: 0, n: 1 },
+  { p: 1, n: 2 },
+  { p: 0, n: 2 },
+  { p: 1, n: 2 },
+  { p: 0, n: 2 },
+  { p: 1, n: 1 }
+];
+
+// ============================================================
+// GAME STATE
+// ============================================================
+
+class GameState {
+  constructor() {
+    this.phase = 'draft';  // 'draft' | 'playing' | 'gameover'
+
+    this.players = [
+      { id: 1, heroes: [] },
+      { id: 2, heroes: [] }
+    ];
+
+    // Draft state
+    this.draft = {
+      phase:        'ban',   // 'ban' | 'pick'
+      banned:       new Set(),
+      picks:        [[], []],
+      banIdx:       0,
+      pickRound:    0,
+      pickInRound:  0
+    };
+
+    // Brown spots — generated in startGame() after heroes are placed
+    this.brownSpots = [];
+
+    // Pièges posés sur la carte
+    this.traps = [];
+
+    // Glyphes de Shallah
+    this.glyphs = [];
+
+    // Zones de bombardement (Stank - Appel)
+    this.bombZones = [];
+
+    // Murs de haine (Sharagoth - Mur de haine)
+    this.hateWalls = [];
+
+    // Zones de lame d'eau (Ondine)
+    this.lameEauZones = [];
+
+    // Gold total gagné par équipe depuis le début
+    this.teamGoldEarned = [0, 0];
+
+    // Playing state
+    this.globalTurn    = 1;
+    this.heroTurnIndex = 0;
+    this.log           = [];
+    this.winner        = null;
+
+    // Per-hero-turn state
+    this.currentHero    = null;
+    this.actionMode     = null;
+    this.selectedSpell  = null;
+    this.pushTarget     = null;
+    this.actionsUsed       = 0;
+    this.movementLeft      = 0;
+    this.autoAttacksUsed   = 0;
+    this.autoAttacksAllowed = 1;
+    this.spellsUsed        = {};
+    this.canBuy         = true;
+
+    // Timer
+    this.timeLeft      = TURN_TIME;
+    this._timerHandle  = null;
+  }
+
+  // ============================================================
+  // DRAFT
+  // ============================================================
+
+  draftCurrentPlayer() {
+    const d = this.draft;
+    if (d.phase === 'ban')  return BAN_ORDER[d.banIdx];
+    if (d.phase === 'pick') return PICK_SEQUENCE[d.pickRound].p;
+    return -1;
+  }
+
+  draftStatus() {
+    // Returns a human-readable string for the UI
+    const d   = this.draft;
+    const p   = this.draftCurrentPlayer() + 1;
+    if (d.phase === 'ban') {
+      const myBansDone = [...Array(d.banIdx)].filter((_, i) => BAN_ORDER[i] === this.draftCurrentPlayer()).length;
+      return `Joueur ${p} — Bannissement ${myBansDone + 1}/3`;
+    }
+    if (d.phase === 'pick') {
+      const seq  = PICK_SEQUENCE[d.pickRound];
+      const done = this.players[seq.p].heroes.length; // picks done so far for that player
+      return `Joueur ${p} — Sélection ${done + 1}/5`;
+    }
+    return '';
+  }
+
+  _isUnavailable(typeId) {
+    const d = this.draft;
+    if (d.banned.has(typeId)) return true;
+    if (d.picks[0].includes(typeId) || d.picks[1].includes(typeId)) return true;
+    // Pendant le pick : un joueur ne peut pas prendre 2 héros du même rôle
+    if (d.phase === 'pick') {
+      const seq = PICK_SEQUENCE[d.pickRound];
+      if (seq) {
+        const takenRoles = d.picks[seq.p].map(id => HERO_TYPES[id].roleId);
+        if (takenRoles.includes(HERO_TYPES[typeId].roleId)) return true;
+      }
+    }
+    return false;
+  }
+
+  banHero(typeId) {
+    const d = this.draft;
+    if (d.phase !== 'ban') return false;
+    if (this._isUnavailable(typeId)) return false;
+
+    d.banned.add(typeId);
+    Stats.recordBan(typeId);
+    d.banIdx++;
+    this.addLog(`Joueur ${BAN_ORDER[d.banIdx - 1] + 1} bannit ${HERO_TYPES[typeId].name}`);
+
+    if (d.banIdx >= BAN_ORDER.length) d.phase = 'pick';
+    return true;
+  }
+
+  pickHero(typeId) {
+    const d = this.draft;
+    if (d.phase !== 'pick') return false;
+    if (this._isUnavailable(typeId)) return false;
+
+    const seq  = PICK_SEQUENCE[d.pickRound];
+    d.picks[seq.p].push(typeId);
+    Stats.recordPick(typeId, seq.p);
+    this.addLog(`Joueur ${seq.p + 1} choisit ${HERO_TYPES[typeId].name}`);
+
+    d.pickInRound++;
+    if (d.pickInRound >= seq.n) {
+      d.pickRound++;
+      d.pickInRound = 0;
+    }
+
+    if (d.pickRound >= PICK_SEQUENCE.length) {
+      // Draft complete → start game
+      this.startGame(d.picks[0], d.picks[1]);
+    }
+    return true;
+  }
+
+  // ============================================================
+  // GAME START
+  // ============================================================
+
+  startGame(p1Types, p2Types) {
+    const sortByRole = types =>
+      [...types].sort((a, b) => HERO_TYPES[a].roleOrder - HERO_TYPES[b].roleOrder);
+
+    const s1 = sortByRole(p1Types);
+    const s2 = sortByRole(p2Types);
+
+    this.players[0].heroes = s1.map((t, i) => createHeroInstance(t, 0, i));
+    this.players[1].heroes = s2.map((t, i) => createHeroInstance(t, 1, i));
+
+    // Place heroes at corner spawn positions
+    this.players[0].heroes.forEach((h, i) => { h.position = { ...SPAWN_POSITIONS[0][i] }; });
+    this.players[1].heroes.forEach((h, i) => { h.position = { ...SPAWN_POSITIONS[1][i] }; });
+
+    this._generateBrownSpots(8);
+    this.phase = 'playing';
+    this.heroTurnIndex = 0;
+    this._startHeroTurn();
+  }
+
+  // ============================================================
+  // TURN MANAGEMENT
+  // ============================================================
+
+  _currentPlayerIdx() { return this.heroTurnIndex % 2; }
+  _currentHeroSlot()  { return Math.floor(this.heroTurnIndex / 2); }
+
+  _startHeroTurn() {
+    const pi   = this._currentPlayerIdx();
+    const slot = this._currentHeroSlot();
+    const hero = this.players[pi].heroes[slot];
+
+    if (!hero || !hero.isAlive) { this._advance(); return; }
+
+    // Stun: skip this hero's turn entirely
+    const stunIdx = (hero.statusEffects || []).findIndex(e => e.type === 'stun');
+    if (stunIdx !== -1) {
+      hero.statusEffects[stunIdx].turns--;
+      if (hero.statusEffects[stunIdx].turns <= 0) hero.statusEffects.splice(stunIdx, 1);
+      this.addLog(`${hero.name} est étourdi — tour annulé !`);
+      if (window.renderer) { renderer.render(); renderer.updateUI(); }
+      this._advance();
+      return;
+    }
+
+    // Retirer le bonus temporaire de Tueur
+    if (hero.tueurBonus) {
+      hero.ad -= hero.tueurBonus;
+      hero.ap -= hero.tueurBonus;
+      this.addLog(`${hero.name} — bonus Tueur expiré (−${hero.tueurBonus} AD & AP)`);
+      hero.tueurBonus = 0;
+    }
+
+    // Retirer le bonus temporaire du passif Decigeno
+    if (hero.decigenoBonus) {
+      hero.ad -= hero.decigenoBonus;
+      this.addLog(`${hero.name} — bonus Passif expiré (−${hero.decigenoBonus} AD)`);
+      hero.decigenoBonus = 0;
+    }
+
+    // Passif Protection Divine : décrémenter le cooldown
+    if (hero.items.includes('protection_divine') && (hero.protectionDivineCooldown || 0) > 0) {
+      hero.protectionDivineCooldown--;
+    }
+
+    this.currentHero        = hero;
+    this.actionsUsed        = 0;
+    this.movementLeft       = hero.pm;
+    this.autoAttacksUsed    = 0;
+    this.autoAttacksAllowed = 1 + (hero.extraAutoAttacks || 0);
+    this.spellsUsed         = {};
+    this.canBuy             = true;
+    this.actionMode         = null;
+    this.selectedSpell      = null;
+
+    // Apply and tick status effects
+    for (const e of (hero.statusEffects || [])) {
+      if (e.type === 'slow') {
+        this.movementLeft = Math.max(0, this.movementLeft - e.pmReduction);
+        this.addLog(`${hero.name} est ralenti (-${e.pmReduction} PM ce tour)`);
+      }
+      if (e.type === 'hemorrhage') {
+        hero.hemorrhageTurns = Math.max(hero.hemorrhageTurns, e.turns);
+        this.addLog(`${hero.name} est en hémorragie (soins -50%)`);
+      }
+      if (e.type === 'malediction') {
+        hero.maledictionTurns = Math.max(hero.maledictionTurns, e.turns);
+        this.addLog(`${hero.name} est maudit (portée sorts -3)`);
+      }
+      if (e.type === 'mute') {
+        this.addLog(`${hero.name} est muet — sorts bloqués ce tour`);
+      }
+      e.turns--;
+    }
+    hero.statusEffects = (hero.statusEffects || []).filter(e => e.turns > 0);
+    if (hero.hemorrhageTurns > 0) hero.hemorrhageTurns--;
+    if (hero.maledictionTurns > 0) hero.maledictionTurns--;
+
+    // Reset bouclier Dague du Soldat
+    hero.daggerShield = 0;
+
+    // Tick bouclier temporisé (Barrière Protectrice)
+    if (hero.shieldTurnsLeft > 0) {
+      hero.shieldTurnsLeft--;
+      if (hero.shieldTurnsLeft === 0 && hero.shield > 0) {
+        hero.shield = 0;
+        this.addLog(`${hero.name} — Bouclier expiré`);
+      }
+    }
+
+    // Épée Cinglante : expiration de la réduction d'armure
+    if (hero.armorShredTurns > 0) {
+      hero.armorShredTurns--;
+      if (hero.armorShredTurns === 0 && hero.armorShred > 0) {
+        hero.armor += hero.armorShred;
+        hero.armorShred = 0;
+        this.addLog(`${hero.name} — Armure restaurée (Épée Cinglante expirée)`);
+      }
+    }
+
+    // Expiration des glyphes ultime quand Shallah commence son tour
+    if (hero.passive === 'shallah_passive') {
+      const expired = this.glyphs.filter(g => g.type === 'ultimate' && g.ownerHero === hero);
+      if (expired.length) this.addLog(`${hero.name} — Glyphe Ultime expirée`);
+      this.glyphs = this.glyphs.filter(g => !(g.type === 'ultimate' && g.ownerHero === hero));
+    }
+
+    // Zone de bombardement (Stank - Appel) : dégâts en début de tour si dans la zone
+    if (hero.position) {
+      this.bombZones.forEach(bz => {
+        if (!hero.isAlive) return;
+        if (Math.abs(hero.position.x - bz.cx) + Math.abs(hero.position.y - bz.cy) <= bz.radius) {
+          const raw = Math.floor(bz.baseDamage + bz.caster.ad * bz.adRatio);
+          const dmg = this._reduceDmg(raw, 'physical', hero, bz.caster.armorPenPct || 0);
+          this._applyDamage(hero, dmg, bz.caster, 'physical');
+          this.addLog(`${hero.name} — Zone de bombardement : −${dmg} HP`);
+        }
+      });
+    }
+
+    // Vaillance (Ondine) : réinitialisation du bouclier de débuff chaque tour de héros
+    if (hero.passive === 'vaillance') hero.debuffDodgedThisTurn = false;
+
+    // Cape Moyenne d'Antimagie : bouclier magique si dégâts magiques reçus depuis le dernier tour
+    if (hero.items.includes('cape_antimagie_moyenne')) {
+      if (hero.tookMagicDmgSinceLastTurn) {
+        hero.magicShield = Math.floor(hero.currentHP * 0.08);
+        this.addLog(`${hero.name} — Cape Antimagie : Bouclier magique +${hero.magicShield} HP`);
+      } else {
+        hero.magicShield = 0;
+      }
+      hero.tookMagicDmgSinceLastTurn = false;
+    } else {
+      hero.magicShield = 0;
+    }
+
+    // Buff PM Tour (Miaou Miaou ! de Shana)
+    if (hero.bonusPMNextTurn > 0) {
+      this.movementLeft += hero.bonusPMNextTurn;
+      this.addLog(`${hero.name} — Buff : +${hero.bonusPMNextTurn} PM ce tour (Miaou Miaou !)`);
+      hero.bonusPMNextTurn = 0;
+    }
+
+    // Chronos : mémoriser la position de début de tour pour Rollback
+    if (hero.passive === 'chronos_passive' && hero.position) {
+      hero.chronosStartPos = { ...hero.position };
+    }
+
+    // Passif Layia : reset bonus PO; +1 PO d'attaque tous les 5 tours
+    if (hero.passive === 'layia_passive') {
+      hero.layiaBonusPOTurn = 0;
+      hero.layiaTurnCount   = (hero.layiaTurnCount || 0) + 1;
+      if (hero.layiaTurnCount % 5 === 0) {
+        hero.po++;
+        this.addLog(`${hero.name} — Passif : PO d'attaque → ${hero.po} !`);
+      }
+    }
+
+    // Passif Bottes de Grande Vitesse : +1 PM si aucun dégât infligé au tour précédent
+    if (hero.items.includes('speed_boots') && !hero.dealtDamageLastTurn) {
+      this.movementLeft++;
+      this.addLog(`${hero.name} — Passif Bottes : +1 PM`);
+    }
+    hero.dealtDamageLastTurn = false;
+
+    // Passif Bouclier Basique : récupère 5% des HP manquants si HP < 30% max
+    if (hero.items.includes('basic_shield') && hero.currentHP < hero.maxHP * 0.30) {
+      const gain = Math.max(1, Math.floor((hero.maxHP - hero.currentHP) * 0.05));
+      hero.currentHP = Math.min(hero.maxHP, hero.currentHP + gain);
+      this.addLog(`${hero.name} — Passif Bouclier Basique : +${gain} HP`);
+    }
+
+    // Passif Anneau du Mage Mineur : récupère 5% du mana manquant si mana < 25% max
+    if (hero.items.includes('minor_mage_ring') && hero.currentMana < hero.maxMana * 0.25) {
+      const gain = Math.max(1, Math.floor((hero.maxMana - hero.currentMana) * 0.05));
+      hero.currentMana = Math.min(hero.maxMana, hero.currentMana + gain);
+      this.addLog(`${hero.name} — Passif Anneau du Mage Mineur : +${gain} Mana`);
+    }
+
+    // Passif Masello : +1 PM par allié à ≤ 7 cases (Manhattan)
+    if (hero.passive === 'masello_passive' && hero.position) {
+      const nearby = this._getAllies(hero.playerIdx)
+        .filter(a => a !== hero && a.isAlive && a.position && this._manhattan(hero.position, a.position) <= 7);
+      if (nearby.length > 0) {
+        this.movementLeft += nearby.length;
+        this.addLog(`${hero.name} — Passif : +${nearby.length} PM (${nearby.length} allié${nearby.length > 1 ? 's' : ''} à portée)`);
+      }
+    }
+
+    // Passif Sharagoth : bouclier de 10% HP max par allié à ≤ 10 cases (Manhattan)
+    if (hero.passive === 'sharagoth_passive' && hero.position) {
+      const nearby = this._getAllies(hero.playerIdx)
+        .filter(a => a !== hero && a.isAlive && a.position && this._manhattan(hero.position, a.position) <= 10);
+      if (nearby.length > 0) {
+        const shieldAmt = nearby.length * Math.floor(hero.maxHP * 0.10);
+        hero.shield = shieldAmt;
+        hero.shieldTurnsLeft = 2;
+        this.addLog(`${hero.name} — Passif : Bouclier +${shieldAmt} HP (${nearby.length} allié${nearby.length > 1 ? 's' : ''} à portée)`);
+      }
+    }
+
+    this._resetTimer();
+    this.addLog(`── Tour de ${hero.name} (Joueur ${pi + 1}) — 💰 ${hero.gold}g`);
+
+    if (window.renderer) { renderer.render(); renderer.updateUI(); renderer.openShop(); }
+  }
+
+  endHeroTurn() {
+    this._stopTimer();
+    this.actionMode   = null;
+    this.selectedSpell = null;
+
+    // Passif Anneau Magique : +5% or si seul dans une zone à gold
+    const hero = this.currentHero;
+    if (hero && hero.items.includes('magic_ring') && hero.position) {
+      const zone = ZONES.find(z => inZone(z, hero.position));
+      if (zone) {
+        const allyInZone = this._getAllies(hero.playerIdx)
+          .some(a => a !== hero && a.isAlive && a.position && inZone(zone, a.position));
+        if (!allyInZone) {
+          const bonus = Math.max(1, Math.floor(hero.gold * 0.05));
+          this._giveGold(hero, bonus);
+          this.addLog(`${hero.name} — Passif Anneau Magique : +${bonus}g (zone solitaire)`);
+        }
+      }
+    }
+
+    // Lame d'eau : fin du tour d'Ondine → dégâts + déplacement
+    if (hero && hero.passive === 'vaillance' && this.lameEauZones.length) {
+      this.lameEauZones.forEach(zone => {
+        if (zone.caster !== hero) return;
+        this._applyLameEauDamage(zone);
+        zone.cx += zone.dx;
+        zone.cy += zone.dy;
+        zone.turnsLeft--;
+      });
+      this.lameEauZones = this.lameEauZones.filter(z => z.turnsLeft > 0);
+    }
+
+    // Passif Grimoire Magique : +50 mana si au moins 1 PM restant
+    if (hero && hero.items.includes('grimoire_magique') && this.movementLeft >= 1) {
+      hero.currentMana = Math.min(hero.maxMana, hero.currentMana + 50);
+      this.addLog(`${hero.name} — Passif Grimoire Magique : +50 mana`);
+    }
+
+    this.currentHero  = null;
+    this._advance();
+  }
+
+  _advance() {
+    this.heroTurnIndex++;
+    if (this.heroTurnIndex >= 10) { this._endGlobalTurn(); return; }
+    const pi   = this._currentPlayerIdx();
+    const slot = this._currentHeroSlot();
+    const hero = this.players[pi].heroes[slot];
+    if (!hero || !hero.isAlive) { this._advance(); return; }
+    this._startHeroTurn();
+  }
+
+  _endGlobalTurn() {
+    this.globalTurn++;
+    if (this.globalTurn > MAX_TURNS) { this.endGame(null); return; }
+
+    // Passive gold + regen + cooldowns per hero
+    this.players.forEach(player => {
+      player.heroes.forEach(hero => {
+        if (!hero.isAlive) return;
+        this._giveGold(hero, PASSIVE_GOLD);
+        if (hero.goldPerTurn > 0) this._giveGold(hero, hero.goldPerTurn);
+        hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP   + Math.floor(hero.hpRegen * (hero.hemorrhageTurns > 0 ? 0.5 : 1)));
+        // Passif Armure de la Vie : +10% HP manquants si aucun dégât reçu ce tour
+        if (hero.items.includes('armure_de_la_vie') && !hero.tookDmgThisGlobalTurn) {
+          const regen = Math.floor((hero.maxHP - hero.currentHP) * 0.10);
+          if (regen > 0) {
+            hero.currentHP = Math.min(hero.maxHP, hero.currentHP + regen);
+            this.addLog(`${hero.name} — Armure de la Vie : +${regen} HP (pas de dégâts)`);
+          }
+        }
+        hero.tookDmgThisGlobalTurn = false;
+        // Tick DOTs (Nuisance noire, etc.)
+        if (hero.dots && hero.dots.length) {
+          hero.dots.forEach(dot => {
+            if (!hero.isAlive) return;
+            const dmg = this._reduceDmg(dot.dmgPerTurn, dot.type || 'magical', hero);
+            this._applyDamage(hero, dmg, dot.caster, dot.type || 'magical');
+            this.addLog(`${hero.name} — Nuisance noire : −${dmg} dégâts magiques`);
+            dot.turns--;
+          });
+          hero.dots = hero.dots.filter(d => d.turns > 0);
+        }
+        hero.currentMana = Math.min(hero.maxMana, hero.currentMana + hero.manaRegen);
+        hero.spells.forEach(sp => { if (hero.cooldowns[sp.id] > 0) hero.cooldowns[sp.id]--; });
+      });
+    });
+
+    // Zone gold → per hero in zone
+    ZONES.forEach(zone => {
+      const present = [];
+      this.players.forEach((player, pi) => {
+        player.heroes.forEach(hero => {
+          if (hero.isAlive && hero.position && inZone(zone, hero.position))
+            present.push({ hero, pi });
+        });
+      });
+      if (!present.length) return;
+      const share = Math.floor(ZONE_GOLD / present.length);
+      present.forEach(({ hero, pi }) => {
+        const gold = hero.roleId === 'roam' ? Math.floor(share / 3) : share;
+        this._giveGold(hero, gold);
+        this.addLog(`${hero.name} (J${pi + 1}) +${gold}g (Zone ${zone.name})`);
+      });
+    });
+
+    // Pièges — décompte
+    this.traps.forEach(t => t.turnsLeft--);
+    this.traps = this.traps.filter(t => t.turnsLeft > 0);
+
+    // Glyphes — décompte (turnsLeft === -1 = ultime, expire au tour de Shallah seulement)
+    this.glyphs.forEach(g => { if (g.turnsLeft > 0) g.turnsLeft--; });
+    this.glyphs = this.glyphs.filter(g => g.turnsLeft !== 0);
+
+    // Zones de bombardement — décompte
+    this.bombZones.forEach(bz => bz.turnsLeft--);
+    this.bombZones = this.bombZones.filter(bz => {
+      if (bz.turnsLeft <= 0) { this.addLog('💥 Zone de bombardement expirée'); return false; }
+      return true;
+    });
+
+    // Murs de haine — décompte
+    this.hateWalls.forEach(w => w.turnsLeft--);
+    this.hateWalls = this.hateWalls.filter(w => {
+      if (w.turnsLeft <= 0) { this.addLog('Mur de haine expiré'); return false; }
+      return true;
+    });
+
+    // Lame d'eau — réinitialisation des dégâts du tour
+    this.lameEauZones.forEach(z => z.damagedThisTurn = new Set());
+    this.lameEauZones = this.lameEauZones.filter(z => z.turnsLeft > 0);
+
+    this.addLog(`═══ Fin tour ${this.globalTurn - 1} ═══`);
+    this.heroTurnIndex = 0;
+    this._startHeroTurn();
+  }
+
+  // ============================================================
+  // TIMER
+  // ============================================================
+
+  _resetTimer() {
+    this._stopTimer();
+    this.timeLeft = TURN_TIME;
+    this._timerHandle = setInterval(() => {
+      this.timeLeft--;
+      if (window.renderer) renderer.updateTimer(this.timeLeft);
+      if (this.timeLeft <= 0) {
+        this.addLog('⏱ Temps écoulé — fin de tour automatique');
+        this.endHeroTurn();
+      }
+    }, 1000);
+  }
+
+  _stopTimer() {
+    if (this._timerHandle) { clearInterval(this._timerHandle); this._timerHandle = null; }
+  }
+
+  // ============================================================
+  // SHOP  (hero pays from their own gold)
+  // ============================================================
+
+  // Returns true if hero owns all items in recipe (handles duplicates)
+  _hasComponents(hero, recipe) {
+    const owned = [...hero.items];
+    for (const cId of recipe) {
+      const idx = owned.indexOf(cId);
+      if (idx === -1) return false;
+      owned.splice(idx, 1);
+    }
+    return true;
+  }
+
+  // Cost to buy: combineCost if hero has all components, otherwise totalCost
+  getBuyCost(hero, itemId) {
+    const item = EQUIPMENT[itemId];
+    if (!item.recipe.length) return item.combineCost;
+    if (this._hasComponents(hero, item.recipe)) return item.combineCost;
+    return item.totalCost;
+  }
+
+  buyItem(itemId) {
+    const item = EQUIPMENT[itemId];
+    const hero = this.currentHero;
+
+    if (!this.canBuy)                 { this.addLog('Achat impossible après une action !'); return false; }
+    if (this.actionsUsed >= MAX_ACTIONS) { this.addLog('Limite d\'actions atteinte !');     return false; }
+
+    if (item.roleRestriction && hero.roleId !== item.roleRestriction)
+      { this.addLog(`${item.name} est réservé aux ${item.roleRestriction}s !`); return false; }
+    if (item.isStarter && hero.items.some(id => EQUIPMENT[id]?.isStarter))
+      { this.addLog('Vous possédez déjà un item Starter !'); return false; }
+    const crafting = item.recipe.length > 0 && this._hasComponents(hero, item.recipe);
+    // Le slot bottes libéré par le craft ne compte pas (les composants bottes sont consommés)
+    const bootsAfterCraft = item.recipe.filter(cId => EQUIPMENT[cId]?.isBoots).length;
+    const bootsInInv      = hero.items.filter(id => EQUIPMENT[id]?.isBoots).length;
+    if (item.isBoots && bootsInInv - (crafting ? bootsAfterCraft : 0) >= 1)
+      { this.addLog('Vous portez déjà des bottes !'); return false; }
+    // Slots libérés par les composants consommés au craft
+    const slotsFreed = crafting ? item.recipe.length : 0;
+    if (hero.items.length - slotsFreed >= 6)
+      { this.addLog('Inventaire plein (6 items maximum) !'); return false; }
+
+    const cost = this.getBuyCost(hero, itemId);
+    if (hero.gold < cost) { this.addLog('Pas assez d\'or !'); return false; }
+
+    // Consume & remove component items (reverse their stats)
+    if (crafting) {
+      const toRemove = [...item.recipe];
+      toRemove.forEach(cId => {
+        const idx = hero.items.indexOf(cId);
+        if (idx === -1) return;
+        hero.items.splice(idx, 1);
+        const comp = EQUIPMENT[cId];
+        Object.entries(comp.stats).forEach(([stat, val]) => {
+          hero[stat] -= val;
+          if (stat === 'pm') this.movementLeft = Math.max(0, this.movementLeft - val);
+        });
+        hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP);
+        hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
+      });
+    }
+
+    hero.gold -= cost;
+
+    Object.entries(item.stats).forEach(([stat, val]) => {
+      hero[stat] += val;
+      if (stat === 'maxHP')   hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP   + val);
+      if (stat === 'maxMana') hero.currentMana = Math.min(hero.maxMana, hero.currentMana + val);
+      if (stat === 'pm')      this.movementLeft += val;
+    });
+
+    if (item.instant?.currentHP)
+      hero.currentHP = Math.min(hero.maxHP, hero.currentHP + item.instant.currentHP);
+
+    if (!item.consumable) {
+      hero.items.push(itemId);
+      Stats.recordItemBought(hero.id, itemId);
+    }
+
+    this.actionsUsed++;
+    const verb = crafting ? 'forge' : 'achète';
+    this.addLog(`${hero.name} ${verb} ${item.name} (−${cost}g) → reste ${hero.gold}g`);
+    if (window.renderer) renderer.closeShop();
+    return true;
+  }
+
+  sellItem(itemId) {
+    const hero = this.currentHero;
+    const item = EQUIPMENT[itemId];
+    if (!item) return false;
+    const idx = hero.items.indexOf(itemId);
+    if (idx === -1) return false;
+    hero.items.splice(idx, 1);
+    Object.entries(item.stats).forEach(([stat, val]) => {
+      hero[stat] -= val;
+      if (stat === 'pm') this.movementLeft = Math.max(0, this.movementLeft - val);
+    });
+    hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP);
+    hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
+    const refund = Math.floor(item.totalCost * 0.8);
+    hero.gold += refund;
+    this.addLog(`${hero.name} vend ${item.name} → +${refund}g`);
+    return true;
+  }
+
+  // ============================================================
+  // MOVEMENT
+  // ============================================================
+
+  moveHero(tx, ty) {
+    const hero = this.currentHero;
+    if (!hero) return false;
+    if (this.movementLeft <= 0)         { this.addLog('Plus de PM !');                   return false; }
+    if (this.actionsUsed >= MAX_ACTIONS) { this.addLog('Limite d\'actions atteinte !'); return false; }
+
+    if (isWall(tx, ty))               { this.addLog('Destination invalide !'); return false; }
+    const result = this._dijkstraPath(hero.position, { x: tx, y: ty });
+    if (!result)                      { this.addLog('Chemin inaccessible !'); return false; }
+    if (result.cost > this.movementLeft) { this.addLog('Pas assez de PM !'); return false; }
+
+    hero.position     = { x: tx, y: ty };
+    this.movementLeft -= result.cost;
+    this.actionsUsed++;
+    this.canBuy = false;
+    this.addLog(`${hero.name} → (${tx},${ty}) [−${result.cost} PM, reste ${this.movementLeft}]`);
+    if (hero.roleId === 'roam') this._checkBrownCollection(hero);
+    this._checkTrap(hero);
+    this._checkGlyph(hero);
+    this._checkBombZone(hero);
+    return true;
+  }
+
+  // Dijkstra: orthogonal = 1 PM, diagonal = 2 PM. Heroes (allies & enemies) bloquent le passage.
+  _dijkstraPath(from, to) {
+    if (from.x === to.x && from.y === to.y) return { cost: 0 };
+    const blocked = new Set();
+    this.players.forEach(p => p.heroes.forEach(h => {
+      if (h.isAlive && h !== this.currentHero && h.position)
+        blocked.add(`${h.position.x},${h.position.y}`);
+    }));
+    if (blocked.has(`${to.x},${to.y}`)) return null;
+
+    const cost = new Map([[`${from.x},${from.y}`, 0]]);
+    // Min-heap simulé avec tableau trié
+    const pq = [{ c: 0, pos: from }];
+    while (pq.length) {
+      pq.sort((a, b) => a.c - b.c);
+      const { c, pos } = pq.shift();
+      if (pos.x === to.x && pos.y === to.y) return { cost: c };
+      if (c > (cost.get(`${pos.x},${pos.y}`) ?? Infinity)) continue;
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+        if (!dx && !dy) continue;
+        const nx = pos.x + dx, ny = pos.y + dy;
+        if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) continue;
+        if (isWall(nx, ny)) continue;
+        const key = `${nx},${ny}`;
+        if (blocked.has(key)) continue; // bodyblock : impossible de traverser un héros
+        const moveCost = (dx !== 0 && dy !== 0) ? 2 : 1;
+        const newCost  = c + moveCost;
+        if (newCost < (cost.get(key) ?? Infinity)) {
+          cost.set(key, newCost);
+          pq.push({ c: newCost, pos: { x: nx, y: ny } });
+        }
+      }
+    }
+    return null;
+  }
+
+  getReachableCells() {
+    const hero = this.currentHero;
+    if (!hero || this.movementLeft === 0) return [];
+    const blocked = new Set();
+    this.players.forEach(p => p.heroes.forEach(h => {
+      if (h.isAlive && h !== hero && h.position)
+        blocked.add(`${h.position.x},${h.position.y}`);
+    }));
+    const cost  = new Map([[`${hero.position.x},${hero.position.y}`, 0]]);
+    const pq    = [{ c: 0, pos: hero.position }];
+    const cells = [];
+    while (pq.length) {
+      pq.sort((a, b) => a.c - b.c);
+      const { c, pos } = pq.shift();
+      if (c > (cost.get(`${pos.x},${pos.y}`) ?? Infinity)) continue;
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+        if (!dx && !dy) continue;
+        const nx = pos.x + dx, ny = pos.y + dy;
+        if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) continue;
+        const key = `${nx},${ny}`;
+        if (blocked.has(key) || isWall(nx, ny)) continue;
+        const moveCost = (dx !== 0 && dy !== 0) ? 2 : 1;
+        const newCost  = c + moveCost;
+        if (newCost <= this.movementLeft && newCost < (cost.get(key) ?? Infinity)) {
+          cost.set(key, newCost);
+          cells.push({ x: nx, y: ny });
+          pq.push({ c: newCost, pos: { x: nx, y: ny } });
+        }
+      }
+    }
+    return cells;
+  }
+
+  // ============================================================
+  // AUTO-ATTACK
+  // ============================================================
+
+  autoAttack(targetHero) {
+    const attacker = this.currentHero;
+    if (!attacker) return false;
+    if (this.autoAttacksUsed >= this.autoAttacksAllowed) { this.addLog('Attaque de base déjà utilisée !'); return false; }
+    if (this.actionsUsed >= MAX_ACTIONS)  { this.addLog('Limite d\'actions atteinte !');    return false; }
+    if (targetHero.playerIdx === attacker.playerIdx) { this.addLog('Cible alliée !');       return false; }
+
+    const effectivePO = attacker.po + (attacker.layiaBonusPOTurn || 0);
+    if (this._manhattan(attacker.position, targetHero.position) > effectivePO)
+      { this.addLog('Cible hors de portée !'); return false; }
+
+    // Passif Decigeno : consume PM restants → +25 AD par PM
+    if (attacker.passive === 'decigeno_passive' && this.movementLeft > 0) {
+      const pmLeft = this.movementLeft;
+      const bonus  = 25 * pmLeft;
+      attacker.ad           += bonus;
+      attacker.decigenoBonus = (attacker.decigenoBonus || 0) + bonus;
+      this.movementLeft      = 0;
+      this.addLog(`${attacker.name} — Passif : consume ${pmLeft} PM → +${bonus} AD`);
+    }
+
+    // Passif Layia : frappe tous les ennemis à portée effective
+    if (attacker.passive === 'layia_passive') {
+      const targets = this._getEnemies(attacker.playerIdx).filter(e =>
+        e.position && this._manhattan(attacker.position, e.position) <= effectivePO
+      );
+      const bonusFlat = attacker.layiaBonusNextAttack || 0;
+      attacker.layiaBonusNextAttack = 0;
+      const wasEmpowered  = !!attacker.empoweredAttack;
+      const empowered     = attacker.empoweredAttack;
+      const hadSpellBonus = wasEmpowered || bonusFlat > 0;
+      if (wasEmpowered) attacker.empoweredAttack = null;
+      const armorPen = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0);
+      const armorPenPct = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
+      targets.forEach(e => {
+        const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
+        const rawBase = Math.floor((attacker.ad + bonusFlat) * (isCrit ? 1.5 : 1));
+        // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
+        if (attacker.passive === 'abyss_passive') {
+          const physDmg = this._reduceDmg(Math.floor(rawBase * 0.4), 'physical', e, armorPen, 0, armorPenPct);
+          const magDmg  = this._reduceDmg(Math.floor(rawBase * 0.4), 'magical',  e, 0, 0);
+          const rawDmg  = Math.floor(rawBase * 0.2);
+          this._applyDamage(e, physDmg, attacker, 'physical');
+          if (e.isAlive) this._applyDamage(e, magDmg, attacker, 'magical');
+          if (e.isAlive) this._applyDamage(e, rawDmg, attacker, 'raw');
+          this.addLog(`${attacker.name} → ${e.name}: −${physDmg} phys −${magDmg} mag −${rawDmg} bruts (Abysses)${isCrit ? ' CRITIQUE' : ''}`);
+          this._applyHemorrhage(attacker, e);
+          return;
+        }
+        let dmg = this._reduceDmg(rawBase, 'physical', e, armorPen, 0, armorPenPct);
+        if (wasEmpowered) {
+          const empBonus = this._reduceDmg(
+            Math.floor(attacker.ad * empowered.adRatio + this._effectiveAP(attacker) * empowered.apRatio),
+            'physical', e, armorPen, 0, armorPenPct
+          );
+          dmg += empBonus;
+        }
+        // Passif Lame Bleue / Trinité Sacrée : +15% si attaque boostée par un sort
+        const hasBlade = hadSpellBonus && attacker.items.some(id => ['blue_blade', 'holy_trinity'].includes(id));
+        if (hasBlade) dmg = Math.floor(dmg * 1.15);
+        // Passif Vigilance Sombre (Lame de Nargoth) : +10% si armure cible < 15%
+        if (armorPen > 0 && e.armor - armorPen < 15) dmg = Math.floor(dmg * 1.1);
+        this._applyDamage(e, dmg, attacker);
+        this._applyHemorrhage(attacker, e);
+        // Passif Lame Électrique : 25 dégâts magiques en chaîne
+        if (attacker.items.includes('lame_electrique') && e.position) {
+          this._applyLameElectrique(attacker, e);
+        }
+        // Passif Épée Magique : dégâts magiques bonus si attaque boostée
+        const hasMagicSword = hadSpellBonus && attacker.items.includes('magic_sword');
+        if (hasMagicSword) {
+          const pct = (15 + 0.05 * this._effectiveAP(attacker)) / 100;
+          const magicBonusDmg = this._reduceDmg(Math.floor(attacker.ad * pct), 'magical', e, 0, attacker.items.includes('sorcerer_boots') ? 5 : 0);
+          this._applyDamage(e, magicBonusDmg, attacker, 'magical');
+          this.addLog(`${attacker.name} — Épée Magique : +${magicBonusDmg} dégâts magiques`);
+        }
+        const tag = [isCrit ? 'CRITIQUE' : null, wasEmpowered ? 'renforcé' : null, bonusFlat > 0 ? 'Petit Bond' : null, hasBlade ? 'Lame Bleue' : null, hasMagicSword ? 'Épée Magique' : null, armorPen > 0 ? 'Nargoth' : null].filter(Boolean).join(', ');
+        this.addLog(`${attacker.name} → ${e.name}: −${dmg} HP${tag ? ` (${tag})` : ''}`);
+      });
+      if (!targets.length) this.addLog(`${attacker.name} — Aucune cible à portée`);
+      // Dague du Soldat : seulement si encore au corps à corps (po ≤ 1)
+      if (attacker.items.includes('soldier_dagger') && attacker.po <= 1) {
+        if (targets.some(e => this._manhattan(attacker.position, e.position) <= 1)) {
+          attacker.daggerShield = (attacker.daggerShield || 0) + 15;
+          this.addLog(`${attacker.name} — Passif Dague : bouclier +15`);
+        }
+      }
+      // Passif Lame du Diable : 6% HP max en dégâts bruts sur chaque cible
+      if (attacker.items.includes('lame_du_diable')) {
+        targets.forEach(e => {
+          if (!e.isAlive) return;
+          const rawDmg = Math.floor(e.maxHP * 0.06);
+          this._applyDamage(e, rawDmg, attacker, 'raw');
+          this.addLog(`${attacker.name} — Lame du Diable : −${rawDmg} dégâts bruts`);
+        });
+      }
+      if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable'].includes(id))) {
+        this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
+        this.addLog(`${attacker.name} — Passif : +1 PM`);
+      }
+      this.autoAttacksUsed++;
+      this.actionsUsed++;
+      this.canBuy = false;
+      this._checkGameOver();
+      return true;
+    }
+
+    // Attaque de base normale (cible unique)
+    const bonusFlat2    = attacker.layiaBonusNextAttack || 0;
+    attacker.layiaBonusNextAttack = 0;
+    const wasEmpowered  = !!attacker.empoweredAttack;
+    const hadSpellBonus = wasEmpowered || bonusFlat2 > 0;
+    const armorPen2 = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0);
+    const armorPenPct2 = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
+    const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
+    const rawBase2 = Math.floor((attacker.ad + bonusFlat2) * (isCrit2 ? 1.5 : 1));
+    // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
+    if (attacker.passive === 'abyss_passive') {
+      const physDmg2 = this._reduceDmg(Math.floor(rawBase2 * 0.4), 'physical', targetHero, armorPen2, 0, armorPenPct2);
+      const magDmg2  = this._reduceDmg(Math.floor(rawBase2 * 0.4), 'magical',  targetHero, 0, 0);
+      const rawDmg2  = Math.floor(rawBase2 * 0.2);
+      this.addLog(`${attacker.name} attaque ${targetHero.name} — ${physDmg2} phys + ${magDmg2} mag + ${rawDmg2} bruts (Abysses)${isCrit2 ? ' CRITIQUE' : ''}`);
+      this._applyDamage(targetHero, physDmg2, attacker, 'physical');
+      if (targetHero.isAlive) this._applyDamage(targetHero, magDmg2, attacker, 'magical');
+      if (targetHero.isAlive) this._applyDamage(targetHero, rawDmg2, attacker, 'raw');
+      this._applyHemorrhage(attacker, targetHero);
+      this.autoAttacksUsed++;
+      this.actionsUsed++;
+      this.canBuy = false;
+      this._checkGameOver();
+      return true;
+    }
+    let dmg = this._reduceDmg(rawBase2, 'physical', targetHero, armorPen2, 0, armorPenPct2);
+    if (wasEmpowered) {
+      const bonus = this._reduceDmg(
+        Math.floor(attacker.ad * attacker.empoweredAttack.adRatio + this._effectiveAP(attacker) * attacker.empoweredAttack.apRatio),
+        'physical', targetHero, armorPen2, 0, armorPenPct2
+      );
+      dmg += bonus;
+      attacker.empoweredAttack = null;
+    }
+    // Passif Lame Bleue / Trinité Sacrée : +15% si attaque boostée par un sort
+    const hasBlade2 = hadSpellBonus && attacker.items.some(id => ['blue_blade', 'holy_trinity'].includes(id));
+    if (hasBlade2) dmg = Math.floor(dmg * 1.15);
+    // Passif Vigilance Sombre (Lame de Nargoth) : +10% si armure cible < 15%
+    if (armorPen2 > 0 && targetHero.armor - armorPen2 < 15) dmg = Math.floor(dmg * 1.1);
+    const hasMagicSword2 = hadSpellBonus && attacker.items.includes('magic_sword');
+    const tag2 = [isCrit2 ? 'CRITIQUE' : null, wasEmpowered ? 'renforcé' : null, bonusFlat2 > 0 ? 'Petit Bond' : null, hasBlade2 ? 'Lame Bleue' : null, hasMagicSword2 ? 'Épée Magique' : null, armorPen2 > 0 ? 'Nargoth' : null].filter(Boolean).join(', ');
+    this.addLog(`${attacker.name} attaque ${targetHero.name} — ${dmg} dégâts physiques${tag2 ? ` (${tag2})` : ''}`);
+    this._applyDamage(targetHero, dmg, attacker);
+    this._applyHemorrhage(attacker, targetHero);
+    // Passif Lame Électrique : 25 dégâts magiques en chaîne
+    if (attacker.items.includes('lame_electrique') && targetHero.position) {
+      this._applyLameElectrique(attacker, targetHero);
+    }
+    // Passif Gros Calibre (Stank) : splash aux ennemis adjacents à la cible
+    if (attacker.passive === 'gros_calibre' && targetHero.position) {
+      this._getEnemies(attacker.playerIdx)
+        .filter(e => e !== targetHero && e.isAlive && e.position && this._chebyshev(targetHero.position, e.position) <= 1)
+        .forEach(e => {
+          const splashDmg = this._reduceDmg(Math.floor(attacker.ad * (isCrit2 ? 1.5 : 1)), 'physical', e, armorPen2);
+          this._applyDamage(e, splashDmg, attacker);
+          this.addLog(`${attacker.name} — Passif : Gros Calibre → ${e.name}: −${splashDmg} HP (splash)`);
+        });
+    }
+    // Passif Épée Magique : dégâts magiques bonus si attaque boostée
+    if (hasMagicSword2) {
+      const pct = (15 + 0.05 * attacker.ap) / 100;
+      const magicBonusDmg = this._reduceDmg(Math.floor(attacker.ad * pct), 'magical', targetHero);
+      this._applyDamage(targetHero, magicBonusDmg, attacker, 'magical');
+      this.addLog(`${attacker.name} — Épée Magique : +${magicBonusDmg} dégâts magiques`);
+    }
+    // Passif Dague du Soldat : bouclier +15 si attaque corps à corps (distance ≤ 1)
+    if (attacker.items.includes('soldier_dagger') && this._manhattan(attacker.position, targetHero.position) <= 1) {
+      attacker.daggerShield = (attacker.daggerShield || 0) + 15;
+      this.addLog(`${attacker.name} — Passif Dague : bouclier +15`);
+    }
+    // Passif Lame du Diable : 6% HP max de la cible en dégâts bruts
+    if (attacker.items.includes('lame_du_diable')) {
+      const rawDmg = Math.floor(targetHero.maxHP * 0.06);
+      this._applyDamage(targetHero, rawDmg, attacker, 'raw');
+      this.addLog(`${attacker.name} — Lame du Diable : −${rawDmg} dégâts bruts`);
+    }
+    // Passif Marteau du Marcheur Blanc / Trinité Sacrée / Lame de Nargoth / Lame du Diable : +1 PM après attaque de base
+    if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable'].includes(id))) {
+      this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
+      this.addLog(`${attacker.name} — Passif : +1 PM`);
+    }
+    this.autoAttacksUsed++;
+    this.actionsUsed++;
+    this.canBuy = false;
+    this._checkGameOver();
+    return true;
+  }
+
+  getAttackTargets() {
+    const hero = this.currentHero;
+    if (!hero) return [];
+    const effectivePO = hero.po + (hero.layiaBonusPOTurn || 0);
+    return this._getEnemies(hero.playerIdx).filter(e =>
+      this._manhattan(hero.position, e.position) <= effectivePO
+    );
+  }
+
+  getAttackRangeCells() {
+    const hero = this.currentHero;
+    if (!hero?.position) return [];
+    const effectivePO = hero.po + (hero.layiaBonusPOTurn || 0);
+    const cells = [];
+    for (let x = 0; x < MAP_SIZE; x++)
+      for (let y = 0; y < MAP_SIZE; y++)
+        if (!isWall(x, y) && this._manhattan(hero.position, { x, y }) <= effectivePO)
+          cells.push({ x, y });
+    return cells;
+  }
+
+  // ============================================================
+  // SPELLS
+  // ============================================================
+
+  castSpell(spell, target) {
+    const caster = this.currentHero;
+    if (!caster) return false;
+
+    const _usedCount = typeof this.spellsUsed[spell.id] === 'number' ? this.spellsUsed[spell.id] : (this.spellsUsed[spell.id] ? 999 : 0);
+    if (_usedCount >= (spell.maxUsesPerTurn || 1)) { this.addLog(`${spell.name} déjà utilisé !`); return false; }
+    if (caster.cooldowns[spell.id] > 0)     { this.addLog(`${spell.name} en recharge (${caster.cooldowns[spell.id]})`); return false; }
+    if (caster.currentMana < spell.manaCost){ this.addLog('Pas assez de mana !');                       return false; }
+    if (this.actionsUsed >= MAX_ACTIONS)    { this.addLog('Limite d\'actions atteinte !');               return false; }
+    if ((caster.statusEffects || []).some(e => e.type === 'mute')) {
+      this.addLog(`${caster.name} est muet — sorts bloqués !`); return false;
+    }
+
+    // Range check (malediction reduces effective range by 3, min 1)
+    const _effectiveRange = spell.range > 0 ? Math.max(1, spell.range + (caster.bonusSpellRange || 0) - (caster.maledictionTurns > 0 ? 3 : 0)) : spell.range;
+    if (spell.targetType !== 'self' && spell.targetType !== 'no_target' && spell.targetType !== 'line_zone' && spell.range > 0 && !spell.targetAll) {
+      const tx = target?.x ?? target?.hero?.position?.x ?? caster.position.x;
+      const ty = target?.y ?? target?.hero?.position?.y ?? caster.position.y;
+      if (this._manhattan(caster.position, { x: tx, y: ty }) > _effectiveRange) {
+        this.addLog('Hors de portée !'); return false;
+      }
+      if (spell.lineOnly) {
+        const dx = Math.abs(tx - caster.position.x), dy = Math.abs(ty - caster.position.y);
+        if (dx !== 0 && dy !== 0) { this.addLog('Ce sort ne peut être lancé qu\'en ligne droite !'); return false; }
+      }
+    }
+
+    caster.currentMana -= spell.manaCost;
+
+    // Passif Decigeno : consume PM restants → +25 AD par PM (avant calcul des dégâts)
+    if (caster.passive === 'decigeno_passive' && this.movementLeft > 0) {
+      const pmLeft = this.movementLeft;
+      const bonus  = 25 * pmLeft;
+      caster.ad          += bonus;
+      caster.decigenoBonus = (caster.decigenoBonus || 0) + bonus;
+      this.movementLeft   = 0;
+      this.addLog(`${caster.name} — Passif : consume ${pmLeft} PM → +${bonus} AD`);
+    }
+
+    let success = true;
+
+    switch (spell.targetType) {
+      case 'enemy_hero': {
+        const enemy = target?.hero;
+        if (!enemy || enemy.playerIdx === caster.playerIdx) { success = false; break; }
+        if (spell.targetAll) {
+          // From Downtown — bypass range, target any enemy
+        } else if (this._manhattan(caster.position, enemy.position) > spell.range) {
+          this.addLog('Hors de portée !'); caster.currentMana += spell.manaCost; success = false; break;
+        }
+        // Ligne de vue (sauf sorts globaux et ignoresLoS)
+        if (!spell.targetAll && !spell.ignoresLoS && !this._hasLineOfSight(caster.position, enemy.position)) {
+          this.addLog('Ligne de vue bloquée !'); caster.currentMana += spell.manaCost; success = false; break;
+        }
+        // Filet (Stank) : exige une ligne droite orthogonale
+        if (spell.requiresLine) {
+          const rdx = enemy.position.x - caster.position.x;
+          const rdy = enemy.position.y - caster.position.y;
+          if (rdx !== 0 && rdy !== 0) {
+            this.addLog('Sort en ligne droite uniquement !'); caster.currentMana += spell.manaCost; success = false; break;
+          }
+        }
+        // Condition : cible doit avoir plus de HP max que le lanceur (Appel du chevalier)
+        if (spell.conditionHigherHP && enemy.maxHP <= caster.maxHP) {
+          this.addLog(`${caster.name} → ${spell.name} : la cible n'a pas plus de HP max !`);
+          caster.currentMana += spell.manaCost; success = false; break;
+        }
+        if (spell.splitRawPct) {
+          // Dégâts mixtes : splitRawPct% bruts, reste en physiques
+          const totalRaw = Math.floor(spell.baseDamage + caster.ad * (spell.adRatio || 0));
+          const physRaw  = Math.floor(totalRaw * (1 - spell.splitRawPct));
+          const rawPart  = totalRaw - physRaw;
+          const physDmg  = this._reduceDmg(physRaw, 'physical', enemy, caster.armorPenPct || 0, 0);
+          this._applySpellDamage(caster, spell, enemy, physDmg);
+          if (enemy.isAlive) this._applyDamage(enemy, rawPart, caster, 'raw');
+          this.addLog(`${caster.name} → ${spell.name} → ${enemy.name}: −${physDmg} phys + −${rawPart} bruts`);
+        } else {
+          const dmg = this._calcSpellDmg(caster, spell, enemy);
+          this._applySpellDamage(caster, spell, enemy, dmg);
+          this.addLog(`${caster.name} → ${spell.name} → ${enemy.name}: −${dmg} HP`);
+        }
+        this._applySpellEffects(spell, [enemy]);
+        if (caster.passive === 'electro_passive') { caster.ap += 5; this.addLog(`${caster.name} — Passif : +5 AP`); }
+        break;
+      }
+      case 'swap_enemy': {
+        const enemy = target?.hero;
+        if (!enemy || enemy.playerIdx === caster.playerIdx) { success = false; break; }
+        if (this._manhattan(caster.position, enemy.position) > spell.range) {
+          this.addLog('Hors de portée !'); caster.currentMana += spell.manaCost; success = false; break;
+        }
+        const casterPos = { ...caster.position };
+        const enemyPos  = { ...enemy.position };
+        caster.position = enemyPos;
+        enemy.position  = casterPos;
+        const dmgSwap = this._calcSpellDmg(caster, spell, enemy);
+        this._applySpellDamage(caster, spell, enemy, dmgSwap);
+        this.addLog(`${caster.name} → ${spell.name} → ${enemy.name}: échange + −${dmgSwap} HP`);
+        this._applySpellEffects(spell, [enemy]);
+        // Les deux héros peuvent déclencher des pièges/glyphes sur leur nouvelle case
+        this._checkTrap(caster);
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        this._checkTrap(enemy);
+        if (enemy.roleId === 'roam') this._checkBrownCollection(enemy);
+        break;
+      }
+      case 'trap': {
+        const { x, y } = target;
+        if (isWall(x, y))               { this.addLog('Impossible sur un mur !');           success = false; break; }
+        if (this.getHeroAt(x, y))       { this.addLog('Un héros est sur cette case !');      success = false; break; }
+        if (this.traps.some(t => t.x === x && t.y === y)) { this.addLog('Piège déjà posé ici !'); success = false; break; }
+        if (this._manhattan(caster.position, { x, y }) > spell.range) { this.addLog('Hors de portée !'); success = false; break; }
+        this.traps.push({ x, y, turnsLeft: 3, playerIdx: caster.playerIdx, ownerHero: caster,
+          baseDamage: spell.baseDamage, adRatio: spell.adRatio, apRatio: spell.apRatio, damageType: spell.damageType });
+        this.addLog(`${caster.name} pose un piège en (${x},${y}) — 3 tours`);
+        break;
+      }
+      case 'cone_zone': {
+        const { x: cx2, y: cy2 } = target;
+        const cdx = cx2 - caster.position.x, cdy = cy2 - caster.position.y;
+        if (cdx !== 0 && cdy !== 0) { this.addLog('Cône : direction orthogonale requise !'); caster.currentMana += spell.manaCost; success = false; break; }
+        if (cdx === 0 && cdy === 0) { this.addLog('Cible invalide !'); caster.currentMana += spell.manaCost; success = false; break; }
+        const fdx = Math.sign(cdx), fdy = Math.sign(cdy);
+        const coneHit = [];
+        for (let gx = 0; gx < MAP_SIZE; gx++) {
+          for (let gy = 0; gy < MAP_SIZE; gy++) {
+            const fwd = fdx !== 0 ? (gx - caster.position.x) * fdx : (gy - caster.position.y) * fdy;
+            const lat = fdx !== 0 ? Math.abs(gy - caster.position.y) : Math.abs(gx - caster.position.x);
+            if (fwd >= 1 && fwd <= spell.range && lat <= fwd && !isWall(gx, gy)) {
+              const e = this.getHeroAt(gx, gy);
+              if (e && e.playerIdx !== caster.playerIdx) coneHit.push(e);
+            }
+          }
+        }
+        if (!coneHit.length) { this.addLog('Aucune cible dans le cône !'); caster.currentMana += spell.manaCost; success = false; break; }
+        coneHit.forEach(e => {
+          const dmg = this._calcSpellDmg(caster, spell, e);
+          this._applySpellDamage(caster, spell, e, dmg);
+          this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+        });
+        this._applySpellEffects(spell, coneHit);
+        break;
+      }
+      case 'bomb_zone': {
+        const { x: bx, y: by } = target;
+        if (isWall(bx, by)) { this.addLog('Position invalide !'); caster.currentMana += spell.manaCost; success = false; break; }
+        this.bombZones.push({ cx: bx, cy: by, radius: 2, turnsLeft: 3, caster,
+          baseDamage: spell.baseDamage, adRatio: spell.adRatio });
+        this.addLog(`${caster.name} → ${spell.name} : zone de bombardement en (${bx},${by}) — 3 tours`);
+        break;
+      }
+      case 'push_enemy': {
+        const pushEnemy = target?.hero;
+        if (!pushEnemy || pushEnemy.playerIdx === caster.playerIdx) { success = false; break; }
+        if (this._manhattan(caster.position, pushEnemy.position) > spell.range) {
+          this.addLog('Hors de portée !'); caster.currentMana += spell.manaCost; success = false; break;
+        }
+        const { dx: pdx, dy: pdy } = target;
+        let _px = pushEnemy.position.x, _py = pushEnemy.position.y;
+        for (let step = 1; step <= 3; step++) {
+          const nx2 = _px + pdx, ny2 = _py + pdy;
+          if (nx2 < 0 || nx2 >= MAP_SIZE || ny2 < 0 || ny2 >= MAP_SIZE) break;
+          if (isWall(nx2, ny2) || this.getHeroAt(nx2, ny2)) break;
+          _px = nx2; _py = ny2;
+        }
+        pushEnemy.position = { x: _px, y: _py };
+        this.addLog(`${caster.name} → ${spell.name} → ${pushEnemy.name} poussé en (${_px},${_py})`);
+        this._checkTrap(pushEnemy);
+        this._checkBombZone(pushEnemy);
+        break;
+      }
+      case 'hate_wall': {
+        const { x: hwx, y: hwy } = target;
+        const hwdx = hwx - caster.position.x, hwdy = hwy - caster.position.y;
+        if ((hwdx !== 0 && hwdy !== 0) || (hwdx === 0 && hwdy === 0)) {
+          this.addLog('Direction orthogonale requise !'); caster.currentMana += spell.manaCost; success = false; break;
+        }
+        if (Math.abs(hwdx) + Math.abs(hwdy) !== spell.range) {
+          this.addLog(`Portée exacte ${spell.range} requise !`); caster.currentMana += spell.manaCost; success = false; break;
+        }
+        const perpDx = hwdy !== 0 ? 1 : 0, perpDy = hwdx !== 0 ? 1 : 0;
+        const hwCells = [];
+        for (let off = -1; off <= 1; off++) {
+          const wx = hwx + perpDx * off, wy = hwy + perpDy * off;
+          if (wx >= 0 && wx < MAP_SIZE && wy >= 0 && wy < MAP_SIZE && !isWall(wx, wy))
+            hwCells.push({ x: wx, y: wy });
+        }
+        if (!hwCells.length) { this.addLog('Aucune case disponible pour le mur !'); caster.currentMana += spell.manaCost; success = false; break; }
+        this.hateWalls.push({ cells: hwCells, ownerPlayerIdx: caster.playerIdx, turnsLeft: 2 });
+        this.addLog(`${caster.name} → ${spell.name} : mur de haine posé (${hwCells.length} cases, 2 tours)`);
+        break;
+      }
+      case 'swap_ally': {
+        const ally = target?.hero;
+        if (!ally || ally.playerIdx !== caster.playerIdx || ally === caster) {
+          this.addLog('Cible invalide !'); caster.currentMana += spell.manaCost; success = false; break;
+        }
+        const _cPos = { ...caster.position };
+        const _aPos = { ...ally.position };
+        caster.position = _aPos;
+        ally.position   = _cPos;
+        this.addLog(`${caster.name} → ${spell.name} → ${ally.name} : échange de positions`);
+        this._checkTrap(caster);
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        this._checkTrap(ally);
+        if (ally.roleId === 'roam') this._checkBrownCollection(ally);
+        break;
+      }
+      case 'line_zone': {
+        const { x, y } = target;
+        const ldx = x - caster.position.x, ldy = y - caster.position.y;
+        if (ldx !== 0 && ldy !== 0) { this.addLog('Doit être en ligne droite (orthogonale) !'); success = false; break; }
+        const ldist = Math.abs(ldx) + Math.abs(ldy);
+        if (ldist < spell.minRange || ldist > spell.maxRange) { this.addLog(`Portée invalide (${spell.minRange}–${spell.maxRange} cases) !`); success = false; break; }
+        const udx = ldx === 0 ? 0 : Math.sign(ldx);
+        const udy = ldy === 0 ? 0 : Math.sign(ldy);
+        const hit = [];
+        for (let step = spell.minRange; step <= spell.maxRange; step++) {
+          const cx = caster.position.x + udx * step, cy = caster.position.y + udy * step;
+          if (cx < 0 || cx >= MAP_SIZE || cy < 0 || cy >= MAP_SIZE) break;
+          const e = this.getHeroAt(cx, cy);
+          if (e && e.playerIdx !== caster.playerIdx) hit.push(e);
+        }
+        if (!hit.length) { this.addLog('Aucune cible sur la ligne !'); success = false; break; }
+        hit.forEach(e => {
+          const dmg = this._calcSpellDmg(caster, spell, e);
+          this._applySpellDamage(caster, spell, e, dmg);
+          this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+        });
+        this._applySpellEffects(spell, hit);
+        if (caster.passive === 'electro_passive') { caster.ap += 5 * hit.length; this.addLog(`${caster.name} — Passif : +${5 * hit.length} AP`); }
+        break;
+      }
+      case 'ally_hero': {
+        const ally = target?.hero;
+        if (!ally || ally.playerIdx !== caster.playerIdx) { success = false; break; }
+        // Buff PM (Miaou Miaou ! de Shana)
+        if (spell.pmBuff) {
+          ally.bonusPMNextTurn = (ally.bonusPMNextTurn || 0) + spell.pmBuff;
+          this.addLog(`${caster.name} → ${spell.name} → ${ally.name}: +${spell.pmBuff} PM au prochain tour`);
+          break;
+        }
+        const baseHeal = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0));
+        const healFactor = ally.hemorrhageTurns > 0 ? 0.5 : 1;
+        const heal = Math.floor(baseHeal * healFactor * (1 + (ally.healEfficiency || 0) / 100));
+        ally.currentHP = Math.min(ally.maxHP, ally.currentHP + heal);
+        Stats.addHeal(caster.id, heal);
+        if (ally !== caster) { if (!ally.buffedBy) ally.buffedBy = {}; ally.buffedBy[caster.id] = this.globalTurn; }
+        this.addLog(`${caster.name} soigne ${ally.name} +${heal} HP${ally.hemorrhageTurns > 0 ? ' (hémorragie -50%)' : ''}`);
+        // Passif Anastasia : +10 PO par soin (allié ou soi-même)
+        if (caster.passive === 'anastasia_passive') {
+          this._giveGold(caster, 10);
+          this.addLog(`${caster.name} — Passif : +10 PO`);
+        }
+        // Passif Shana — Félin pour l'autre : se soigne du même montant
+        if (caster.passive === 'shana_passive' && ally !== caster) {
+          const selfHealFactor = caster.hemorrhageTurns > 0 ? 0.5 : 1;
+          const selfHeal = Math.floor(heal * selfHealFactor);
+          caster.currentHP = Math.min(caster.maxHP, caster.currentHP + selfHeal);
+          Stats.addHeal(caster.id, selfHeal);
+          this.addLog(`${caster.name} — Passif : auto-soin +${selfHeal} HP`);
+        }
+        break;
+      }
+      case 'self': {
+        if (spell.empoweredAttack) {
+          caster.empoweredAttack = { adRatio: spell.adRatio, apRatio: spell.apRatio };
+          this.addLog(`${caster.name} → ${spell.name}: prochaine attaque renforcée`);
+        } else {
+          const shield = Math.floor(
+            (spell.shieldAmount || 0) +
+            caster.ad * (spell.adShieldRatio || 0) +
+            this._effectiveAP(caster) * (spell.apShieldRatio || 0)
+          );
+          caster.shield += shield;
+          if (spell.shieldTurns) caster.shieldTurnsLeft = spell.shieldTurns;
+          Stats.addShield(caster.id, shield);
+          this.addLog(`${caster.name} → ${spell.name}: bouclier +${shield}`);
+        }
+        break;
+      }
+      case 'stealth_dash': {
+        const { x, y } = target;
+        const dx = x - caster.position.x, dy = y - caster.position.y;
+        // Must be orthogonal (not diagonal) and within range
+        if ((dx !== 0 && dy !== 0) || Math.abs(dx) + Math.abs(dy) > spell.range) {
+          this.addLog('Destination invalide (en ligne droite uniquement) !'); success = false; break;
+        }
+        if (this.getHeroAt(x, y)) { this.addLog('Case occupée !'); success = false; break; }
+        caster.position = { x, y };
+        // Bonus next attack (Layia Petit Bond)
+        if (spell.bonusNextAttackAP) {
+          caster.layiaBonusNextAttack = Math.floor(this._effectiveAP(caster) * spell.bonusNextAttackAP);
+          this.addLog(`${caster.name} → ${spell.name}: prochaine attaque +${caster.layiaBonusNextAttack}`);
+        }
+        if (!spell.noDamageOnLand) {
+          // Damage all adjacent enemies (chebyshev 1)
+          const hit = this._getEnemies(caster.playerIdx).filter(e =>
+            e.position && this._chebyshev(caster.position, e.position) <= 1
+          );
+          if (hit.length) {
+            hit.forEach(e => {
+              const dmg = this._calcSpellDmg(caster, spell, e);
+              this._applySpellDamage(caster, spell, e, dmg);
+              this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+            });
+            if (caster.passive === 'electro_passive') { caster.ap += 5 * hit.length; this.addLog(`${caster.name} — Passif : +${5 * hit.length} AP`); }
+          } else {
+            this.addLog(`${caster.name} → ${spell.name} (aucune cible adjacente)`);
+          }
+        } else if (!spell.bonusNextAttackAP) {
+          this.addLog(`${caster.name} → ${spell.name}`);
+        }
+        this._checkBrownCollection(caster);
+        this._checkTrap(caster);
+        break;
+      }
+      case 'abyss_w': {
+        // Dash en ligne droite (orthogonal, max spell.range cases)
+        const { x: wx, y: wy } = target;
+        const wdx = wx - caster.position.x, wdy = wy - caster.position.y;
+        if ((wdx !== 0 && wdy !== 0) || Math.abs(wdx) + Math.abs(wdy) > spell.range) {
+          this.addLog('Nuisance noire : destination en ligne droite uniquement !'); caster.currentMana += spell.manaCost; success = false; break;
+        }
+        if (this.getHeroAt(wx, wy)) { this.addLog('Case occupée !'); caster.currentMana += spell.manaCost; success = false; break; }
+        caster.position = { x: wx, y: wy };
+        this._checkBrownCollection(caster);
+        this._checkTrap(caster);
+        // Appliquer DOT aux ennemis à ≤ 3 cases (manhattan)
+        const dotDmgPerTurn = Math.floor(spell.baseDamage + this._effectiveAP(caster) * spell.apRatio);
+        const dotTargets = this._getEnemies(caster.playerIdx).filter(e =>
+          e.isAlive && e.position && this._manhattan(caster.position, e.position) <= 3
+        );
+        dotTargets.forEach(e => {
+          (e.dots = e.dots || []).push({ dmgPerTurn: dotDmgPerTurn, turns: 3, caster, type: 'magical' });
+          this.addLog(`${e.name} subit Nuisance noire : −${dotDmgPerTurn} dégâts magiques/tour pendant 3 tours`);
+          if (!e.debuffContributors) e.debuffContributors = {};
+          e.debuffContributors[caster.id] = this.globalTurn;
+        });
+        if (!dotTargets.length) this.addLog(`${caster.name} → Nuisance noire (aucune cible à portée)`);
+        break;
+      }
+      case 'abyss_r': {
+        // Nuit infinie : dash sur un ennemi à 8-10 cases (sans ligne de vue)
+        const rEnemy = target?.hero;
+        if (!rEnemy || rEnemy.playerIdx === caster.playerIdx) { caster.currentMana += spell.manaCost; success = false; break; }
+        const rDist = this._manhattan(caster.position, rEnemy.position);
+        if (rDist < (spell.minRange || 8) || rDist > spell.range) {
+          this.addLog(`Nuit infinie : la cible doit être à ${spell.minRange || 8}–${spell.range} cases !`);
+          caster.currentMana += spell.manaCost; success = false; break;
+        }
+        const rFreeAdj = this._getAdjacentFreeCells(rEnemy.position, caster);
+        if (!rFreeAdj.length) { this.addLog('Aucune case libre autour de la cible !'); caster.currentMana += spell.manaCost; success = false; break; }
+        caster.position = rFreeAdj.reduce((best, c) =>
+          this._manhattan(caster.position, c) < this._manhattan(caster.position, best) ? c : best
+        );
+        this._checkBrownCollection(caster);
+        this._checkTrap(caster);
+        const rDmg = this._calcSpellDmg(caster, spell, rEnemy);
+        this._applySpellDamage(caster, spell, rEnemy, rDmg);
+        this.addLog(`${caster.name} → Nuit infinie → ${rEnemy.name}: −${rDmg} HP`);
+        break;
+      }
+      case 'pm_sacrifice': {
+        const sacrificed = this.movementLeft;
+        if (sacrificed === 0) { this.addLog('Aucun PM à sacrifier !'); success = false; break; }
+        const bonus = 50 * sacrificed;
+        caster.ad        += bonus;
+        caster.ap        += bonus;
+        caster.tueurBonus = (caster.tueurBonus || 0) + bonus;
+        this.movementLeft = 0;
+        this.addLog(`${caster.name} → ${spell.name}: sacrifie ${sacrificed} PM → +${bonus} AD & AP (jusqu'au prochain tour)`);
+        break;
+      }
+      case 'cell': {
+        const { x, y } = target;
+        if (isWall(x, y))         { this.addLog('Destination invalide !'); success = false; break; }
+        if (this.getHeroAt(x, y)) { this.addLog('Case occupée !');         success = false; break; }
+        caster.position = { x, y };
+        this.addLog(`${caster.name} → ${spell.name}`);
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        this._checkTrap(caster);
+        break;
+      }
+      case 'zone': {
+        const { x, y } = target;
+        const sz  = spell.zone.size;
+        const hit = this._getEnemies(caster.playerIdx).filter(e =>
+          Math.abs(e.position.x - x) <= sz && Math.abs(e.position.y - y) <= sz
+        );
+        if (!hit.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
+        hit.forEach(e => {
+          const dmg = this._calcSpellDmg(caster, spell, e);
+          this._applySpellDamage(caster, spell, e, dmg);
+          this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+        });
+        this._applySpellEffects(spell, hit);
+        if (caster.passive === 'electro_passive') { caster.ap += 5 * hit.length; this.addLog(`${caster.name} — Passif : +${5 * hit.length} AP`); }
+        break;
+      }
+      case 'dash_to_ally': {
+        const ally = target?.hero;
+        if (!ally || ally.playerIdx !== caster.playerIdx || ally === caster) { success = false; break; }
+        const freeAdj = this._getAdjacentFreeCells(ally.position, caster);
+        if (!freeAdj.length) { this.addLog('Aucune case libre autour de l\'allié !'); success = false; break; }
+        const dest = freeAdj.reduce((best, c) =>
+          this._chebyshev(caster.position, c) < this._chebyshev(caster.position, best) ? c : best
+        );
+        caster.position = dest;
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        this._checkTrap(caster);
+        this.addLog(`${caster.name} → ${spell.name} → aux côtés de ${ally.name}`);
+        break;
+      }
+      case 'no_target': {
+        // Shana — À la Rescousse : soigne tous les alliés
+        if (spell.healAllAllies) {
+          const baseHeal = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0));
+          const targets  = this._getAllies(caster.playerIdx);
+          targets.forEach(ally => {
+            const healFactor = ally.hemorrhageTurns > 0 ? 0.5 : 1;
+            const heal = Math.floor(baseHeal * healFactor * (1 + (ally.healEfficiency || 0) / 100));
+            ally.currentHP = Math.min(ally.maxHP, ally.currentHP + heal);
+            this.addLog(`${caster.name} → ${spell.name} → ${ally.name}: +${heal} HP${ally.hemorrhageTurns > 0 ? ' (hémorragie -50%)' : ''}`);
+            // Passif Anastasia : +10 PO par soin
+            if (caster.passive === 'anastasia_passive') {
+              this._giveGold(caster, 10);
+              this.addLog(`${caster.name} — Passif : +10 PO`);
+            }
+            // Passif Shana : se soigne pour chaque allié soigné (hors soi-même)
+            if (caster.passive === 'shana_passive' && ally !== caster) {
+              const selfFactor = caster.hemorrhageTurns > 0 ? 0.5 : 1;
+              const selfHeal = Math.floor(heal * selfFactor);
+              caster.currentHP = Math.min(caster.maxHP, caster.currentHP + selfHeal);
+              this.addLog(`${caster.name} — Passif : +${selfHeal} HP`);
+            }
+          });
+          break;
+        }
+        // Chronos — Rollback : retour à la position de début de tour
+        if (spell.rollback) {
+          const dest = caster.chronosStartPos;
+          if (!dest) { this.addLog('Position de départ inconnue !'); success = false; break; }
+          if (!this.getHeroAt(dest.x, dest.y)) {
+            caster.position = { ...dest };
+            this.addLog(`${caster.name} → ${spell.name}: retour en (${dest.x},${dest.y})`);
+          } else {
+            const adj = this._getAdjacentFreeCells(dest, caster);
+            if (!adj.length) { this.addLog(`${spell.name} : aucune case disponible !`); success = false; break; }
+            const closest = adj.reduce((best, c) =>
+              this._chebyshev(dest, c) < this._chebyshev(dest, best) ? c : best
+            );
+            caster.position = closest;
+            this.addLog(`${caster.name} → ${spell.name}: position de départ occupée, case adjacente (${closest.x},${closest.y})`);
+          }
+          this._checkTrap(caster);
+          if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+          break;
+        }
+        // Layia — Vision : +PO d'attaque ce tour
+        if (spell.layiaBonusPO) {
+          caster.layiaBonusPOTurn = (caster.layiaBonusPOTurn || 0) + spell.layiaBonusPO;
+          this.addLog(`${caster.name} → ${spell.name}: +${spell.layiaBonusPO} PO d'attaque ce tour`);
+          break;
+        }
+        // Layia — Double Cibles : double le nombre d'attaques de base autorisées ce tour
+        if (spell.layiaDoubleAttacks) {
+          this.autoAttacksAllowed *= 2;
+          this.addLog(`${caster.name} → ${spell.name}: attaques de base doublées (${this.autoAttacksAllowed} disponibles)`);
+          break;
+        }
+        if (spell.nearestAllyCleanse) {
+          const allies = this._getAllies(caster.playerIdx).filter(a => a !== caster && a.isAlive && a.position);
+          if (!allies.length) { this.addLog('Aucun allié vivant !'); success = false; break; }
+          const nearest = allies.reduce((best, a) =>
+            this._manhattan(caster.position, a.position) < this._manhattan(caster.position, best.position) ? a : best
+          );
+          if (this._manhattan(caster.position, nearest.position) > spell.range) { this.addLog('Aucun allié à portée !'); success = false; break; }
+          const hadDebuff = (nearest.statusEffects || []).length > 0 || nearest.hemorrhageTurns > 0 || nearest.maledictionTurns > 0;
+          nearest.statusEffects    = [];
+          nearest.hemorrhageTurns  = 0;
+          nearest.maledictionTurns = 0;
+          if (hadDebuff) {
+            this.addLog(`${caster.name} → ${spell.name} → ${nearest.name}: tous les débuffs supprimés !`);
+          } else {
+            const baseHeal  = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0));
+            const heal      = Math.floor(baseHeal * (1 + (nearest.healEfficiency || 0) / 100));
+            nearest.currentHP = Math.min(nearest.maxHP, nearest.currentHP + heal);
+            this.addLog(`${caster.name} → ${spell.name} → ${nearest.name}: +${heal} HP`);
+          }
+          break;
+        }
+        const hit = spell.targetAll
+          ? this._getEnemies(caster.playerIdx)
+          : spell.adjacentHit
+            ? this._getEnemies(caster.playerIdx).filter(e => this._chebyshev(caster.position, e.position) <= 1)
+            : this._getEnemies(caster.playerIdx).filter(e => this._manhattan(caster.position, e.position) <= spell.range);
+        if (!hit.length) { this.addLog('Aucune cible à portée !'); success = false; break; }
+        hit.forEach(e => {
+          const dmg = this._calcSpellDmg(caster, spell, e);
+          this._applySpellDamage(caster, spell, e, dmg);
+          this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+        });
+        this._applySpellEffects(spell, hit);
+        if (caster.passive === 'electro_passive') { caster.ap += 5 * hit.length; this.addLog(`${caster.name} — Passif : +${5 * hit.length} AP`); }
+        break;
+      }
+      case 'dash_to_enemy': {
+        const enemy = target?.hero;
+        if (!enemy || enemy.playerIdx === caster.playerIdx) { success = false; break; }
+        const freeAdj = this._getAdjacentFreeCells(enemy.position, caster);
+        if (!freeAdj.length) { this.addLog('Aucune case libre autour de la cible !'); success = false; break; }
+        // Move to the closest free adjacent cell
+        const dest = freeAdj.reduce((best, c) =>
+          this._chebyshev(caster.position, c) < this._chebyshev(caster.position, best) ? c : best
+        );
+        caster.position = dest;
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        const dmgW = this._calcSpellDmg(caster, spell, enemy);
+        this._applySpellDamage(caster, spell, enemy, dmgW);
+        this.addLog(`${caster.name} → ${spell.name} → ${enemy.name}: −${dmgW} HP`);
+        this._applySpellEffects(spell, [enemy]);
+        if (caster.passive === 'electro_passive') { caster.ap += 5; this.addLog(`${caster.name} — Passif : +5 AP`); }
+        break;
+      }
+      case 'dash_behind_enemy': {
+        const enemy = target?.hero;
+        if (!enemy || enemy.playerIdx === caster.playerIdx) { success = false; break; }
+        const rdx = enemy.position.x - caster.position.x;
+        const rdy = enemy.position.y - caster.position.y;
+        if (rdx !== 0 && rdy !== 0) { this.addLog('Sort en ligne droite uniquement !'); caster.currentMana += spell.manaCost; success = false; break; }
+        if (Math.abs(rdx) + Math.abs(rdy) > spell.range) { this.addLog('Hors de portée !'); caster.currentMana += spell.manaCost; success = false; break; }
+        const ddx = Math.sign(rdx), ddy = Math.sign(rdy);
+        const bx = enemy.position.x + ddx, by = enemy.position.y + ddy;
+        let dest;
+        if (bx >= 0 && bx < MAP_SIZE && by >= 0 && by < MAP_SIZE && !isWall(bx, by) && !this.getHeroAt(bx, by)) {
+          dest = { x: bx, y: by };
+        } else {
+          const freeAdj = this._getAdjacentFreeCells(enemy.position, caster);
+          if (!freeAdj.length) { this.addLog('Aucune case libre autour de la cible !'); caster.currentMana += spell.manaCost; success = false; break; }
+          dest = freeAdj.reduce((best, c) =>
+            (Math.abs(c.x - bx) + Math.abs(c.y - by)) < (Math.abs(best.x - bx) + Math.abs(best.y - by)) ? c : best
+          );
+        }
+        caster.position = dest;
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        this._checkTrap(caster);
+        const physRaw = Math.floor(spell.baseDamage + caster.ad * (spell.adRatio || 0));
+        const physDmg = this._reduceDmg(physRaw, 'physical', enemy, caster.armorPenPct || 0);
+        this._applySpellDamage(caster, spell, enemy, physDmg);
+        if (enemy.isAlive) {
+          const rawDmg = Math.floor((spell.rawBase || 0) + this._effectiveAP(caster) * (spell.rawApRatio || 0));
+          if (rawDmg > 0) this._applyDamage(enemy, rawDmg, caster, 'raw');
+          this.addLog(`${caster.name} → ${spell.name} → ${enemy.name}: −${physDmg} phys + −${rawDmg} bruts`);
+        } else {
+          this.addLog(`${caster.name} → ${spell.name} → ${enemy.name}: −${physDmg} phys`);
+        }
+        this._applySpellEffects(spell, [enemy]);
+        break;
+      }
+      case 'lame_eau': {
+        const { x, y } = target;
+        const rdx = x - caster.position.x, rdy = y - caster.position.y;
+        if (rdx !== 0 && rdy !== 0) { this.addLog('Lame d\'eau : direction orthogonale requise !'); caster.currentMana += spell.manaCost; success = false; break; }
+        if (Math.abs(rdx) + Math.abs(rdy) !== 2) { this.addLog('Lame d\'eau : portée exacte 2 requise !'); caster.currentMana += spell.manaCost; success = false; break; }
+        const _leZone = {
+          cx: x, cy: y,
+          dx: Math.sign(rdx), dy: Math.sign(rdy),
+          turnsLeft: 3,
+          baseDamage: spell.baseDamage,
+          adRatio: spell.adRatio,
+          caster,
+          playerIdx: caster.playerIdx,
+          damagedThisTurn: new Set()
+        };
+        this.lameEauZones.push(_leZone);
+        // Dégâts immédiats à la pose
+        this._applyLameEauDamage(_leZone);
+        this.addLog(`${caster.name} → Lame d'eau lancée en (${x},${y}) — 3 tours !`);
+        break;
+      }
+      case 'diamond_zone': {
+        const { x, y } = target;
+        const sz = spell.zone?.size ?? 2;
+        // Anastasia — Barrière Protectrice : bouclier sur les alliés dans la zone
+        if (spell.allyShield) {
+          const alliesInZone = this._getAllies(caster.playerIdx).filter(a =>
+            a.position && Math.abs(a.position.x - x) + Math.abs(a.position.y - y) <= sz
+          );
+          if (!alliesInZone.length) { this.addLog('Aucun allié dans la zone !'); success = false; break; }
+          const shieldVal = Math.floor((spell.shieldBase || 0) + this._effectiveAP(caster) * (spell.shieldAPRatio || 0));
+          alliesInZone.forEach(a => {
+            a.shield = Math.max(a.shield, shieldVal);
+            a.shieldTurnsLeft = spell.shieldTurns || 3;
+            this.addLog(`${caster.name} → ${spell.name} → ${a.name}: bouclier +${shieldVal} (${spell.shieldTurns || 3} tours)`);
+          });
+          break;
+        }
+        const hit = this._getEnemies(caster.playerIdx).filter(e =>
+          Math.abs(e.position.x - x) + Math.abs(e.position.y - y) <= sz
+        );
+        if (!hit.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
+        if (spell.damageType) {
+          hit.forEach(e => {
+            const dmg = this._calcSpellDmg(caster, spell, e);
+            this._applySpellDamage(caster, spell, e, dmg);
+            this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+          });
+          if (caster.passive === 'electro_passive') { caster.ap += 5 * hit.length; this.addLog(`${caster.name} — Passif : +${5 * hit.length} AP`); }
+        } else {
+          this.addLog(`${caster.name} → ${spell.name} (${hit.map(e => e.name).join(', ')})`);
+        }
+        this._applySpellEffects(spell, hit);
+        break;
+      }
+      case 'place_glyph': {
+        const { x: gx, y: gy } = target;
+        const glyphSize  = spell.glyphZoneSize ?? 2;
+        const glyphCells = this._diamondCells(gx, gy, glyphSize);
+        if (spell.glyphType === 'pain') {
+          const allHeroes = [...this.players[0].heroes, ...this.players[1].heroes].filter(h => h.isAlive && h.position);
+          if (allHeroes.some(h => glyphCells.some(c => c.x === h.position.x && c.y === h.position.y))) {
+            this.addLog('Un champion se trouve dans la zone !'); success = false; break;
+          }
+          this.glyphs.push({ type: 'pain', centerX: gx, centerY: gy, cells: glyphCells,
+            turnsLeft: 3, playerIdx: caster.playerIdx, ownerHero: caster,
+            baseDamage: spell.baseDamage, apRatio: spell.apRatio, damageType: spell.damageType });
+          this.addLog(`${caster.name} → ${spell.name} posée`);
+        } else if (spell.glyphType === 'ultimate') {
+          this.glyphs = this.glyphs.filter(g => !(g.type === 'ultimate' && g.ownerHero === caster));
+          this.glyphs.push({ type: 'ultimate', centerX: gx, centerY: gy, cells: glyphCells,
+            turnsLeft: -1, playerIdx: caster.playerIdx, ownerHero: caster });
+          this.addLog(`${caster.name} → ${spell.name} posée`);
+        }
+        break;
+      }
+      case 'wind_glyph': {
+        const { x: wx, y: wy } = target;
+        const zSize     = spell.glyphZoneSize ?? 1;
+        const zoneCells = this._diamondCells(wx, wy, zSize);
+        const enemies   = this._getEnemies(caster.playerIdx).filter(e =>
+          e.position && zoneCells.some(c => c.x === e.position.x && c.y === e.position.y)
+        );
+        if (!enemies.length) { this.addLog('Aucun ennemi dans la zone !'); success = false; break; }
+        const myGlyphs = this.glyphs.filter(g => g.playerIdx === caster.playerIdx && g.type === 'pain');
+        enemies.forEach(enemy => {
+          let pushDir;
+          if (myGlyphs.length > 0) {
+            const nearest = myGlyphs.reduce((best, g) =>
+              this._manhattan(enemy.position, { x: g.centerX, y: g.centerY }) <
+              this._manhattan(enemy.position, { x: best.centerX, y: best.centerY }) ? g : best
+            );
+            const dx = nearest.centerX - enemy.position.x, dy = nearest.centerY - enemy.position.y;
+            pushDir = Math.abs(dx) >= Math.abs(dy) ? { dx: dx > 0 ? 1 : -1, dy: 0 } : { dx: 0, dy: dy > 0 ? 1 : -1 };
+          } else {
+            const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+            pushDir = dirs[Math.floor(Math.random() * 4)];
+          }
+          const nx = enemy.position.x + pushDir.dx, ny = enemy.position.y + pushDir.dy;
+          if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && !isWall(nx, ny) && !this.getHeroAt(nx, ny)) {
+            enemy.position = { x: nx, y: ny };
+            this.addLog(`${enemy.name} repoussé vers (${nx},${ny})`);
+            this._checkGlyph(enemy);
+            this._checkTrap(enemy);
+            if (enemy.roleId === 'roam') this._checkBrownCollection(enemy);
+          }
+        });
+        this.addLog(`${caster.name} → ${spell.name}`);
+        break;
+      }
+      default: success = false;
+    }
+
+    if (success) {
+      // CD 0 = pas de rechargement ; sinon réduction normale
+      if (spell.cooldown > 0) {
+        const _hasStun = spell.effects?.some(e => e.type === 'stun');
+        const _minCd   = _hasStun ? 2 : 1;
+        let _cd = Math.max(_minCd, spell.cooldown - (caster.cdReduction || 0));
+        // Bottes de Célérité : -1 CD supplémentaire sur le sort 3 (index 2), seulement si CD > minimum
+        if (caster.items.includes('boots_of_celerity')) {
+          const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
+          if (_spellIdx === 2 && _cd > _minCd) _cd--;
+        }
+        caster.cooldowns[spell.id] = _cd;
+      } else {
+        caster.cooldowns[spell.id] = 0;
+      }
+      // Suivi des utilisations (maxUsesPerTurn ou boolean classique)
+      if (spell.maxUsesPerTurn) {
+        this.spellsUsed[spell.id] = (typeof this.spellsUsed[spell.id] === 'number' ? this.spellsUsed[spell.id] : 0) + 1;
+      } else {
+        this.spellsUsed[spell.id] = true;
+      }
+      this.actionsUsed++;
+      this.canBuy = false;
+      // Passif Chronos : +50 PO par sort lancé
+      if (caster.passive === 'chronos_passive') {
+        this._giveGold(caster, 50);
+        this.addLog(`${caster.name} — Passif : +50 PO`);
+      }
+      // Passive : Larme de Mana — +manaOnSpell maxMana par sort (plafonné)
+      if (caster.manaOnSpell > 0 && caster.manaOnSpellGained < caster.manaOnSpellMax) {
+        const gain = Math.min(caster.manaOnSpell, caster.manaOnSpellMax - caster.manaOnSpellGained);
+        caster.maxMana            += gain;
+        caster.manaOnSpellGained  += gain;
+      }
+      this._checkGameOver();
+    } else {
+      caster.currentMana += spell.manaCost; // refund
+    }
+    return success;
+  }
+
+  getSpellTargets(spell) {
+    const hero = this.currentHero;
+    if (!hero) return { heroes: [], cells: [], heroesOutOfRange: [] };
+
+    const effRange = spell.range > 0 ? Math.max(1, spell.range + (hero.bonusSpellRange || 0) - (hero.maledictionTurns > 0 ? 3 : 0)) : spell.range;
+    const _rangeCells = () => {
+      const cells = [];
+      for (let x = 0; x < MAP_SIZE; x++)
+        for (let y = 0; y < MAP_SIZE; y++)
+          if (!isWall(x, y) && this._manhattan(hero.position, { x, y }) <= effRange)
+            cells.push({ x, y });
+      return cells;
+    };
+
+    switch (spell.targetType) {
+      case 'swap_enemy':
+      case 'enemy_hero': {
+        const all = this._getEnemies(hero.playerIdx);
+        if (spell.targetAll) return { heroes: all, heroesOutOfRange: [], cells: [] };
+        let _inRange  = all.filter(e => this._manhattan(hero.position, e.position) <= effRange);
+        let _outRange = all.filter(e => this._manhattan(hero.position, e.position) >  effRange);
+        if (spell.requiresLine) {
+          _inRange  = _inRange.filter(e => e.position.x === hero.position.x || e.position.y === hero.position.y);
+          _outRange = _outRange.filter(e => e.position.x === hero.position.x || e.position.y === hero.position.y);
+        }
+        // LOS : héros hors ligne de vue → anneau rouge (heroesOutOfRange)
+        if (!spell.targetAll && !spell.ignoresLoS) {
+          const _losOk  = _inRange.filter(e => this._hasLineOfSight(hero.position, e.position));
+          const _losKo  = _inRange.filter(e => !this._hasLineOfSight(hero.position, e.position));
+          _outRange = [..._outRange, ..._losKo];
+          _inRange  = _losOk;
+        }
+        return { heroes: _inRange, heroesOutOfRange: _outRange, cells: _rangeCells() };
+      }
+      case 'ally_hero': {
+        const all = this._getAllies(hero.playerIdx);
+        return {
+          heroes:           all.filter(a => this._manhattan(hero.position, a.position) <= effRange),
+          heroesOutOfRange: all.filter(a => this._manhattan(hero.position, a.position) >  effRange),
+          cells: _rangeCells()
+        };
+      }
+      case 'cell':
+      case 'zone':
+        return { heroes: [], heroesOutOfRange: [], cells: _rangeCells() };
+      case 'dash_to_enemy': {
+        const all = this._getEnemies(hero.playerIdx);
+        return {
+          heroes:           all.filter(e => this._manhattan(hero.position, e.position) <= effRange),
+          heroesOutOfRange: all.filter(e => this._manhattan(hero.position, e.position) >  effRange),
+          cells: _rangeCells()
+        };
+      }
+      case 'diamond_zone':
+        return { heroes: [], heroesOutOfRange: [], cells: _rangeCells() };
+      case 'stealth_dash': {
+        const cells = [];
+        const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        dirs.forEach(({dx, dy}) => {
+          for (let step = 1; step <= spell.range; step++) {
+            const x = hero.position.x + dx * step, y = hero.position.y + dy * step;
+            if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) break;
+            if (!this.getHeroAt(x, y)) cells.push({ x, y });
+          }
+        });
+        return { heroes: [], heroesOutOfRange: [], cells };
+      }
+      case 'dash_to_ally': {
+        const all = this._getAllies(hero.playerIdx).filter(a => a !== hero && a.isAlive);
+        return {
+          heroes:           all.filter(a => this._manhattan(hero.position, a.position) <= effRange),
+          heroesOutOfRange: all.filter(a => this._manhattan(hero.position, a.position) >  effRange),
+          cells: _rangeCells()
+        };
+      }
+      case 'trap':
+        return { heroes: [], heroesOutOfRange: [], cells: _rangeCells().filter(c => !this.getHeroAt(c.x, c.y) && !this.traps.some(t => t.x === c.x && t.y === c.y)) };
+      case 'line_zone': {
+        const cells = [];
+        const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        dirs.forEach(({dx, dy}) => {
+          for (let step = spell.minRange ?? 1; step <= (spell.maxRange ?? spell.range); step++) {
+            const cx = hero.position.x + dx * step, cy = hero.position.y + dy * step;
+            if (cx >= 0 && cx < MAP_SIZE && cy >= 0 && cy < MAP_SIZE && !isWall(cx, cy))
+              cells.push({ x: cx, y: cy });
+          }
+        });
+        return { heroes: [], heroesOutOfRange: [], cells };
+      }
+      case 'cone_zone': {
+        const coneCells = [];
+        const seen = new Set();
+        const coneDirs = [{fdx:1,fdy:0},{fdx:-1,fdy:0},{fdx:0,fdy:1},{fdx:0,fdy:-1}];
+        coneDirs.forEach(({fdx, fdy}) => {
+          for (let gx = 0; gx < MAP_SIZE; gx++) {
+            for (let gy = 0; gy < MAP_SIZE; gy++) {
+              const fwd = fdx !== 0 ? (gx - hero.position.x) * fdx : (gy - hero.position.y) * fdy;
+              const lat = fdx !== 0 ? Math.abs(gy - hero.position.y) : Math.abs(gx - hero.position.x);
+              if (fwd >= 1 && fwd <= spell.range && lat <= fwd && !isWall(gx, gy)) {
+                const k = `${gx},${gy}`;
+                if (!seen.has(k)) { seen.add(k); coneCells.push({ x: gx, y: gy }); }
+              }
+            }
+          }
+        });
+        return { heroes: [], heroesOutOfRange: [], cells: coneCells };
+      }
+      case 'bomb_zone': {
+        const allCells = [];
+        for (let gx = 0; gx < MAP_SIZE; gx++)
+          for (let gy = 0; gy < MAP_SIZE; gy++)
+            if (!isWall(gx, gy)) allCells.push({ x: gx, y: gy });
+        return { heroes: [], heroesOutOfRange: [], cells: allCells };
+      }
+      case 'place_glyph':
+      case 'wind_glyph': {
+        const cells = [];
+        const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        dirs.forEach(({dx, dy}) => {
+          for (let step = 1; step <= effRange; step++) {
+            const x = hero.position.x + dx * step, y = hero.position.y + dy * step;
+            if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) break;
+            if (isWall(x, y)) break;
+            cells.push({ x, y });
+          }
+        });
+        return { heroes: [], heroesOutOfRange: [], cells };
+      }
+      case 'push_enemy': {
+        const _peAll = this._getEnemies(hero.playerIdx);
+        return {
+          heroes:           _peAll.filter(e => this._manhattan(hero.position, e.position) <= effRange),
+          heroesOutOfRange: _peAll.filter(e => this._manhattan(hero.position, e.position) >  effRange),
+          cells: []
+        };
+      }
+      case 'hate_wall': {
+        const _hwDirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        const _hwCells = _hwDirs.map(({dx, dy}) => ({
+          x: hero.position.x + dx * spell.range,
+          y: hero.position.y + dy * spell.range
+        })).filter(c => c.x >= 0 && c.x < MAP_SIZE && c.y >= 0 && c.y < MAP_SIZE && !isWall(c.x, c.y));
+        return { heroes: [], heroesOutOfRange: [], cells: _hwCells };
+      }
+      case 'swap_ally': {
+        const _saAll = this._getAllies(hero.playerIdx).filter(a => a !== hero && a.isAlive);
+        if (spell.targetAll) return { heroes: _saAll, heroesOutOfRange: [], cells: [] };
+        return {
+          heroes:           _saAll.filter(a => this._manhattan(hero.position, a.position) <= effRange),
+          heroesOutOfRange: _saAll.filter(a => this._manhattan(hero.position, a.position) >  effRange),
+          cells: []
+        };
+      }
+      case 'dash_behind_enemy': {
+        const _dbeAll = this._getEnemies(hero.playerIdx);
+        const _dbeValid = _dbeAll.filter(e => {
+          const ex = e.position.x - hero.position.x, ey = e.position.y - hero.position.y;
+          if (ex !== 0 && ey !== 0) return false;
+          return Math.abs(ex) + Math.abs(ey) <= effRange;
+        });
+        return {
+          heroes:           _dbeValid,
+          heroesOutOfRange: _dbeAll.filter(e => !_dbeValid.includes(e)),
+          cells: []
+        };
+      }
+      case 'lame_eau': {
+        const _leCells = [];
+        [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}].forEach(({dx, dy}) => {
+          const tx = hero.position.x + dx * 2, ty = hero.position.y + dy * 2;
+          if (tx >= 0 && tx < MAP_SIZE && ty >= 0 && ty < MAP_SIZE && !isWall(tx, ty))
+            _leCells.push({ x: tx, y: ty });
+        });
+        return { heroes: [], heroesOutOfRange: [], cells: _leCells };
+      }
+      case 'no_target':
+        if (spell.targetAll) return { heroes: this._getEnemies(hero.playerIdx), heroesOutOfRange: [], cells: [] };
+        if (spell.adjacentHit) {
+          const all = this._getEnemies(hero.playerIdx);
+          return {
+            heroes:           all.filter(e => this._chebyshev(hero.position, e.position) <= 1),
+            heroesOutOfRange: all.filter(e => this._chebyshev(hero.position, e.position) >  1),
+            cells: []
+          };
+        }
+        return { heroes: this._getEnemies(hero.playerIdx).filter(e => this._manhattan(hero.position, e.position) <= spell.range), heroesOutOfRange: [], cells: [] };
+      case 'abyss_w': {
+        // Dash orthogonal en ligne droite jusqu'à range cases
+        const _awCells = [];
+        const _awDirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        _awDirs.forEach(({dx, dy}) => {
+          for (let step = 1; step <= effRange; step++) {
+            const cx = hero.position.x + dx * step, cy = hero.position.y + dy * step;
+            if (cx < 0 || cx >= MAP_SIZE || cy < 0 || cy >= MAP_SIZE) break;
+            if (isWall(cx, cy)) break;
+            if (!this.getHeroAt(cx, cy)) _awCells.push({ x: cx, y: cy });
+          }
+        });
+        return { heroes: [], heroesOutOfRange: [], cells: _awCells };
+      }
+      case 'abyss_r': {
+        // Ennemi à distance 8-10 (sans ligne de vue)
+        const _arAll = this._getEnemies(hero.playerIdx);
+        const _arMin = spell.minRange || 8;
+        const _arValid = _arAll.filter(e => {
+          const d = this._manhattan(hero.position, e.position);
+          return d >= _arMin && d <= effRange;
+        });
+        return {
+          heroes:           _arValid,
+          heroesOutOfRange: _arAll.filter(e => !_arValid.includes(e)),
+          cells: []
+        };
+      }
+      default:
+        return { heroes: [], heroesOutOfRange: [], cells: [] };
+    }
+  }
+
+  // ============================================================
+  // DAMAGE
+  // ============================================================
+
+  _calcSpellDmg(caster, spell, target) {
+    const raw = spell.baseDamage + caster.ad * (spell.adRatio || 0) + this._effectiveAP(caster) * (spell.apRatio || 0);
+    const armorPen    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0);
+    const mrPen       = caster.items.includes('sorcerer_boots') ? 5 : 0;
+    const armorPenPct = caster.items.includes('arc_perforant_anges') ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
+    let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct);
+    if (armorPen > 0 && target.armor - armorPen < 15) dmg = Math.floor(dmg * 1.1);
+    return dmg;
+  }
+
+  _effectiveAP(hero) {
+    return hero.items.includes('chapeau_de_dieu') ? Math.floor(hero.ap * 1.4) : hero.ap;
+  }
+
+  _reduceDmg(raw, dmgType, target, armorPen = 0, mrPen = 0, armorPenPct = 0) {
+    if (dmgType === 'physical') {
+      const effectiveArmor = Math.min(80, Math.floor(target.armor * (1 - armorPenPct / 100)) - armorPen);
+      let dmg;
+      if (effectiveArmor >= 0) {
+        dmg = Math.floor(raw * (1 - effectiveArmor / 100));
+      } else {
+        dmg = Math.floor(raw * (1 + Math.pow(-effectiveArmor, 1.3) / 100));
+      }
+      if (target.passive === 'rock_solid') dmg = Math.floor(dmg * 0.5);
+      return Math.max(0, dmg);
+    }
+    if (dmgType === 'magical') {
+      const effectiveMR = Math.min(80, target.mr - mrPen);
+      if (effectiveMR >= 0) {
+        return Math.max(0, Math.floor(raw * (1 - effectiveMR / 100)));
+      } else {
+        return Math.floor(raw * (1 + Math.pow(-effectiveMR, 1.3) / 100));
+      }
+    }
+    return Math.max(0, Math.floor(raw));
+  }
+
+  _applyHemorrhage(attacker, target, turns = 1, dmgType = 'physical') {
+    if (!attacker || !target.isAlive || target.playerIdx === attacker.playerIdx) return;
+    if (dmgType === 'physical' && attacker.items.includes('lame_ensanglanté')) {
+      target.hemorrhageTurns = Math.max(target.hemorrhageTurns || 0, turns);
+    }
+    if (dmgType === 'magical' && (attacker.items.includes('boule_du_demon') || attacker.items.includes('livre_des_morts_vivants'))) {
+      target.hemorrhageTurns = Math.max(target.hemorrhageTurns || 0, turns);
+      this.addLog(`${target.name} — Hémorragie magique !`);
+    }
+  }
+
+  // Applique dégâts d'un sort + passifs liés (hémorragie si physique ou magique)
+  _applySpellDamage(caster, spell, target, dmg) {
+    this._applyDamage(target, dmg, caster, spell.damageType || 'physical');
+    if (spell.damageType === 'physical' || spell.damageType === 'magical') {
+      this._applyHemorrhage(caster, target, 1, spell.damageType);
+    }
+    // Passif Dans la chair (Frigiel) : +5% HP max cible en dégâts bruts par sort
+    if (caster.passive === 'dans_la_chair' && target.isAlive) {
+      const bonusRaw = Math.floor(target.maxHP * 0.05);
+      this._applyDamage(target, bonusRaw, caster, 'raw');
+      this.addLog(`${caster.name} — Passif : Dans la chair −${bonusRaw} HP bruts`);
+    }
+  }
+
+  _applyArmorShred(attacker, target) {
+    if (!target.isAlive) return;
+    const base     = target.armor + (target.armorShred || 0);  // armure totale sans réductions
+    if (base <= 0) return;
+    const maxShred = Math.round(base * 0.20);
+    const perHit   = Math.max(1, Math.round(base * 0.03));
+    const current  = target.armorShred || 0;
+    const delta    = Math.min(perHit, maxShred - current);
+    if (delta > 0) {
+      target.armor     -= delta;
+      target.armorShred = current + delta;
+      this.addLog(`${attacker.name} — Épée Cinglante : armure ${target.name} −${delta} (${target.armor}% restant, shred ${target.armorShred}/${maxShred})`);
+    }
+    target.armorShredTurns = 5;
+  }
+
+  _applyDamage(target, damage, attacker, dmgType = 'physical') {
+    // Épée Cinglante : réduction d'armure sur chaque hit
+    if (attacker && attacker.items.includes('epee_cinglante') && target.playerIdx !== attacker.playerIdx) {
+      this._applyArmorShred(attacker, target);
+    }
+    // Passif Combattant Anti-Mage : réduction des dégâts magiques de 0,1×AD
+    if (dmgType === 'magical' && target.items?.includes('combattant_antimage')) {
+      damage = Math.max(0, damage - Math.floor(0.1 * target.ad));
+    }
+    if (target.daggerShield > 0) {
+      const absorbed   = Math.min(target.daggerShield, damage);
+      target.daggerShield -= absorbed;
+      damage              -= absorbed;
+    }
+    if (target.shield > 0) {
+      const absorbed = Math.min(target.shield, damage);
+      target.shield  -= absorbed;
+      damage         -= absorbed;
+    }
+    // Bouclier magique (Cape Antimagie) : absorbe uniquement les dégâts magiques
+    if (dmgType === 'magical' && (target.magicShield || 0) > 0) {
+      const absorbed = Math.min(target.magicShield, damage);
+      target.magicShield -= absorbed;
+      damage             -= absorbed;
+    }
+    // Tracker les dégâts magiques reçus (après absorption) pour le passif de la cape
+    if (dmgType === 'magical' && damage > 0) target.tookMagicDmgSinceLastTurn = true;
+    if (attacker && target.playerIdx !== attacker.playerIdx && damage > 0) {
+      attacker.dealtDamageLastTurn = true;
+      Stats.addDamage(attacker.id, damage, dmgType);
+      // Contribution tracking pour les assistances
+      if (!target.damageContributors) target.damageContributors = {};
+      target.damageContributors[attacker.id] = this.globalTurn;
+    }
+    if (attacker?.lifeSteal > 0) {
+      const lifeHeal = Math.floor(damage * attacker.lifeSteal / 100 * (attacker.hemorrhageTurns > 0 ? 0.5 : 1));
+      attacker.currentHP = Math.min(attacker.maxHP, attacker.currentHP + lifeHeal);
+    }
+    if (damage > 0) target.tookDmgThisGlobalTurn = true;
+    target.currentHP -= damage;
+    // Passif Plastron Brûlant / Armure de Stal'noth : hémorragie sur l'attaquant
+    if (dmgType === 'physical' && damage > 0 && attacker && attacker.isAlive && attacker.playerIdx !== target.playerIdx) {
+      if (target.items?.includes('plastron_brulant') || target.items?.includes('armure_de_stalnoth')) {
+        attacker.hemorrhageTurns = Math.max(attacker.hemorrhageTurns || 0, 1);
+        this.addLog(`${target.name} — Passif : ${attacker.name} subit Hémorragie !`);
+      }
+    }
+    // Passif Boule de Piques / Armure de Stal'noth : renvoi de dégâts physiques
+    if (dmgType === 'physical' && damage > 0 && attacker && attacker.isAlive && attacker.playerIdx !== target.playerIdx) {
+      if (target.items?.includes('boule_de_piques') || target.items?.includes('armure_de_stalnoth')) {
+        const reflectPct = target.items?.includes('armure_de_stalnoth')
+          ? (20 + Math.max(0, target.armor * 0.2)) / 100
+          : 0.20;
+        const reflectDmg = Math.floor(damage * reflectPct);
+        if (reflectDmg > 0) {
+          this._applyDamage(attacker, reflectDmg, null, 'magical');
+          this.addLog(`${target.name} — Passif : renvoi ${reflectDmg} dégâts à ${attacker.name}`);
+        }
+      }
+    }
+    if (target.currentHP <= 0) {
+      target.currentHP = 0;
+      target.isAlive   = false;
+      target.position  = null;
+      this.addLog(`💀 ${target.name} (J${target.playerIdx + 1}) éliminé !`);
+      // KDA
+      target.deaths = (target.deaths || 0) + 1;
+      if (attacker) attacker.kills = (attacker.kills || 0) + 1;
+      {
+        const ASSIST_WINDOW = 3;
+        const assisters = new Set();
+        for (const [hId, turn] of Object.entries(target.damageContributors || {})) {
+          if (this.globalTurn - turn <= ASSIST_WINDOW && hId !== attacker?.id) assisters.add(hId);
+        }
+        for (const [hId, turn] of Object.entries(target.debuffContributors || {})) {
+          if (this.globalTurn - turn <= ASSIST_WINDOW && hId !== attacker?.id) assisters.add(hId);
+        }
+        if (attacker) {
+          for (const [hId, turn] of Object.entries(attacker.buffedBy || {})) {
+            if (this.globalTurn - turn <= ASSIST_WINDOW && hId !== attacker.id) assisters.add(hId);
+          }
+        }
+        assisters.delete(target.id);
+        this.players.flatMap(p => p.heroes).forEach(h => {
+          if (h && assisters.has(h.id) && h.playerIdx === attacker?.playerIdx) {
+            h.assists = (h.assists || 0) + 1;
+          }
+        });
+      }
+      if (attacker) {
+        this._giveGold(attacker, KILL_GOLD);
+        this.addLog(`+${KILL_GOLD}g pour ${attacker.name} (kill)`);
+        if (attacker.passive === 'skjer_passive') {
+          attacker.currentMana = attacker.maxMana;
+          this.movementLeft    = attacker.pm;
+          Object.keys(attacker.cooldowns).forEach(id => { attacker.cooldowns[id] = 0; });
+          Object.keys(this.spellsUsed).forEach(id => { this.spellsUsed[id] = false; });
+          this.autoAttacksUsed = 0;
+          this.addLog(`${attacker.name} — Passif : Mana, PM et cooldowns remis à zéro !`);
+        }
+      }
+    }
+  }
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+
+  _brownCandidates() {
+    const occupied = new Set(this.brownSpots.map(s => `${s.x},${s.y}`));
+    this.players.forEach(p => p.heroes.forEach(h => {
+      if (h.position) occupied.add(`${h.position.x},${h.position.y}`);
+    }));
+    const cells = [];
+    for (let x = 1; x < MAP_SIZE - 1; x++)
+      for (let y = 1; y < MAP_SIZE - 1; y++) {
+        const key = `${x},${y}`;
+        if (isWall(x, y)) continue;
+        if (ZONE_CELL_SET.has(key)) continue;
+        if (occupied.has(key)) continue;
+        cells.push({ x, y });
+      }
+    return cells;
+  }
+
+  _generateBrownSpots(count) {
+    this.brownSpots = [];
+    const candidates = this._brownCandidates();
+    for (let i = 0; i < count && candidates.length; i++) {
+      const idx = Math.floor(Math.random() * candidates.length);
+      this.brownSpots.push({ ...candidates[idx] });
+      candidates.splice(idx, 1);
+    }
+  }
+
+  // Ligne de vue — Bresenham. Murs et héros (sauf from/to) bloquent.
+  _hasLineOfSight(from, to, blockHeroes = true) {
+    if (from.x === to.x && from.y === to.y) return true;
+    let x = from.x, y = from.y;
+    const dx = Math.abs(to.x - x), dy = Math.abs(to.y - y);
+    const sx = to.x > x ? 1 : -1, sy = to.y > y ? 1 : -1;
+    let err = dx - dy;
+    while (true) {
+      const e2 = 2 * err;
+      if (e2 > -dy) { err -= dy; x += sx; }
+      if (e2 <  dx) { err += dx; y += sy; }
+      if (x === to.x && y === to.y) return true;
+      if (isWall(x, y)) return false;
+      if (blockHeroes && this.getHeroAt(x, y)) return false;
+      if (this.hateWalls?.some(w => w.cells.some(c => c.x === x && c.y === y))) return false;
+    }
+  }
+
+  _checkBombZone(hero) {
+    if (!hero.isAlive || !hero.position) return;
+    this.bombZones.forEach(bz => {
+      if (!hero.isAlive) return;
+      if (Math.abs(hero.position.x - bz.cx) + Math.abs(hero.position.y - bz.cy) <= bz.radius) {
+        const raw = Math.floor(bz.baseDamage + bz.caster.ad * bz.adRatio);
+        const dmg = this._reduceDmg(raw, 'physical', hero, bz.caster.armorPenPct || 0);
+        this._applyDamage(hero, dmg, bz.caster, 'physical');
+        this.addLog(`${hero.name} — Zone de bombardement : −${dmg} HP`);
+      }
+    });
+  }
+
+  _applyLameElectrique(attacker, primaryTarget) {
+    const CHAIN_RANGE = 4;
+    const CHAIN_DMG = 25;
+    const allEnemies = this._getEnemies(attacker.playerIdx).filter(e => e.isAlive && e.position);
+    const hit = new Set([primaryTarget.id]);
+    const queue = [primaryTarget];
+    while (queue.length) {
+      const src = queue.shift();
+      allEnemies.forEach(e => {
+        if (hit.has(e.id)) return;
+        if (this._manhattan(src.position, e.position) <= CHAIN_RANGE) {
+          hit.add(e.id);
+          queue.push(e);
+        }
+      });
+    }
+    let anyDmg = false;
+    allEnemies.forEach(e => {
+      if (!hit.has(e.id)) return;
+      const dmg = this._reduceDmg(CHAIN_DMG, 'magical', e, 0);
+      this._applyDamage(e, dmg, attacker, 'magical');
+      this.addLog(`${e.name} — Lame Électrique : −${dmg} dégâts magiques`);
+      anyDmg = true;
+    });
+    if (anyDmg) this._checkGameOver();
+  }
+
+  _applyLameEauDamage(zone) {
+    const hit = this._getEnemies(zone.playerIdx).filter(e =>
+      e.isAlive && Math.abs(e.position.x - zone.cx) <= 1 && Math.abs(e.position.y - zone.cy) <= 1
+      && !zone.damagedThisTurn.has(e.id)
+    );
+    hit.forEach(e => {
+      zone.damagedThisTurn.add(e.id);
+      const raw = Math.floor(zone.baseDamage + zone.caster.ad * zone.adRatio);
+      const dmg = this._reduceDmg(raw, 'physical', e, zone.caster.armorPenPct || 0);
+      this._applyDamage(e, dmg, zone.caster, 'physical');
+      this.addLog(`${e.name} — Lame d'eau : −${dmg} HP`);
+    });
+    if (hit.length) this._checkGameOver();
+  }
+
+  _checkLameEauZone(hero) {
+    if (!hero?.position || !this.lameEauZones?.length) return;
+    this.lameEauZones.forEach(zone => {
+      if (zone.playerIdx === hero.playerIdx) return;
+      if (!hero.isAlive) return;
+      if (zone.damagedThisTurn.has(hero.id)) return;
+      if (Math.abs(hero.position.x - zone.cx) <= 1 && Math.abs(hero.position.y - zone.cy) <= 1) {
+        zone.damagedThisTurn.add(hero.id);
+        const raw = Math.floor(zone.baseDamage + zone.caster.ad * zone.adRatio);
+        const dmg = this._reduceDmg(raw, 'physical', hero, zone.caster.armorPenPct || 0);
+        this._applyDamage(hero, dmg, zone.caster, 'physical');
+        this.addLog(`${hero.name} — Lame d'eau (entrée) : −${dmg} HP`);
+        this._checkGameOver();
+      }
+    });
+  }
+
+  _checkTrap(hero) {
+    if (!hero || !hero.position) return;
+    // Lame d'eau : déclenchement à l'entrée
+    this._checkLameEauZone(hero);
+    const idx = this.traps.findIndex(t =>
+      t.x === hero.position.x && t.y === hero.position.y && t.playerIdx !== hero.playerIdx
+    );
+    if (idx === -1) return;
+    const trap  = this.traps[idx];
+    const owner = trap.ownerHero;
+    const raw   = trap.baseDamage + owner.ad * (trap.adRatio || 0) + owner.ap * (trap.apRatio || 0);
+    const dmg   = this._reduceDmg(raw, trap.damageType, hero);
+    this._applyDamage(hero, dmg, owner);
+    this.addLog(`${hero.name} déclenche un piège de ${owner.name} — ${dmg} dégâts magiques !`);
+    this.traps.splice(idx, 1);
+    this._checkGameOver();
+    if (window.renderer) { renderer.render(); renderer.updateUI(); }
+  }
+
+  _checkBrownCollection(hero) {
+    const key = `${hero.position.x},${hero.position.y}`;
+    const idx = this.brownSpots.findIndex(s => `${s.x},${s.y}` === key);
+    if (idx === -1) return;
+    this._giveGold(hero, 150);
+    this.addLog(`${hero.name} collecte une zone de butin — +150g !`);
+    // Passif Layia : +1 PO d'attaque sur case de butin
+    if (hero.passive === 'layia_passive') {
+      hero.po++;
+      this.addLog(`${hero.name} — Passif : PO d'attaque → ${hero.po} !`);
+    }
+    // Move spot to new random position immediately
+    const candidates = this._brownCandidates();
+    if (candidates.length) {
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      this.brownSpots[idx] = { ...pick };
+    } else {
+      this.brownSpots.splice(idx, 1);
+    }
+    if (window.renderer) { renderer.render(); renderer.updateUI(); }
+  }
+
+  // Donne de l'or à un héros, avec partage vers l'allié le plus proche si goldSharePct > 0
+  _giveGold(hero, amount) {
+    hero.gold += amount;
+    hero.totalGoldEarned = (hero.totalGoldEarned || 0) + amount;
+    this.teamGoldEarned[hero.playerIdx] += amount;
+    if (hero.goldSharePct > 0) {
+      const share = Math.floor(amount * hero.goldSharePct / 100);
+      if (share > 0) {
+        const allies = this._getAllies(hero.playerIdx).filter(a => a !== hero && a.position);
+        if (allies.length) {
+          const nearest = allies.reduce((best, a) =>
+            this._chebyshev(hero.position, a.position) < this._chebyshev(hero.position, best.position) ? a : best
+          );
+          nearest.gold += share;
+          this.teamGoldEarned[hero.playerIdx] += share;
+          this.addLog(`${hero.name} partage ${share}g → ${nearest.name}`);
+        }
+      }
+    }
+  }
+
+  _chebyshev(a, b)          { return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)); }
+  _manhattan(a, b)          { return Math.abs(a.x - b.x) + Math.abs(a.y - b.y); }
+  _getEnemies(playerIdx)    { return this.players[1 - playerIdx].heroes.filter(h => h.isAlive); }
+  _getAllies(playerIdx)      { return this.players[playerIdx].heroes.filter(h => h.isAlive); }
+
+  getHeroAt(x, y) {
+    for (const p of this.players)
+      for (const h of p.heroes)
+        if (h.isAlive && h.position && h.position.x === x && h.position.y === y)
+          return h;
+    return null;
+  }
+
+  _isInUltimateGlyph(hero) {
+    if (!hero?.position) return false;
+    return this.glyphs.some(g =>
+      g.type === 'ultimate' && g.playerIdx === hero.playerIdx &&
+      g.cells.some(c => c.x === hero.position.x && c.y === hero.position.y)
+    );
+  }
+
+  _diamondCells(cx, cy, size) {
+    const cells = [];
+    for (let dx = -size; dx <= size; dx++)
+      for (let dy = -(size - Math.abs(dx)); dy <= (size - Math.abs(dx)); dy++)
+        cells.push({ x: cx + dx, y: cy + dy });
+    return cells;
+  }
+
+  _checkGlyph(hero) {
+    if (!hero?.position) return;
+    for (let i = this.glyphs.length - 1; i >= 0; i--) {
+      const g = this.glyphs[i];
+      if (!g.cells.some(c => c.x === hero.position.x && c.y === hero.position.y)) continue;
+      // Pain glyph damages enemies only
+      if (g.type === 'pain' && hero.playerIdx !== g.playerIdx) {
+        const raw = Math.floor(g.baseDamage + g.ownerHero.ap * g.apRatio);
+        const dmg = this._reduceDmg(raw, g.damageType, hero);
+        this._applyDamage(hero, dmg, g.ownerHero);
+        this.addLog(`${hero.name} déclenche la Glyphe de Douleur de ${g.ownerHero.name} — ${dmg} dégâts magiques !`);
+        this.glyphs.splice(i, 1);
+        this._checkGameOver();
+        if (window.renderer) { renderer.render(); renderer.updateUI(); }
+      }
+      // Shallah passive: +1 PM quand il marche dans sa propre glyphe pendant son tour
+      if (hero === g.ownerHero && hero.passive === 'shallah_passive' && this.currentHero === hero) {
+        this.movementLeft++;
+        this.addLog(`${hero.name} — Passif : +1 PM (glyphe)`);
+      }
+    }
+  }
+
+  _applySpellEffects(spell, targets) {
+    if (!spell.effects?.length) return;
+    spell.effects.forEach(eff => {
+      targets.forEach(t => {
+        if (!t.isAlive) return;
+        // Glyphe Ultime : immunité aux débuffs
+        if (this._isInUltimateGlyph(t)) {
+          this.addLog(`${t.name} est protégé par la Glyphe Ultime !`);
+          return;
+        }
+        // Vaillance (Ondine) : annule le premier débuff du tour
+        if (t.passive === 'vaillance' && !t.debuffDodgedThisTurn) {
+          t.debuffDodgedThisTurn = true;
+          this.addLog(`${t.name} — Vaillance : débuff annulé !`);
+          return;
+        }
+        if (eff.type === 'stun') {
+          // Passif Protection Divine : un allié à moins de 10 cases peut annuler le stun
+          const protector = this._getAllies(t.playerIdx).find(a =>
+            a.isAlive && a.position && t.position &&
+            a.items.includes('protection_divine') &&
+            !(a.protectionDivineCooldown > 0) &&
+            this._manhattan(a.position, t.position) < 10
+          );
+          if (protector) {
+            protector.protectionDivineCooldown = 7;
+            this.addLog(`${protector.name} — Protection Divine : stun sur ${t.name} annulé ! (CD 7 tours)`);
+          } else if (!(t.statusEffects || []).some(e => e.type === 'stun')) {
+            (t.statusEffects = t.statusEffects || []).push({ ...eff });
+            this.addLog(`${t.name} est étourdi !`);
+            if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+          }
+        } else if (eff.type === 'slow') {
+          (t.statusEffects = t.statusEffects || []).push({ ...eff });
+          this.addLog(`${t.name} perd ${eff.pmReduction} PM au prochain tour`);
+          if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+        } else if (eff.type === 'hemorrhage') {
+          (t.statusEffects = t.statusEffects || []).push({ ...eff });
+          this.addLog(`${t.name} subit une hémorragie (soins -50% pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''})`);
+          if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+        } else if (eff.type === 'malediction') {
+          (t.statusEffects = t.statusEffects || []).push({ ...eff });
+          this.addLog(`${t.name} est maudit (portée sorts -3 pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''})`);
+          if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+        } else if (eff.type === 'mute') {
+          if (!(t.statusEffects || []).some(e => e.type === 'mute')) {
+            (t.statusEffects = t.statusEffects || []).push({ ...eff });
+            this.addLog(`${t.name} est muet — sorts bloqués pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''} !`);
+            if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+          }
+        }
+      });
+    });
+  }
+
+  _getAdjacentFreeCells(pos, exclude) {
+    const cells = [];
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+      if (!dx && !dy) continue;
+      const nx = pos.x + dx, ny = pos.y + dy;
+      if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) continue;
+      if (isWall(nx, ny)) continue;
+      const occupant = this.getHeroAt(nx, ny);
+      if (occupant && occupant !== exclude) continue;
+      cells.push({ x: nx, y: ny });
+    }
+    return cells;
+  }
+
+  addLog(msg) {
+    this.log.push(msg);
+    if (this.log.length > 200) this.log.shift();
+    if (window.renderer) renderer.appendLog(msg);
+  }
+
+  // ============================================================
+  // GAME OVER
+  // ============================================================
+
+  _checkGameOver() {
+    const a0 = this.players[0].heroes.filter(h => h.isAlive).length;
+    const a1 = this.players[1].heroes.filter(h => h.isAlive).length;
+    if (a0 === 0 && a1 === 0) { this.endGame(null); return; }
+    if (a0 === 0)              { this.endGame(1);    return; }
+    if (a1 === 0)              { this.endGame(0);    return; }
+    if (this.currentHero && !this.currentHero.isAlive) this.endHeroTurn();
+  }
+
+  endGame(winnerIdx) {
+    this._stopTimer();
+    this.phase  = 'gameover';
+    this.winner = winnerIdx;
+
+    // Record KDA to Stats before recordGameEnd
+    this.players.flatMap(p => p.heroes).filter(Boolean).forEach(h => {
+      Stats.recordKDA(h.id, h.kills || 0, h.deaths || 0, h.assists || 0);
+    });
+
+    // Build match result for history + scoreboard
+    const matchResult = {
+      date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      winner: winnerIdx,
+      players: this.players.map((p, pi) => ({
+        label: `Joueur ${pi + 1}`,
+        won: winnerIdx !== null && winnerIdx === pi,
+        heroes: p.heroes.filter(Boolean).map(h => ({
+          name:        h.name,
+          portrait:    h.portrait || null,
+          colorFill:   h.colorFill,
+          kills:       h.kills   || 0,
+          deaths:      h.deaths  || 0,
+          assists:     h.assists || 0,
+          totalGold:   h.totalGoldEarned || h.gold,
+          items:       [...h.items],
+        }))
+      }))
+    };
+    MatchHistory.save(matchResult);
+
+    Stats.recordGameEnd(winnerIdx, this.players);
+    if (window.renderer) renderer.showGameOver(winnerIdx, matchResult);
+  }
+}

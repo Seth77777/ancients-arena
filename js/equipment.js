@@ -1,0 +1,283 @@
+// ============================================================
+// EQUIPMENT CATALOG
+// ============================================================
+
+const EQUIPMENT = {
+
+  // ─── TIER 1 ────────────────────────────────────────────────
+
+  black_scythe:    { tier: 1, categories: [], name: 'Faux Noire',            icon: 'img/items/black_scythe.png',    combineCost: 500, recipe: [], isStarter: true,
+                     stats: { ad: 5, goldPerTurn: 20 },
+                     passive: 'Gagnez 20 golds supplémentaires par tour.' },
+
+  minor_mage_ring: { tier: 1, categories: [], name: 'Anneau du Mage Mineur', icon: 'img/items/minor_mage_ring.png', combineCost: 400, recipe: [], isStarter: true,
+                     stats: { ap: 10, manaRegen: 10 },
+                     passive: 'Au début de votre tour, si votre mana est inférieur à 25% de votre mana max, récupérez 5% de votre mana manquant.' },
+
+  soldier_dagger:  { tier: 1, categories: [], name: 'Dague du Soldat',       icon: 'img/items/soldier_dagger.png',  combineCost: 450, recipe: [], isStarter: true,
+                     stats: { ad: 10, lifeSteal: 4 },
+                     passive: 'Si vous attaquez au corps à corps (distance 1), vous gagnez un bouclier de 15 HP jusqu\'à votre prochain tour.' },
+
+  magic_ring:      { tier: 1, categories: [], name: 'Anneau Magique',        icon: 'img/items/magic_ring.png',      combineCost: 450, recipe: [], isStarter: true,
+                     stats: { ap: 15, maxHP: 70 },
+                     passive: 'Finir votre tour dans une zone à gold vous rapporte 5% d\'or supplémentaire si aucun allié ne s\'y trouve.' },
+
+  basic_shield:    { tier: 1, categories: [], name: 'Bouclier Basique',      icon: 'img/items/basic_shield.png',    combineCost: 400, recipe: [], isStarter: true,
+                     stats: { maxHP: 100, armor: 3, mr: 3 },
+                     passive: 'Au début de votre tour, si vos HP sont inférieurs à 30% de votre max, récupérez 5% de vos HP manquants.' },
+
+  mana_tear:       { tier: 1, categories: [], name: 'Larme de Mana',         icon: 'img/items/mana_tear.png',       combineCost: 400, recipe: [],
+                     stats: { maxMana: 200, manaOnSpell: 15, manaOnSpellMax: 300 },
+                     passive: 'Chaque sort lancé augmente votre Mana max de 15 (max +300 via ce passif).' },
+
+  simple_boots:    { tier: 1, categories: [], name: 'Bottes Simples',        icon: 'img/items/simple_boots.png',    combineCost: 400, recipe: [],
+                     isBoots: true,
+                     stats: { pm: 1 } },
+
+  reinforced_boots: { tier: 2, categories: [], name: 'Bottes Renforcées',       icon: 'img/items/reinforced_boots.png', combineCost: 800, recipe: ['simple_boots'],
+                      isBoots: true,
+                      stats: { pm: 2, armor: 10 } },
+
+  anti_spell_boots: { tier: 2, categories: [], name: 'Bottes Anti-Sort',        icon: 'img/items/anti_spell_boots.png', combineCost: 800, recipe: ['simple_boots'],
+                      isBoots: true,
+                      stats: { pm: 2, mr: 10 } },
+
+  sorcerer_boots:  { tier: 2, categories: [], name: 'Bottes du Sorcier',        icon: 'img/items/sorcerer_boots.png', combineCost: 800, recipe: ['simple_boots'],
+                     isBoots: true,
+                     stats: { pm: 2, ap: 15 },
+                     passive: 'Ignore 5% de la résistance magique adverse (peut devenir négative).' },
+
+  boots_of_celerity: { tier: 2, categories: [], name: 'Bottes de Célérité',      icon: 'img/items/boots_of_celerity.png', combineCost: 800, recipe: ['simple_boots'],
+                       isBoots: true,
+                       stats: { pm: 2, maxHP: 100 },
+                       passive: 'Réduit de 1 supplémentaire le CD de votre ultime (sort au CD le plus élevé).' },
+
+  speed_boots:     { tier: 2, categories: [], name: 'Bottes de Grande Vitesse', icon: 'img/items/speed_boots.png',  combineCost: 800, recipe: ['simple_boots'],
+                     isBoots: true,
+                     stats: { pm: 2 },
+                     passive: 'Si vous n\'avez pas infligé de dégâts à un héros lors de votre dernier tour, recevez +1 PM ce tour.' },
+
+  bottes_attaquant: { tier: 2, categories: [], name: 'Bottes de l\'Attaquant',  icon: 'img/items/bottes_attaquant.png', combineCost: 800, recipe: ['simple_boots'],
+                      isBoots: true,
+                      stats: { pm: 2, ad: 10 },
+                      passive: 'Ignore 5% de l\'armure adverse (peut devenir négative).' },
+
+  linked_names:    { tier: 1, categories: [], name: 'Nos Noms Sont Liés',    icon: 'img/items/linked_names.png',    combineCost: 300, recipe: [], isStarter: true,
+                     stats: { maxHP: 80, healEfficiency: 10, goldSharePct: 20 },
+                     passive: '+10% d\'efficacité des soins. 20% des golds gagnés sont aussi donnés à votre allié le plus proche.',
+                     roleRestriction: 'support',
+                     roleRestrictionNote: 'Réservé aux Supports.' },
+
+  short_sword:     { tier: 1, categories: [], name: 'Petite Épée',           icon: 'img/items/short_sword.png',     combineCost: 400, recipe: [],
+                     stats: { ad: 10 } },
+
+  arc_percant:          { tier: 2, categories: [], name: 'Arc Perçant',           icon: 'img/items/arc_percant.png',          combineCost: 750, recipe: ['short_sword'],
+                          stats: { ad: 25 },
+                          passive: 'Ignore 20% de l\'armure de la cible lorsque vous lui infligez des dégâts physiques.' },
+
+  arc_perforant_anges:  { tier: 3, categories: ['dpt'], name: 'Arc Perforant des Anges', icon: 'img/items/arc_perforant_anges.png', combineCost: 700,
+                          recipe: ['arc_percant', 'small_crit_cape'],
+                          stats: { ad: 55, critChance: 20 },
+                          passive: 'Ignore 35% de l\'armure de la cible lorsque vous lui infligez des dégâts physiques.' },
+
+  coeur_de_courage:     { tier: 2, categories: [], name: 'Cœur de Courage',        icon: 'img/items/coeur_de_courage.png',     combineCost: 500, recipe: ['life_crystal'],
+                          stats: { maxHP: 180, healEfficiency: 10 },
+                          passive: 'L\'efficacité de vos soins augmente de 10%.' },
+
+  protection_divine:    { tier: 3, categories: ['support'], name: 'Protection Divine',      icon: 'img/items/protection_divine.png',    combineCost: 0,
+                          recipe: ['coeur_de_courage', 'baton_magique'],
+                          stats: { ap: 50, maxHP: 230, healEfficiency: 10 },
+                          passive: 'Améliore vos soins de 10%. Lorsqu\'un allié à moins de 10 cases subit un stun, ce stun est annulé (7 tours de CD).' },
+
+  coeur_de_vie:         { tier: 2, categories: ['bruiser'], name: 'Cœur de Vie',           icon: 'img/items/coeur_de_vie.png',         combineCost: 250, recipe: ['life_crystal', 'regen_necklace'],
+                          stats: { maxHP: 220, hpRegen: 15 } },
+
+  ceinture_de_vie:      { tier: 2, categories: ['bruiser'], name: 'Ceinture de Vie',        icon: 'img/items/ceinture_de_vie.png',      combineCost: 450, recipe: ['life_crystal'],
+                          stats: { maxHP: 280 } },
+
+  armure_de_la_vie:     { tier: 3, categories: ['bruiser'], name: 'Armure de la Vie',       icon: 'img/items/armure_de_la_vie.png',     combineCost: 800,
+                          recipe: ['coeur_de_vie', 'ceinture_de_vie'],
+                          stats: { maxHP: 700, hpRegen: 25 },
+                          passive: 'Si vous n\'avez pas reçu de dégâts lors de votre dernier tour de jeu, vous régénérez 10% de vos HP manquants.' },
+
+  plastron_brulant:     { tier: 2, categories: ['bruiser'], name: 'Plastron Brûlant',      icon: 'img/items/plastron_brulant.png',     combineCost: 500, recipe: ['small_armor'],
+                          stats: { armor: 15, maxHP: 70 },
+                          passive: 'Subir des dégâts physiques applique Hémorragie sur l\'attaquant pendant 1 tour (soins −50%).' },
+
+  boule_de_piques:      { tier: 2, categories: ['bruiser'], name: 'Boule de Piques',        icon: 'img/items/boule_de_piques.png',      combineCost: 500, recipe: ['life_crystal'],
+                          stats: { maxHP: 250 },
+                          passive: 'Renvoie 20% des dégâts physiques subis (après calcul d\'armure) à l\'attaquant.' },
+
+  armure_de_stalnoth:   { tier: 3, categories: ['bruiser'], name: 'Armure de Stal\'noth',   icon: 'img/items/armure_de_stalnoth.png',   combineCost: 600,
+                          recipe: ['boule_de_piques', 'plastron_brulant'],
+                          stats: { maxHP: 450, armor: 17 },
+                          passive: 'Subir des dégâts physiques applique Hémorragie sur l\'attaquant. Renvoie (20 + max(0, Armure×0,2))% des dégâts physiques subis à l\'attaquant.' },
+
+  lame_antimagie:       { tier: 2, categories: [], name: 'Lame Antimagie',         icon: 'img/items/lame_antimagie.png',       combineCost: 350, recipe: ['short_sword', 'small_antimagic_cape'],
+                          stats: { ad: 30, mr: 10 } },
+
+  combattant_antimage:  { tier: 3, categories: ['dpt', 'bruiser', 'assassin'], name: 'Combattant Anti-Mage',  icon: 'img/items/combattant_antimage.png',  combineCost: 500,
+                          recipe: ['lame_antimagie', 'lame_antimagie'],
+                          stats: { ad: 60, mr: 22 },
+                          passive: 'Réduit tous les dégâts magiques reçus de 0,1×AD (appliqué après calcul des résistances).' },
+
+  sceptre_de_vie:  { tier: 2, categories: [], name: 'Sceptre de Vie',          icon: 'img/items/sceptre_de_vie.png',   combineCost: 500, recipe: ['short_sword'],
+                     stats: { ad: 20, lifeSteal: 10 } },
+
+  lame_du_diable:  { tier: 3, categories: ['dpt'], name: 'Lame du Diable',     icon: 'img/items/lame_du_diable.png',  combineCost: 0,
+                     recipe: ['sceptre_de_vie', 'white_walker_hammer'],
+                     stats: { ad: 50, lifeSteal: 12 },
+                     passive: 'Chaque attaque de base infligée à un ennemi vous octroie 1 PM ce tour. Inflige également des dégâts bruts bonus égaux à 6% des HP max de la cible.' },
+
+  grosse_lame:     { tier: 2, categories: [], name: 'Grosse Lame',           icon: 'img/items/grosse_lame.png',     combineCost: 900, recipe: ['short_sword'],
+                     stats: { ad: 45 } },
+
+  lame_electrique: { tier: 3, categories: ['dpt'], name: 'Lame Électrique',       icon: 'img/items/lame_electrique.png', combineCost: 600,
+                     recipe: ['grosse_lame', 'small_crit_cape'],
+                     stats: { ad: 60, critChance: 15 },
+                     passive: 'Vos attaques de base infligent 25 dégâts magiques supplémentaires à la cible et à tous les ennemis en chaîne (chaque ennemi à moins de 4 cases d\'un ennemi déjà touché est également touché).' },
+
+  // ─── TIER 2 — Générique (suite) ─────────────────────────────
+
+  lame_ensanglanté: { tier: 2, categories: [], name: 'Lame Ensanglantée',       icon: 'img/items/lame_ensanglantee.png', combineCost: 450,
+                      recipe: ['short_sword'],
+                      stats: { ad: 18 },
+                      passive: 'Vos dégâts physiques appliquent Hémorragie pendant 1 tour aux cibles touchées (soins −50%).' },
+
+  epee_cinglante:  { tier: 2, categories: [], name: 'Épée Cinglante',         icon: 'img/items/epee_cinglante.png',  combineCost: 400,
+                     recipe: ['short_sword', 'short_sword'],
+                     stats: { ad: 25 },
+                     passive: 'Chaque sort ou attaque de base réduit l\'armure de la cible de 3% de son armure totale (max 20%) pendant 5 tours.' },
+
+  life_crystal:    { tier: 1, categories: [], name: 'Cristal de Vie',        icon: 'img/items/life_crystal.png',    combineCost: 400, recipe: [],
+                     stats: { maxHP: 100 } },
+
+  mana_crystal:    { tier: 1, categories: [], name: 'Cristal de Mana',       icon: 'img/items/mana_crystal.png',    combineCost: 300, recipe: [],
+                     stats: { maxMana: 80 } },
+
+  regen_necklace:  { tier: 1, categories: [], name: 'Collier Régénérant',    icon: 'img/items/regen_necklace.png',  combineCost: 200, recipe: [],
+                     stats: { hpRegen: 10 } },
+
+  mana_necklace:   { tier: 1, categories: [], name: 'Collier de Mana',       icon: 'img/items/mana_necklace.png',   combineCost: 240, recipe: [],
+                     stats: { manaRegen: 10 } },
+
+  time_glass:      { tier: 1, categories: [], name: 'Sablier Temporel',      icon: 'img/items/time_glass.png',      combineCost: 500, recipe: [],
+                     stats: { cdReduction: 1 },
+                     passive: 'Réduit de 1 le CD de tous vos sorts lors de leur utilisation (minimum 1 ; minimum 2 pour les sorts infligeant un stun).' },
+
+  distant_vision:  { tier: 1, categories: [], name: 'Vision Lointaine',      icon: 'img/items/distant_vision.png',  combineCost: 500, recipe: [],
+                     stats: { bonusSpellRange: 1 },
+                     passive: 'Augmente la portée de tous vos sorts de 1.' },
+
+  small_crit_cape:      { tier: 1, categories: [], name: 'Petite Cape Critique',   icon: 'img/items/small_crit_cape.png',   combineCost: 400, recipe: [],
+                          stats: { critChance: 10 },
+                          passive: 'Les attaques de base ont 10% de chance d\'infliger un coup critique (+50% de dégâts).' },
+
+  small_antimagic_cape: { tier: 1, categories: [], name: 'Petite Cape Antimagie',  icon: 'img/items/small_antimagic_cape.png', combineCost: 400, recipe: [],
+                          stats: { mr: 10 } },
+
+  cape_antimagie_moyenne: { tier: 2, categories: [], name: 'Cape Moyenne d\'Antimagie', icon: 'img/items/cape_antimagie_moyenne.png', combineCost: 350,
+                            recipe: ['life_crystal', 'small_antimagic_cape'],
+                            stats: { maxHP: 180, mr: 14 },
+                            passive: 'Si vous avez subi des dégâts magiques depuis votre dernier tour, vous gagnez un bouclier magique de 8% de vos HP actuels au début de votre tour (bloque uniquement les dégâts magiques).' },
+
+  small_armor:          { tier: 1, categories: [], name: 'Petite Armure',           icon: 'img/items/small_armor.png',       combineCost: 400, recipe: [],
+                          stats: { armor: 10 } },
+
+  petit_grimoire:  { tier: 1, categories: [], name: 'Petit Grimoire',          icon: 'img/items/petit_grimoire.png',   combineCost: 400, recipe: [],
+                     stats: { ap: 15 } },
+
+  // ─── TIER 2 — Mage ──────────────────────────────────────────
+
+  grimoire_magique: { tier: 2, categories: [], name: 'Grimoire Magique',         icon: 'img/items/grimoire_magique.png',  combineCost: 500, recipe: ['petit_grimoire'],
+                      stats: { ap: 25, maxMana: 100 },
+                      passive: 'Récupérez 50 points de mana s\'il vous reste au moins 1 PM à la fin de votre tour.' },
+
+  gros_baton_magique: { tier: 2, categories: ['mage'], name: 'Gros Bâton Magique',    icon: 'img/items/gros_baton_magique.png', combineCost: 500,
+                        recipe: ['baton_magique', 'petit_grimoire'],
+                        stats: { ap: 80 } },
+
+  chapeau_de_dieu:    { tier: 3, categories: ['mage'], name: 'Chapeau de Dieu',       icon: 'img/items/chapeau_de_dieu.png',    combineCost: 0,
+                        recipe: ['gros_baton_magique', 'baton_magique'],
+                        stats: { ap: 120 },
+                        passive: 'Votre AP totale est multipliée par 1,4 (calculé après ajout des stats de cet item).' },
+
+  baton_magique:   { tier: 2, categories: ['mage'], name: 'Bâton Magique',            icon: 'img/items/baton_magique.png',    combineCost: 400,
+                     recipe: ['petit_grimoire'],
+                     stats: { ap: 35 } },
+
+  boule_du_demon:  { tier: 2, categories: ['mage'], name: 'Boule du Démon',              icon: 'img/items/boule_du_demon.png',   combineCost: 400,
+                     recipe: ['petit_grimoire'],
+                     stats: { ap: 25 },
+                     passive: 'Vos dégâts magiques appliquent Hémorragie à la cible pendant 1 tour (soins −50%).' },
+
+  // ─── TIER 2 — Générique ─────────────────────────────────────
+
+  black_blade:         { tier: 2, categories: [], name: 'Lame Noire',                 icon: 'img/items/black_blade.png',         combineCost: 350,
+                         recipe: ['short_sword', 'life_crystal'],
+                         stats: { ad: 30, maxHP: 140 } },
+
+  // ─── TIER 2 — Bruiser / Tank ────────────────────────────────
+
+  white_walker_hammer: { tier: 2, categories: ['bruiser'], name: 'Marteau du Marcheur Blanc', icon: 'img/items/white_walker_hammer.png', combineCost: 350,
+                         recipe: ['life_crystal', 'short_sword'],
+                         stats: { maxHP: 120, ad: 15 },
+                         passive: 'Chaque attaque de base infligée à un ennemi vous octroie 1 PM supplémentaire ce tour.' },
+
+  blue_blade:          { tier: 2, categories: ['bruiser'], name: 'Lame Bleue',                icon: 'img/items/blue_blade.png',          combineCost: 850,
+                         recipe: ['mana_crystal'],
+                         stats: { maxMana: 80 },
+                         passive: 'Vos attaques de base renforcées par un sort infligent 15% de dégâts supplémentaires.' },
+
+  // ─── TIER 3 — Assassin ──────────────────────────────────────
+
+  lame_de_nargoth:     { tier: 3, categories: ['assassin'], name: 'Lame de Nargoth',          icon: 'img/items/lame_de_nargoth.png',     combineCost: 700,
+                         recipe: ['black_blade', 'white_walker_hammer'],
+                         stats: { ad: 80, maxHP: 250 },
+                         passive: 'Ignore 3% d\'armure adverse. Vigilance Sombre : si la cible a moins de 15% d\'armure, vos dégâts sont augmentés de 10%. Chaque attaque de base infligée à un ennemi vous octroie 1 PM ce tour.' },
+
+  // ─── TIER 3 — Mage ──────────────────────────────────────────
+
+  livre_des_morts_vivants: { tier: 3, categories: ['mage'], name: 'Livre des Morts-Vivants', icon: 'img/items/livre_des_morts_vivants.png', combineCost: 550,
+                             recipe: ['boule_du_demon', 'baton_magique'],
+                             stats: { ap: 80, maxHP: 150 },
+                             passive: 'Vos dégâts magiques appliquent Hémorragie à la cible pendant 1 tour (soins −50%).' },
+
+  magic_sword:         { tier: 3, categories: ['mage'], name: 'Épée Magique',              icon: 'img/items/magic_sword.png',         combineCost: 500,
+                         recipe: ['baton_magique', 'blue_blade'],
+                         stats: { ap: 55 },
+                         passive: 'Vos attaques de base renforcées par un sort infligent (15 + 0,05×AP)% de dégâts magiques supplémentaires.' },
+
+  // ─── TIER 3 — Bruiser / Tank ────────────────────────────────
+
+  holy_trinity:        { tier: 3, categories: ['bruiser'], name: 'Trinité Sacrée',            icon: 'img/items/holy_trinity.png',        combineCost: 1050,
+                         recipe: ['white_walker_hammer', 'blue_blade'],
+                         stats: { maxHP: 250, ad: 35, maxMana: 100 },
+                         passive: 'Chaque attaque de base infligée à un ennemi vous octroie 1 PM ce tour. Vos attaques renforcées par un sort infligent 15% de dégâts supplémentaires.' },
+};
+
+// Assign id to each item
+Object.keys(EQUIPMENT).forEach(id => { EQUIPMENT[id].id = id; });
+
+// Compute totalCost recursively (combineCost + all component costs)
+function _itemTotalCost(id) {
+  const item = EQUIPMENT[id];
+  return item.combineCost + item.recipe.reduce((sum, cId) => sum + _itemTotalCost(cId), 0);
+}
+Object.keys(EQUIPMENT).forEach(id => { EQUIPMENT[id].totalCost = _itemTotalCost(id); });
+
+// Returns a Set of T1 item ids that are direct or transitive components of itemId
+function _getAllT1Components(itemId, visited = new Set()) {
+  if (visited.has(itemId)) return new Set();
+  visited.add(itemId);
+  const item = EQUIPMENT[itemId];
+  const t1s = new Set();
+  item.recipe.forEach(cId => {
+    if (EQUIPMENT[cId].tier === 1) {
+      t1s.add(cId);
+    } else {
+      _getAllT1Components(cId, visited).forEach(id => t1s.add(id));
+    }
+  });
+  return t1s;
+}

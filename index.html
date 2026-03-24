@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arena Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       MENU PRINCIPAL
+  ════════════════════════════════════════════ -->
+  <div id="menu-screen" class="screen active">
+    <div id="menu-content">
+      <h1 id="menu-title">⚔ ANCIENTS ARENA</h1>
+      <div id="menu-buttons">
+        <button id="btn-menu-draft"   class="menu-btn">⚔ Draft</button>
+        <button id="btn-menu-editor"  class="menu-btn">✏ Éditeur</button>
+        <button id="btn-menu-heroes"  class="menu-btn">📋 Infos Générales</button>
+        <button id="btn-menu-stats"   class="menu-btn">📊 Statistiques</button>
+        <button id="btn-menu-history" class="menu-btn">📜 Historique</button>
+        <button id="btn-menu-rules"   class="menu-btn">📖 Règles du jeu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ÉDITEUR DE HÉROS
+  ════════════════════════════════════════════ -->
+  <div id="editor-screen" class="screen">
+    <div id="editor-header">
+      <button id="editor-back-btn" class="action-btn">← Menu</button>
+      <span id="editor-title">Éditeur de héros</span>
+      <div id="editor-header-actions">
+        <button id="editor-save-btn"  class="action-btn">💾 Sauvegarder</button>
+        <button id="editor-reset-btn" class="action-btn">↺ Réinitialiser</button>
+      </div>
+    </div>
+    <div id="editor-body">
+      <div id="editor-list"></div>
+      <div id="editor-panel"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       DRAFT SCREEN
+  ════════════════════════════════════════════ -->
+  <div id="draft-screen" class="screen">
+
+    <!-- Header -->
+    <div id="draft-header">
+      <div id="draft-phase-label">⚔ PHASE DE BAN</div>
+      <div id="draft-action-label">Joueur 1 — Bannissement 1/3</div>
+    </div>
+
+    <!-- Main layout: P1 | Pool | P2 -->
+    <div id="draft-main">
+
+      <!-- P1 panel -->
+      <div class="draft-side" id="draft-p1-panel">
+        <div class="draft-player-title p1-color">Joueur 1</div>
+        <div class="draft-section-label">Bans</div>
+        <div id="p1-bans" class="draft-ban-slots"></div>
+        <div class="draft-section-label">Picks</div>
+        <div id="p1-picks" class="draft-pick-slots"></div>
+      </div>
+
+      <!-- Hero pool -->
+      <div id="draft-pool-container">
+        <div id="hero-pool"></div>
+      </div>
+
+      <!-- P2 panel -->
+      <div class="draft-side" id="draft-p2-panel">
+        <div class="draft-player-title p2-color">Joueur 2</div>
+        <div class="draft-section-label">Bans</div>
+        <div id="p2-bans" class="draft-ban-slots"></div>
+        <div class="draft-section-label">Picks</div>
+        <div id="p2-picks" class="draft-pick-slots"></div>
+      </div>
+
+    </div>
+
+    <!-- Log during draft -->
+    <div id="draft-log-bar">
+      <div id="action-log-draft" class="action-log-small"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       GAME SCREEN
+  ════════════════════════════════════════════ -->
+  <div id="game-screen" class="screen">
+
+    <!-- Panel Joueur 1 -->
+    <div id="panel-p1" class="side-panel">
+      <h3 class="p1-color">Joueur 1</h3>
+      <div id="p1-heroes-list"></div>
+    </div>
+
+    <!-- Colonne centrale (carte + barre d'action) -->
+    <div id="game-center">
+
+      <!-- Carte -->
+      <div id="map-container">
+        <div id="turn-info">
+          <span id="team-gold-p1" class="team-gold p1-gold">J1 : 0g</span>
+          <span id="turn-label">—</span>
+          <span id="timer-display">⏱ 120s</span>
+          <span id="team-gold-p2" class="team-gold p2-gold">J2 : 0g</span>
+        </div>
+        <div id="canvas-wrapper">
+          <canvas id="game-canvas" width="1020" height="1020"></canvas>
+        </div>
+
+        <!-- Boutique overlay (couvre la carte) -->
+        <div id="shop-overlay">
+          <div id="shop-left">
+            <div id="shop-hero-name"></div>
+            <div id="shop-hero-gold"></div>
+            <div class="shop-bar-row">
+              <span class="shop-bar-lbl">❤</span>
+              <div class="shop-bar-bg"><div id="shop-bar-hp" class="shop-bar-fill shop-hp-fill"></div></div>
+              <span id="shop-bar-hp-num" class="shop-bar-num"></span>
+            </div>
+            <div class="shop-bar-row">
+              <span class="shop-bar-lbl">🔵</span>
+              <div class="shop-bar-bg"><div id="shop-bar-mana" class="shop-bar-fill shop-mana-fill"></div></div>
+              <span id="shop-bar-mana-num" class="shop-bar-num"></span>
+            </div>
+            <div id="shop-hero-stats"></div>
+            <div class="shop-section-title">Inventaire</div>
+            <div id="shop-inventory"></div>
+          </div>
+          <div id="shop-right">
+            <div id="shop-tabs">
+              <button class="shop-tab" data-cat="t1">T1</button>
+              <button class="shop-tab" data-cat="boots">Bottes</button>
+              <button class="shop-tab" data-cat="bruiser">Bruiser / Tank</button>
+              <button class="shop-tab" data-cat="mage">Mage</button>
+              <button class="shop-tab" data-cat="dpt">DPT</button>
+              <button class="shop-tab" data-cat="support">Support</button>
+              <button class="shop-tab" data-cat="assassin">Assassin</button>
+            </div>
+            <div id="shop-grid"></div>
+            <div id="shop-detail"><div class="sd-placeholder">Survolez un item pour voir ses détails</div></div>
+          </div>
+          <button id="shop-close-btn">✕ Fermer</button>
+        </div>
+      </div>
+
+      <!-- Barre d'action -->
+      <div id="action-panel">
+        <div id="current-hero-info">
+          <div id="hero-name-display">—</div>
+          <div id="hero-stats-display"></div>
+        </div>
+        <div id="hero-actions">
+          <button id="btn-move"     class="action-btn">Déplacer</button>
+          <button id="btn-attack"   class="action-btn">Attaque</button>
+          <div    id="spell-buttons"></div>
+          <button id="btn-shop"     class="action-btn shop-open-btn">🛒 Boutique</button>
+          <button id="btn-end-turn"  class="action-btn end-turn">Fin de tour ▶</button>
+        </div>
+        <div id="action-counter" style="display:flex;align-items:center;justify-content:space-between;">
+          <span id="action-counter-text">Actions: 0/30 | PM: 0</span>
+          <button id="btn-forfeit" class="action-btn forfeit-btn">🏳 Abandonner</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Panel Joueur 2 -->
+    <div id="panel-p2" class="side-panel">
+      <h3 class="p2-color">Joueur 2</h3>
+      <div id="p2-heroes-list"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       GAME OVER
+  ════════════════════════════════════════════ -->
+  <div id="gameover-screen" class="screen">
+    <div id="gameover-container">
+      <h1 id="gameover-title">Fin de partie</h1>
+      <div id="gameover-scoreboard"></div>
+      <button onclick="location.reload()" class="menu-btn" style="margin-top:24px">Rejouer</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       HISTORIQUE
+  ════════════════════════════════════════════ -->
+  <div id="history-screen" class="screen">
+    <div id="history-container">
+      <div id="history-header">
+        <button id="history-back-btn" class="action-btn">← Menu</button>
+        <span id="history-title">📜 Historique des parties</span>
+        <button id="history-clear-btn" class="action-btn" style="margin-left:auto;color:#e74c3c">🗑 Effacer</button>
+      </div>
+      <div id="history-body"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       HÉROS
+  ════════════════════════════════════════════ -->
+  <div id="heroes-screen" class="screen">
+    <div id="heroes-container">
+      <div id="heroes-header">
+        <button id="heroes-back-btn" class="action-btn">← Menu</button>
+        <span id="heroes-title">📋 Infos Générales</span>
+        <div id="info-tabs">
+          <button class="info-tab active" data-tab="heroes">🧙 Héros</button>
+          <button class="info-tab" data-tab="items">🛡 Items</button>
+        </div>
+      </div>
+      <div id="heroes-body"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       STATISTIQUES
+  ════════════════════════════════════════════ -->
+  <div id="stats-screen" class="screen">
+    <div id="stats-container">
+      <div id="stats-header">
+        <button id="stats-back-btn" class="action-btn">← Menu</button>
+        <span id="stats-title">📊 Statistiques</span>
+        <div id="stats-tabs">
+          <button class="stats-tab active" data-tab="heroes">🧙 Héros</button>
+          <button class="stats-tab" data-tab="items">🛡 Items</button>
+        </div>
+        <button id="stats-reset-btn" class="action-btn stats-reset-btn">🗑 Réinitialiser</button>
+      </div>
+      <div id="stats-body"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       RÈGLES DU JEU
+  ════════════════════════════════════════════ -->
+  <div id="rules-screen" class="screen">
+    <div id="rules-container">
+      <div id="rules-header">
+        <button id="rules-back-btn" class="action-btn">← Menu</button>
+        <span id="rules-title">📖 Règles du jeu</span>
+      </div>
+      <div id="rules-body">
+
+        <div class="rules-section">
+          <h2 class="rules-section-title">🎯 Objectif</h2>
+          <p>Éliminez tous les héros ennemis pour remporter la partie. La partie se termine aussi si le nombre maximum de tours (200) est atteint — dans ce cas, l'équipe avec le plus de héros en vie gagne.</p>
+        </div>
+
+        <div class="rules-section">
+          <h2 class="rules-section-title">⚔ Phase de Draft</h2>
+          <ul>
+            <li><strong>Bans :</strong> Les deux joueurs bannissent chacun 3 héros en alternance (J1 commence). Les héros bannis ne peuvent pas être sélectionnés.</li>
+            <li><strong>Picks :</strong> Les joueurs choisissent leurs héros selon l'ordre 1-2-2-2-2-1 (5 héros chacun).</li>
+            <li>L'ordre de jeu en partie suit les rôles : <strong>Solo → Roam → Mage → DPT → Support</strong>.</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h2 class="rules-section-title">🔄 Déroulement d'un tour</h2>
+          <ul>
+            <li>Chaque héros joue à son tour, dans l'ordre des rôles.</li>
+            <li>Un tour de héros dure <strong>120 secondes</strong>. À l'expiration, le tour passe automatiquement.</li>
+            <li>En début de tour, la boutique du héros s'ouvre automatiquement.</li>
+            <li>Un héros peut <strong>se déplacer</strong>, <strong>attaquer</strong>, <strong>lancer des sorts</strong> et <strong>acheter des items</strong> dans son tour.</li>
+            <li>L'achat d'item est impossible après un déplacement ou une action de combat.</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h2 class="rules-section-title">🏃 Déplacement (PM)</h2>
+          <ul>
+            <li>Chaque héros dispose d'un nombre de <strong>Points de Mouvement (PM)</strong> par tour.</li>
+            <li>Déplacement <strong>orthogonal</strong> (haut/bas/gauche/droite) : coûte <strong>1 PM</strong>.</li>
+            <li>Déplacement <strong>diagonal</strong> : coûte <strong>2 PM</strong>.</li>
+            <li>Les murs et les cases occupées par d'autres héros sont infranchissables.</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h2 class="rules-section-title">⚔ Combat</h2>
+          <ul>
+            <li><strong>Attaque basique :</strong> portée 1 case (adjacente, y compris diagonale). Inflige des dégâts physiques basés sur l'AD du héros, réduits par l'Armure de la cible.</li>
+            <li><strong>Sorts :</strong> chaque héros possède des sorts uniques. Certains infligent des dégâts (AP ou AD), d'autres soignent, déplacent ou appliquent des effets.</li>
+            <li><strong>Vol de vie :</strong> un pourcentage des dégâts physiques infligés est récupéré en HP.</li>
+            <li>Tuer un ennemi rapporte <strong>200g</strong> au héros qui donne le coup fatal.</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h2 class="rules-section-title">💰 Économie</h2>
+          <ul>
+            <li><strong>Or passif :</strong> chaque héros reçoit <strong>200g</strong> à la fin de chaque tour global.</li>
+            <li><strong>Zones de contrôle (N / C / S) :</strong> à la fin du tour, chaque héros présent dans une zone reçoit <strong>500g</strong> divisé par le nombre de héros présents. Les <strong>Roam reçoivent seulement 1/3</strong> du montant habituel dans ces zones.</li>
+            <li><strong>Cases de butin (Roam uniquement) :</strong> 8 cases spéciales sont placées aléatoirement sur la carte en début de partie. Lorsqu'un Roam marche dessus, il gagne <strong>150g</strong> et la case se déplace instantanément ailleurs sur la carte.</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h2 class="rules-section-title">🛒 Boutique & Items</h2>
+          <ul>
+            <li>Les items sont organisés par catégorie : <strong>Starter, Bruiser/Tank, Mage, DPT, Support, Assassin</strong>.</li>
+            <li>Les items <strong>Tier 1 (Starters)</strong> peuvent être achetés directement.</li>
+            <li>Les items <strong>Tier 2 et 3</strong> peuvent être <strong>forgés</strong> si vous possédez les composants, sinon achetés directement à leur coût total.</li>
+            <li>Certains items sont réservés à un rôle spécifique (ex : <em>Nos Noms Sont Liés</em> → Support uniquement).</li>
+            <li>Les stats des items s'appliquent <strong>immédiatement</strong> à l'achat.</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h2 class="rules-section-title">🧩 Rôles</h2>
+          <ul>
+            <li><strong>Solo :</strong> héros de ligne seule, résistants, orientés combat 1v1.</li>
+            <li><strong>Roam :</strong> héros mobiles qui collectent des ressources sur la carte. Revenus réduits dans les zones de contrôle.</li>
+            <li><strong>Mage :</strong> lanceurs de sorts à forte puissance magique (AP).</li>
+            <li><strong>DPT :</strong> dégâts physiques élevés (AD), fragiles mais très offensifs.</li>
+            <li><strong>Support :</strong> soigneurs et protecteurs. Peuvent porter des items réservés aux supports.</li>
+          </ul>
+        </div>
+
+        <div class="rules-section">
+          <h2 class="rules-section-title">📊 Stats</h2>
+          <ul>
+            <li><strong>HP :</strong> Points de vie. À 0, le héros est éliminé.</li>
+            <li><strong>Mana :</strong> Ressource nécessaire pour lancer des sorts.</li>
+            <li><strong>AD :</strong> Dégâts d'attaque physique.</li>
+            <li><strong>AP :</strong> Puissance magique, amplifie les sorts.</li>
+            <li><strong>Armure :</strong> Réduit les dégâts physiques reçus (valeur en %). Maximum 80%. Si l'armure devient négative (via pénétration), les dégâts subis sont amplifiés : multiplicateur = 1 + (−Armure)^1,3 / 100 (ex : −10% → ×1,1995 ; −20% → ×1,338).</li>
+            <li><strong>RM :</strong> Résistance magique, réduit les dégâts magiques reçus (valeur en %). Maximum 80%. Même règle de super-pénétration si la RM devient négative.</li>
+            <li><strong>Vol de vie :</strong> % des dégâts physiques récupéré en HP.</li>
+            <li><strong>Regen Mana :</strong> Mana récupérée par tour.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup abandon -->
+  <div id="forfeit-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#161b22;border:1px solid #30363d;border-radius:12px;padding:32px 40px;text-align:center;display:flex;flex-direction:column;gap:20px;min-width:300px;">
+      <div style="font-size:1.2rem;font-weight:bold;">Abandonner la partie ?</div>
+      <div style="color:#8b949e;font-size:0.9rem;">L'adversaire remportera la victoire.</div>
+      <div style="display:flex;gap:12px;justify-content:center;">
+        <button id="forfeit-confirm" style="padding:10px 28px;background:#c0392b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1rem;">Confirmer</button>
+        <button id="forfeit-cancel"  style="padding:10px 28px;background:#21262d;color:#e6edf3;border:1px solid #30363d;border-radius:8px;cursor:pointer;font-size:1rem;">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/stats.js"></script>
+  <script src="js/heroes.js"></script>
+  <script src="js/equipment.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
