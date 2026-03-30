@@ -31,9 +31,14 @@ class InputHandler {
     });
     document.getElementById('forfeit-confirm').addEventListener('click', () => {
       overlay.style.display = 'none';
-      const forfeitingPlayer = this.game.currentHero?.playerIdx ?? 0;
+      const forfeitingPlayer = window.OnlineMode?.active
+        ? window.OnlineMode.playerIdx
+        : (this.game.currentHero?.playerIdx ?? 0);
       const winner = forfeitingPlayer === 0 ? 1 : 0;
       this.game.endGame(winner);
+      if (window.OnlineMode?.active && window.OnlineMode.isHost) {
+        window.OnlineMode.sendState(this.game.serialize());
+      }
     });
 
     // Spell buttons (delegated)
@@ -83,20 +88,49 @@ class InputHandler {
   }
 
   // ============================================================
+  // HELPERS ONLINE
+  // ============================================================
+
+  _isMyTurn() {
+    if (!window.OnlineMode?.active) return true;
+    const g = this.game, myIdx = window.OnlineMode.playerIdx;
+    if (g.phase === 'draft')   return g.draftCurrentPlayer() === myIdx;
+    if (g.phase === 'playing') return (g.currentHero?.playerIdx ?? -1) === myIdx;
+    return false;
+  }
+
+  _onlineSync() {
+    if (window.OnlineMode?.active && window.OnlineMode.isHost) {
+      window.OnlineMode.sendState(this.game.serialize());
+    }
+  }
+
+  // ============================================================
   // DRAFT
   // ============================================================
 
   _draftClick(typeId) {
-    const g = this.game;
-    const d = g.draft;
+    const g = this.game, d = g.draft;
+    const online  = window.OnlineMode?.active;
+    const isGuest = online && !window.OnlineMode.isHost;
+
+    if (online && !this._isMyTurn()) return;
     if (g._isUnavailable(typeId)) return;
+
+    if (isGuest) {
+      const action = d.phase === 'ban'
+        ? { type: 'ban',  heroId: typeId }
+        : { type: 'pick', heroId: typeId };
+      window.OnlineMode.sendGuestAction(action);
+      return;
+    }
 
     let ok = false;
     if (d.phase === 'ban')       ok = g.banHero(typeId);
     else if (d.phase === 'pick') ok = g.pickHero(typeId);
 
     if (ok) {
-      // pickHero may have started the game (phase changed to 'playing')
+      this._onlineSync();
       if (g.phase === 'playing') {
         document.getElementById('draft-screen').classList.remove('active');
         document.getElementById('game-screen').classList.add('active');
@@ -125,33 +159,100 @@ class InputHandler {
   _onCanvasClick(e) {
     const g = this.game, r = this.renderer;
     if (g.phase !== 'playing' || !g.currentHero) return;
+
+    const online  = window.OnlineMode?.active;
+    if (online && !this._isMyTurn()) return;
+    const isGuest = online && !window.OnlineMode.isHost;
+
     const cell = this._cellFromEvent(e);
     if (!cell) return;
     const mode = g.actionMode;
 
+    // ── Sélection d'un loup (aucun mode actif → clic sur tuile loup)
+    if (!mode) {
+      const wolf = (g.noyalaWolves || []).find(
+        w => w.x === cell.x && w.y === cell.y && w.ownerInstanceId === g.currentHero.instanceId
+      );
+      if (wolf) {
+        if (wolf.pmLeft <= 0 || g.actionsUsed >= MAX_ACTIONS) return;
+        g.actionMode = 'wolf_move'; g.selectedWolf = wolf;
+        r.clearHighlights();
+        r.highlightWolfMove = g.getWolfReachableCells(wolf);
+        r.render(); r.updateUI();
+        return;
+      }
+    }
+
+    // ── Loup (Noyala) ────────────────────────────────────────
+    if (mode === 'wolf_move') {
+      const wolf = g.selectedWolf;
+      if (!wolf) { this._cancelMode(); return; }
+      if (isGuest) {
+        window.OnlineMode.sendGuestAction({ type: 'wolf_move', wolfId: wolf.id, x: cell.x, y: cell.y });
+        r.clearHighlights(); g.actionMode = null; g.selectedWolf = null;
+        r.render(); r.updateUI();
+        return;
+      }
+      const moved = g._wolfMove(wolf, cell.x, cell.y);
+      this._onlineSync();
+      if (!g.noyalaWolves.includes(wolf) || wolf.pmLeft <= 0) {
+        g.actionMode = null; g.selectedWolf = null; r.clearHighlights();
+      } else if (moved) {
+        r.highlightWolfMove = g.getWolfReachableCells(wolf);
+      }
+      r.render(); r.updateUI();
+      return;
+    }
+
+    // ── Déplacement ──────────────────────────────────────────
     if (mode === 'move') {
+      if (isGuest) {
+        window.OnlineMode.sendGuestAction({ type: 'move', x: cell.x, y: cell.y });
+        r.clearHighlights(); g.actionMode = null;
+        return;
+      }
       const ok = g.moveHero(cell.x, cell.y);
       r.clearHighlights();
       g.actionMode = null;
       if (ok && g.movementLeft > 0) r.setMoveHighlight();
-      r.render(); r.updateUI(); return;
+      this._onlineSync();
+      r.render(); r.updateUI();
+      return;
     }
 
+    // ── Attaque ───────────────────────────────────────────────
     if (mode === 'attack') {
       const target = g.getHeroAt(cell.x, cell.y);
-      if (target && target.playerIdx !== g.currentHero.playerIdx) g.autoAttack(target);
+      if (target && target.playerIdx !== g.currentHero.playerIdx) {
+        if (isGuest) {
+          window.OnlineMode.sendGuestAction({ type: 'attack', heroId: target.instanceId });
+          r.clearHighlights(); g.actionMode = null;
+          return;
+        }
+        g.autoAttack(target);
+        this._onlineSync();
+      }
       r.clearHighlights(); g.actionMode = null;
-      r.render(); r.updateUI(); return;
+      r.render(); r.updateUI();
+      return;
     }
 
+    // ── Sort ──────────────────────────────────────────────────
     if (mode === 'spell') {
       const spell = g.selectedSpell;
       if (!spell) { this._cancelMode(); return; }
 
+      const heroTargetTypes = ['enemy_hero','swap_enemy','ally_hero','swap_ally',
+        'dash_to_enemy','dash_to_ally','dash_behind_enemy','abyss_r'];
+      const cellTargetTypes = ['cell','zone','diamond_zone','stealth_dash','trap',
+        'line_zone','place_glyph','wind_glyph','cone_zone','bomb_zone',
+        'hate_wall','lame_eau','abyss_w','faena_w','faena_r','pibot_r',
+        'noyala_q','noyala_r'];
+
       let done = false;
+
       if (spell.targetType === 'push_enemy') {
         if (!g.pushTarget) {
-          // Step 1: select the enemy to push
           const t = g.getHeroAt(cell.x, cell.y);
           if (t && t.playerIdx !== g.currentHero.playerIdx &&
               g._manhattan(g.currentHero.position, t.position) <= spell.range) {
@@ -160,34 +261,64 @@ class InputHandler {
             r.render(); r.updateUI();
           }
         } else {
-          // Step 2: select push direction
           const enemy = g.pushTarget;
           const relX = cell.x - enemy.position.x;
           const relY = cell.y - enemy.position.y;
-          if ((relX !== 0) !== (relY !== 0)) { // exactly one axis
+          if ((relX !== 0) !== (relY !== 0)) {
             const dx = Math.sign(relX), dy = Math.sign(relY);
             const dist = Math.abs(relX) + Math.abs(relY);
             if (dist >= 1 && dist <= 3) {
-              g.castSpell(spell, { hero: enemy, dx, dy });
+              if (isGuest) {
+                window.OnlineMode.sendGuestAction({ type: 'spell', spellId: spell.id,
+                  target: { heroId: enemy.instanceId, dx, dy } });
+              } else {
+                g.castSpell(spell, { hero: enemy, dx, dy });
+                this._onlineSync();
+              }
               g.pushTarget = null;
               done = true;
             }
           }
         }
         if (done) { r.clearHighlights(); g.actionMode = null; g.selectedSpell = null; }
-        r.render(); r.updateUI(); return;
+        r.render(); r.updateUI();
+        return;
       }
-      if (spell.targetType === 'enemy_hero' || spell.targetType === 'swap_enemy' || spell.targetType === 'ally_hero' || spell.targetType === 'swap_ally' || spell.targetType === 'dash_to_enemy' || spell.targetType === 'dash_to_ally' || spell.targetType === 'dash_behind_enemy') {
+
+      if (heroTargetTypes.includes(spell.targetType)) {
         const target = g.getHeroAt(cell.x, cell.y);
-        if (target) { g.castSpell(spell, { hero: target }); done = true; }
-      } else if (spell.targetType === 'cell' || spell.targetType === 'zone' || spell.targetType === 'diamond_zone' || spell.targetType === 'stealth_dash' || spell.targetType === 'trap' || spell.targetType === 'line_zone' || spell.targetType === 'place_glyph' || spell.targetType === 'wind_glyph' || spell.targetType === 'cone_zone' || spell.targetType === 'bomb_zone' || spell.targetType === 'hate_wall' || spell.targetType === 'lame_eau') {
-        g.castSpell(spell, { x: cell.x, y: cell.y }); done = true;
+        if (target) {
+          if (isGuest) {
+            window.OnlineMode.sendGuestAction({ type: 'spell', spellId: spell.id,
+              target: { heroId: target.instanceId } });
+          } else {
+            g.castSpell(spell, { hero: target });
+            this._onlineSync();
+          }
+          done = true;
+        }
+      } else if (cellTargetTypes.includes(spell.targetType)) {
+        if (isGuest) {
+          window.OnlineMode.sendGuestAction({ type: 'spell', spellId: spell.id,
+            target: { x: cell.x, y: cell.y } });
+        } else {
+          g.castSpell(spell, { x: cell.x, y: cell.y });
+          this._onlineSync();
+        }
+        done = true;
       } else if (spell.targetType === 'no_target') {
-        g.castSpell(spell, null); done = true;
+        if (isGuest) {
+          window.OnlineMode.sendGuestAction({ type: 'spell', spellId: spell.id, target: null });
+        } else {
+          g.castSpell(spell, null);
+          this._onlineSync();
+        }
+        done = true;
       }
 
       if (done) { r.clearHighlights(); g.actionMode = null; g.selectedSpell = null; }
-      r.render(); r.updateUI(); return;
+      r.render(); r.updateUI();
+      return;
     }
   }
 
@@ -197,7 +328,7 @@ class InputHandler {
     if (g.actionMode !== 'spell') return;
     const spell = g.selectedSpell;
     if (!spell || spell.targetType === 'self' || spell.targetType === 'no_target' || spell.targetType === 'pm_sacrifice') return;
-    if (spell.targetType === 'push_enemy' && g.pushTarget) return; // step 2: direction arrows already shown
+    if (spell.targetType === 'push_enemy' && g.pushTarget) return;
     const cell = this._cellFromEvent(e);
     if (!cell) { r.zoneSpellTarget = null; r.render(); return; }
     r.zoneSpellTarget = cell;
@@ -210,6 +341,7 @@ class InputHandler {
 
   _toggleMove() {
     const g = this.game, r = this.renderer;
+    if (window.OnlineMode?.active && !this._isMyTurn()) return;
     if (g.actionMode === 'move') { this._cancelMode(); return; }
     r.closeShop();
     g.actionMode = 'move'; g.selectedSpell = null;
@@ -219,6 +351,7 @@ class InputHandler {
 
   _toggleAttack() {
     const g = this.game, r = this.renderer;
+    if (window.OnlineMode?.active && !this._isMyTurn()) return;
     if (g.actionMode === 'attack') { this._cancelMode(); return; }
     r.closeShop();
     g.actionMode = 'attack'; g.selectedSpell = null;
@@ -227,19 +360,29 @@ class InputHandler {
   }
 
   _toggleSpell(spellId) {
-    const g     = this.game, r = this.renderer;
+    const g   = this.game, r = this.renderer;
     const spell = g.currentHero?.spells.find(s => s.id === spellId);
     if (!spell) return;
+
+    const online  = window.OnlineMode?.active;
+    if (online && !this._isMyTurn()) return;
+    const isGuest = online && !window.OnlineMode.isHost;
+
     r.closeShop();
 
-    // Instant cast (no click needed)
-    if (spell.targetType === 'self' || spell.targetType === 'no_target' || spell.targetType === 'pm_sacrifice') {
-      g.castSpell(spell, null);
+    // Sorts instantanés (pas de clic sur la carte)
+    if (spell.targetType === 'self' || spell.targetType === 'no_target' || spell.targetType === 'pm_sacrifice' || spell.targetType === 'pibot_w') {
+      if (isGuest) {
+        window.OnlineMode.sendGuestAction({ type: 'spell', spellId: spell.id, target: null });
+      } else {
+        g.castSpell(spell, null);
+        this._onlineSync();
+      }
       r.clearHighlights(); g.actionMode = null;
-      r.render(); r.updateUI(); return;
+      r.render(); r.updateUI();
+      return;
     }
 
-    // Toggle
     if (g.actionMode === 'spell' && g.selectedSpell?.id === spellId) {
       this._cancelMode(); return;
     }
@@ -251,15 +394,26 @@ class InputHandler {
 
   _cancelMode() {
     const g = this.game, r = this.renderer;
-    g.actionMode = null; g.selectedSpell = null; g.pushTarget = null;
+    g.actionMode = null; g.selectedSpell = null; g.pushTarget = null; g.selectedWolf = null;
     r.clearHighlights(); r.render(); r.updateUI();
   }
 
   _endTurn() {
     const g = this.game, r = this.renderer;
     if (g.phase !== 'playing' || !g.currentHero) return;
+
+    const online  = window.OnlineMode?.active;
+    if (online && !this._isMyTurn()) return;
+    const isGuest = online && !window.OnlineMode.isHost;
+
     r.clearHighlights();
+    if (isGuest) {
+      window.OnlineMode.sendGuestAction({ type: 'endTurn' });
+      r.render(); r.updateUI();
+      return;
+    }
     g.endHeroTurn();
+    this._onlineSync();
     r.render(); r.updateUI();
   }
 
@@ -277,7 +431,16 @@ class InputHandler {
   }
 
   _shopBuy(itemId) {
+    const online  = window.OnlineMode?.active;
+    if (online && !this._isMyTurn()) return;
+    const isGuest = online && !window.OnlineMode.isHost;
+
+    if (isGuest) {
+      window.OnlineMode.sendGuestAction({ type: 'buy', itemId });
+      return;
+    }
     if (!this.game.buyItem(itemId)) return;
+    this._onlineSync();
     this.renderer._refreshShopHero();
     this.renderer._refreshShopGrid(this.renderer._shopCurrentTier);
     this.renderer._clearShopDetail();

@@ -19,7 +19,12 @@ const PASSIVE_LABELS = {
   gros_calibre:       'Gros Calibre — Les attaques de base de Stank infligent les mêmes dégâts physiques à tous les ennemis sur les cases adjacentes à la cible.',
   sharagoth_passive:  'Plus forts ensemble — Au début de son tour, Sharagoth gagne un bouclier de 10% de ses HP max par allié présent à moins de 10 cases (Manhattan), pendant 2 tours.',
   vaillance:          'Vaillance — Le premier débuff appliqué à Ondine chaque tour est automatiquement annulé.',
-  abyss_passive:      'Équilibre des abysses — Les attaques de base d\'Abyss infligent 40% de dégâts physiques, 40% de dégâts magiques et 20% de dégâts bruts.'
+  abyss_passive:      'Équilibre des abysses — Les attaques de base d\'Abyss infligent 40% de dégâts physiques, 40% de dégâts magiques et 20% de dégâts bruts.',
+  faena_passive:      'Coups critiques mortels — Chaque tranche de 10 AD donne +1% de dégâts critiques (base 150%). S\'applique aux attaques de base et aux Flèches de douleur.',
+  pibot_passive:      'Batterie — Au début de chaque tour de Pibot, une case ⚡ apparaît à 5 cases ou moins. Passer dessus (ou utiliser Station de recharge) récupère 25% de la mana manquante.',
+  gabriel_passive:    'Pas Léger — Au début du tour de chaque allié à moins de 7 cases de Gabriel, cet allié gagne +1 PM.',
+  grolith_passive:    'Pierre qui roule — Grolith gagne 70 points de bouclier au début de chaque tour. Ce bouclier n\'expire jamais.',
+  noyala_passive:     'Chasse — Noyala gagne +1 PM au début de son tour si elle est adjacente à un mur. Ses loups récupèrent leurs PM à chaque début de son tour.'
 };
 
 const TARGET_LABELS = {
@@ -45,7 +50,15 @@ const TARGET_LABELS = {
   dash_behind_enemy:  'Dash derrière un héros ennemi (ligne droite, portée 3)',
   lame_eau:           'Zone 3×3 lancée à 2 cases en ligne droite (se déplace chaque tour)',
   abyss_w:            'Dash en ligne droite (max 3 cases)',
-  abyss_r:            'Dash sur un ennemi lointain (8–10 cases, sans ligne de vue)'
+  abyss_r:            'Dash sur un ennemi lointain (8–10 cases, sans ligne de vue)',
+  cone_zone:          'Zone en cône devant le héros',
+  bomb_zone:          'Zone en losange (bombardement sur 3 tours)',
+  faena_w:            'Case adjacente (déplacement sans PM)',
+  faena_r:            'Zone 1-3-1 — tir critique garanti (portée 5)',
+  pibot_w:            'Téléportation sur la batterie active (portée 5, sans ligne de vue)',
+  pibot_r:            'Zone 1-3-1 en ligne droite orthogonale (portée 5)',
+  noyala_q:           'Invoque un loup sur une case adjacente libre',
+  noyala_r:           'Échange de position avec un loup'
 };
 
 const DMG_LABELS = {
@@ -105,10 +118,11 @@ function renderScoreboard(matchResult) {
           </div>
         </div>`;
     }).join('');
+    const teamGold = player.heroes.reduce((sum, h) => sum + (h.totalGold || 0), 0);
     const winnerBadge = player.won ? ' 🏆' : '';
     return `
       <div class="scoreboard-team${player.won ? ' winner' : ''}">
-        <div class="scoreboard-team-header">${player.label}${winnerBadge}</div>
+        <div class="scoreboard-team-header">${player.label}${winnerBadge}<span class="sb-team-gold">💰 ${teamGold}g</span></div>
         ${rows}
       </div>`;
   }).join('');
@@ -533,6 +547,162 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // ── Game over → menu ─────────────────────────────────────
   document.querySelector('#gameover-screen button').addEventListener('click', () => {
+    location.reload();
+  });
+
+  // ── Online ────────────────────────────────────────────────
+  document.getElementById('btn-menu-online').addEventListener('click', () => {
+    showScreen('online-screen');
+    window.OnlineMode.connect(() => {
+      document.getElementById('online-status').textContent = 'Connecté au serveur — choisissez une option.';
+    });
+  });
+
+  document.getElementById('btn-create-room').addEventListener('click', () => {
+    window.OnlineMode.createRoom(res => {
+      if (res.code) {
+        document.getElementById('room-code-text').textContent = res.code;
+        document.getElementById('online-create-info').classList.remove('hidden');
+        document.getElementById('online-status').textContent = 'En attente de l\'adversaire…';
+      }
+    });
+  });
+
+  document.getElementById('btn-join-room').addEventListener('click', () => {
+    const code = document.getElementById('join-code-input').value.trim();
+    if (!code) return;
+    const errEl = document.getElementById('online-error');
+    errEl.classList.remove('hidden');
+    if (window.OnlineMode.roomCode && code.toUpperCase() === window.OnlineMode.roomCode) {
+      errEl.textContent = 'Tu ne peux pas rejoindre ta propre partie.';
+      return;
+    }
+    errEl.classList.add('hidden');
+    window.OnlineMode.joinRoom(code, res => {
+      if (res.error) {
+        errEl.textContent = res.error;
+        errEl.classList.remove('hidden');
+      } else {
+        document.getElementById('online-status').textContent = 'Connecté ! Démarrage du draft…';
+        setTimeout(() => { showScreen('draft-screen'); renderer.renderDraft(); }, 800);
+      }
+    });
+  });
+
+  document.getElementById('btn-online-back').addEventListener('click', () => {
+    showScreen('menu-screen');
+  });
+
+  // Hôte : l'adversaire a rejoint → démarrer le draft
+  document.addEventListener('online:guest-joined', () => {
+    document.getElementById('online-status').textContent = 'Adversaire connecté ! Démarrage…';
+    setTimeout(() => { showScreen('draft-screen'); renderer.renderDraft(); }, 800);
+  });
+
+  // Les deux : réception de l'état mis à jour par l'hôte
+  document.addEventListener('online:state', e => {
+    const prevPhase = game.phase;
+    game.applySerializedState(e.detail);
+
+    if (game.phase === 'gameover') {
+      const matchResult = {
+        turns: game.globalTurn,
+        teams: game.players.map((p, pi) => ({
+          label: `Joueur ${pi + 1}`,
+          won: game.winner === pi,
+          heroes: p.heroes.map(h => ({
+            name: h.name, portrait: h.portrait, colorFill: h.colorFill,
+            kills: h.kills || 0, deaths: h.deaths || 0, assists: h.assists || 0,
+            totalGold: h.totalGoldEarned || h.gold, items: [...(h.items || [])]
+          }))
+        }))
+      };
+      showScreen('gameover-screen');
+      renderer.showGameOver(game.winner, matchResult);
+      return;
+    }
+
+    // Transition draft → jeu
+    if (prevPhase === 'draft' && game.phase === 'playing') {
+      showScreen('game-screen');
+      renderer.render();
+      renderer.updateUI();
+      return;
+    }
+
+    if (game.phase === 'playing') {
+      renderer.render();
+      renderer.updateUI();
+    } else if (game.phase === 'draft') {
+      renderer.renderDraft();
+    }
+  });
+
+  // Hôte : exécuter l'action reçue du guest puis renvoyer l'état
+  document.addEventListener('online:guest-action', e => {
+    const action = e.detail;
+    const g = game;
+    const all   = [...g.players[0].heroes, ...g.players[1].heroes];
+    const byId  = id => all.find(h => h.instanceId === id) ?? null;
+
+    switch (action.type) {
+      case 'move':
+        g.moveHero(action.x, action.y);
+        break;
+      case 'attack': {
+        const t = byId(action.heroId);
+        if (t) g.autoAttack(t);
+        break;
+      }
+      case 'spell': {
+        const hero  = g.currentHero;
+        if (!hero) break;
+        const spell = hero.spells.find(s => s.id === action.spellId);
+        if (!spell) break;
+        let tgt = action.target;
+        if (tgt?.heroId) tgt = { hero: byId(tgt.heroId), dx: tgt.dx, dy: tgt.dy };
+        g.castSpell(spell, tgt);
+        break;
+      }
+      case 'endTurn':
+        g.endHeroTurn();
+        break;
+      case 'buy':
+        g.buyItem(action.itemId);
+        break;
+      case 'wolf_move': {
+        const wolf = (g.noyalaWolves || []).find(w => w.id === action.wolfId);
+        if (wolf) g._wolfMove(wolf, action.x, action.y);
+        break;
+      }
+      case 'ban':
+        g.banHero(action.heroId);
+        break;
+      case 'pick':
+        g.pickHero(action.heroId);
+        break;
+    }
+
+    window.OnlineMode.sendState(g.serialize());
+
+    if (g.phase === 'gameover') {
+      renderer.showGameOver(g.winner, null);
+      return;
+    }
+    // Transition draft → jeu côté hôte
+    if (g.phase === 'playing' && document.getElementById('draft-screen').classList.contains('active')) {
+      showScreen('game-screen');
+    }
+    if (g.phase === 'playing') {
+      renderer.render(); renderer.updateUI();
+    } else if (g.phase === 'draft') {
+      renderer.renderDraft();
+    }
+  });
+
+  // Adversaire déconnecté
+  document.addEventListener('online:disconnected', () => {
+    alert('Votre adversaire s\'est déconnecté. La partie est terminée.');
     location.reload();
   });
 });

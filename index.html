@@ -15,7 +15,8 @@
     <div id="menu-content">
       <h1 id="menu-title">⚔ ANCIENTS ARENA</h1>
       <div id="menu-buttons">
-        <button id="btn-menu-draft"   class="menu-btn">⚔ Draft</button>
+        <button id="btn-menu-draft"   class="menu-btn">⚔ Draft (Local)</button>
+        <button id="btn-menu-online"  class="menu-btn">🌐 Jouer en ligne</button>
         <button id="btn-menu-editor"  class="menu-btn">✏ Éditeur</button>
         <button id="btn-menu-heroes"  class="menu-btn">📋 Infos Générales</button>
         <button id="btn-menu-stats"   class="menu-btn">📊 Statistiques</button>
@@ -136,13 +137,14 @@
           </div>
           <div id="shop-right">
             <div id="shop-tabs">
-              <button class="shop-tab" data-cat="t1">T1</button>
+              <button class="shop-tab" data-cat="starter">Starter</button>
               <button class="shop-tab" data-cat="boots">Bottes</button>
-              <button class="shop-tab" data-cat="bruiser">Bruiser / Tank</button>
-              <button class="shop-tab" data-cat="mage">Mage</button>
-              <button class="shop-tab" data-cat="dpt">DPT</button>
-              <button class="shop-tab" data-cat="support">Support</button>
-              <button class="shop-tab" data-cat="assassin">Assassin</button>
+              <button class="shop-tab" data-cat="ad">AD</button>
+              <button class="shop-tab" data-cat="ap">AP</button>
+              <button class="shop-tab" data-cat="hp">HP</button>
+              <button class="shop-tab" data-cat="res">Armure / RM</button>
+              <button class="shop-tab" data-cat="mana">Mana</button>
+              <button class="shop-tab" data-cat="util">Utilitaire</button>
             </div>
             <div id="shop-grid"></div>
             <div id="shop-detail"><div class="sd-placeholder">Survolez un item pour voir ses détails</div></div>
@@ -357,6 +359,35 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════
+       ONLINE LOBBY
+  ════════════════════════════════════════════ -->
+  <div id="online-screen" class="screen">
+    <div id="online-container">
+      <h2 style="margin:0 0 8px">🌐 Jouer en ligne</h2>
+      <p id="online-status" style="color:#8b949e;margin:0 0 24px">Connexion au serveur…</p>
+
+      <div id="online-create-section" style="margin-bottom:20px">
+        <button id="btn-create-room" class="menu-btn">Créer une partie</button>
+        <div id="online-create-info" class="hidden" style="margin-top:12px;padding:12px 16px;background:#161b22;border:1px solid #30363d;border-radius:8px;text-align:center">
+          <div style="font-size:0.85rem;color:#8b949e;margin-bottom:4px">Code de la partie</div>
+          <div id="room-code-text" style="font-size:2rem;font-weight:bold;letter-spacing:6px;color:#f0f6fc"></div>
+          <div style="font-size:0.8rem;color:#8b949e;margin-top:4px">Communique ce code à ton adversaire</div>
+        </div>
+      </div>
+
+      <div id="online-join-section" style="display:flex;gap:8px;margin-bottom:12px">
+        <input id="join-code-input" placeholder="Code (ex: AB12CD)" maxlength="6"
+          style="flex:1;padding:10px 14px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#f0f6fc;font-size:1rem;text-transform:uppercase">
+        <button id="btn-join-room" class="menu-btn" style="margin:0">Rejoindre</button>
+      </div>
+
+      <p id="online-error" class="hidden" style="color:#e74c3c;margin:0 0 12px"></p>
+      <button id="btn-online-back" class="menu-btn" style="background:#21262d">← Retour</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
   <script src="js/stats.js"></script>
   <script src="js/heroes.js"></script>
   <script src="js/equipment.js"></script>
@@ -364,6 +395,7 @@
   <script src="js/game.js"></script>
   <script src="js/renderer.js"></script>
   <script src="js/input.js"></script>
+  <script src="js/online.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

@@ -201,7 +201,9 @@ class Renderer {
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Brown spots
-    const _brownSet = new Set(this.game.brownSpots.map(s => `${s.x},${s.y}`));
+    const _brownSet    = new Set(this.game.brownSpots.map(s => `${s.x},${s.y}`));
+    const _batterySet  = new Set((this.game.pibotBatteries || []).map(b => `${b.x},${b.y}`));
+    const _wolfMap     = new Map((this.game.noyalaWolves || []).map(w => [`${w.x},${w.y}`, w]));
 
     for (let x = 0; x < MAP_SIZE; x++) for (let y = 0; y < MAP_SIZE; y++) {
       const px = x * cs, py = y * cs;
@@ -238,6 +240,39 @@ class Renderer {
       if (_brownSet.has(key)) {
         ctx.fillStyle = 'rgba(140,75,20,0.75)';
         ctx.fillRect(px, py, cs, cs);
+      }
+
+      // Pibot batteries
+      if (_batterySet.has(key)) {
+        ctx.fillStyle = 'rgba(0,180,255,0.25)';
+        ctx.fillRect(px, py, cs, cs);
+        ctx.strokeStyle = '#00d4ff';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 1, py + 1, cs - 2, cs - 2);
+        // Icône ⚡ centrée
+        ctx.fillStyle = '#00d4ff';
+        ctx.font = `${cs * 0.45}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('⚡', px + cs / 2, py + cs / 2);
+      }
+
+      // Noyala wolves
+      const _wolf = _wolfMap.get(key);
+      if (_wolf) {
+        ctx.fillStyle = 'rgba(100,180,50,0.3)';
+        ctx.fillRect(px, py, cs, cs);
+        ctx.strokeStyle = '#7dc832';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 1, py + 1, cs - 2, cs - 2);
+        ctx.fillStyle = '#7dc832';
+        ctx.font = `${cs * 0.45}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('🐺', px + cs / 2, py + cs / 2);
+        // HP bar at bottom
+        const wbx = px + 2, wby = py + cs - 6, wbw = cs - 4;
+        ctx.fillStyle = '#111'; ctx.fillRect(wbx, wby, wbw, 4);
+        ctx.fillStyle = '#7dc832'; ctx.fillRect(wbx, wby, Math.floor(wbw * (_wolf.hp / _wolf.maxHp)), 4);
       }
 
       // Murs de haine (Sharagoth)
@@ -308,6 +343,18 @@ class Renderer {
       // Move highlight
       if (this.highlightMove.some(c => c.x === x && c.y === y)) {
         ctx.fillStyle = 'rgba(52,152,219,0.35)';
+        ctx.fillRect(px, py, cs, cs);
+      }
+
+      // Wolf move highlight
+      if (this.highlightWolfMove?.some(c => c.x === x && c.y === y)) {
+        ctx.fillStyle = 'rgba(100,200,50,0.35)';
+        ctx.fillRect(px, py, cs, cs);
+      }
+
+      // Cells blocked by enemy traps
+      if (this.highlightMoveTrapBlocked?.some(c => c.x === x && c.y === y)) {
+        ctx.fillStyle = 'rgba(200,100,0,0.18)';
         ctx.fillRect(px, py, cs, cs);
       }
 
@@ -491,9 +538,13 @@ class Renderer {
     // Action panel
     this._renderActionPanel();
 
-    // Action counter
-    document.getElementById('action-counter-text').innerHTML =
-      `Actions: ${g.actionsUsed}/${MAX_ACTIONS} &nbsp;|&nbsp; <span class="pm-counter">👟 PM : ${g.movementLeft}</span>`;
+    // Action counter (skipped when opponent's turn — _renderActionPanel already set the message)
+    const _isOpponentTurn = window.OnlineMode?.active && g.phase === 'playing' &&
+      g.currentHero && g.currentHero.playerIdx !== window.OnlineMode.playerIdx;
+    if (!_isOpponentTurn) {
+      document.getElementById('action-counter-text').innerHTML =
+        `Actions: ${g.actionsUsed}/${MAX_ACTIONS} &nbsp;|&nbsp; <span class="pm-counter">👟 PM : ${g.movementLeft}</span>`;
+    }
   }
 
   _renderHeroList(playerIdx) {
@@ -601,6 +652,30 @@ class Renderer {
     const btnMove   = document.getElementById('btn-move');
     const btnAttack = document.getElementById('btn-attack');
     const btnShop   = document.getElementById('btn-shop');
+    const btnEndTurn = document.getElementById('btn-end-turn');
+    const actionCounter = document.getElementById('action-counter-text');
+
+    // Online mode — opponent's turn: hide action controls, show waiting message
+    const isOpponentTurn = window.OnlineMode?.active && g.phase === 'playing' &&
+      hero && hero.playerIdx !== window.OnlineMode.playerIdx;
+
+    if (isOpponentTurn) {
+      nameEl.textContent = '—';
+      statsEl.innerHTML = '';
+      spellsEl.innerHTML = '';
+      btnMove.style.display   = 'none';
+      btnAttack.style.display = 'none';
+      if (btnShop)    btnShop.style.display    = 'none';
+      if (btnEndTurn) btnEndTurn.style.display  = 'none';
+      if (actionCounter) actionCounter.innerHTML = '<span style="opacity:.7">⏳ Adversaire en train de jouer…</span>';
+      return;
+    }
+
+    // Restore display if previously hidden
+    btnMove.style.display   = '';
+    btnAttack.style.display = '';
+    if (btnShop)    btnShop.style.display    = '';
+    if (btnEndTurn) btnEndTurn.style.display  = '';
 
     if (!hero) {
       nameEl.textContent = '—';
@@ -616,6 +691,13 @@ class Renderer {
     const hpPct      = Math.min(_rawHpPct2, 100 - _shPct).toFixed(1);
     const manaPct    = (hero.currentMana / hero.maxMana * 100).toFixed(1);
     const _shTitle   = hero.shield > 0 ? ` title="Bouclier : ${hero.shield} HP"` : '';
+    const _myWolves = hero.passive === 'noyala_passive'
+      ? (g.noyalaWolves || []).filter(w => w.ownerInstanceId === hero.instanceId) : [];
+    const _wolfInfo = _myWolves.length > 0
+      ? _myWolves.map(w => {
+          const sel = g.actionMode === 'wolf_move' && g.selectedWolf === w;
+          return `<span title="Loup — ${w.hp}/${w.maxHp} PV · ${w.pmLeft}/${w.pm} PM" style="cursor:default;${sel ? 'color:#7dc832;font-weight:bold;' : 'opacity:0.85;'}">🐺${w.pmLeft}PM</span>`;
+        }).join(' ') : '';
     statsEl.innerHTML = `
       <div class="stat-bars">
         <div class="stat-label">❤ ${hero.currentHP}/${hero.maxHP}</div>
@@ -627,6 +709,7 @@ class Renderer {
         <span>⚔ ${hero.ad}</span><span>✨ ${hero.ap}</span>
         <span>🛡 ${hero.armor}</span><span>🧿 ${hero.mr}</span>
         ${hero.shield > 0 ? `<span class="stat-shield">🔰 ${hero.shield}</span>` : ''}
+        ${_wolfInfo}
       </div>`;
 
     btnMove.classList.toggle('active-mode', g.actionMode === 'move');
@@ -640,18 +723,24 @@ class Renderer {
     hero.spells.forEach(spell => {
       const btn      = document.createElement('button');
       const cd       = hero.cooldowns[spell.id];
-      const used     = !!g.spellsUsed[spell.id];
+      const usedCount = typeof g.spellsUsed[spell.id] === 'number' ? g.spellsUsed[spell.id] : (g.spellsUsed[spell.id] ? 999 : 0);
+      const used     = usedCount >= (spell.maxUsesPerTurn || 1);
       const noMana   = hero.currentMana < spell.manaCost;
       const isActive = g.actionMode === 'spell' && g.selectedSpell?.id === spell.id;
 
       btn.className = 'action-btn spell-btn';
-      btn.disabled  = used || cd > 0 || noMana || g.actionsUsed >= MAX_ACTIONS;
+      let noBattery = false;
+      if (spell.targetType === 'pibot_w') {
+        noBattery = !g.pibotBatteries.some(b => b.heroInstanceId === hero.instanceId);
+      }
+      btn.disabled  = used || cd > 0 || noMana || g.actionsUsed >= MAX_ACTIONS || noBattery;
       btn.classList.toggle('active-mode', isActive);
       btn.dataset.spellId = spell.id;
 
       const keyMatch = spell.id.match(/_([qwer])$/i);
       const key = keyMatch ? keyMatch[1].toUpperCase() : spell.name[0].toUpperCase();
-      const overlay = used ? '✓' : cd > 0 ? cd : '';
+      const maxUses = spell.maxUsesPerTurn || 1;
+      const overlay = used ? '✓' : cd > 0 ? cd : maxUses > 1 && usedCount > 0 ? `${usedCount}/${maxUses}` : '';
       btn.innerHTML = `<span class="spell-key">${key}</span>${overlay !== '' ? `<span class="spell-cd-overlay ${used ? 'spell-used' : ''}">${overlay}</span>` : ''}`;
 
       spellsEl.appendChild(btn);
@@ -718,8 +807,7 @@ class Renderer {
 
   openShop() {
     const hero = this.game.currentHero;
-    const roleTocat = { solo: 'bruiser', roam: 'assassin', mage: 'mage', dpt: 'dpt', support: 'support' };
-    const defaultCat = this.game.globalTurn === 1 ? 't1' : (roleTocat[hero?.roleId] || 'bruiser');
+    const defaultCat = this.game.globalTurn === 1 ? 'starter' : 'ad';
     this._shopCurrentCategory = defaultCat;
     document.getElementById('shop-overlay').style.display = 'flex';
     document.querySelectorAll('.shop-tab').forEach(t => t.classList.toggle('active', t.dataset.cat === defaultCat));
@@ -805,7 +893,9 @@ class Renderer {
     const _addCard = (item, { owned = false, bootsBlocked = false } = {}) => {
       const cost      = this.game.getBuyCost(hero, item.id);
       const craftable = item.recipe.length > 0 && this.game._hasComponents(hero, item.recipe);
+      const hasPartial = item.recipe.some(cId => hero.items.includes(cId));
       const affordable = !owned && !bootsBlocked && hero.gold >= cost;
+      const priceClass = affordable ? 'sic-ok' : hasPartial ? 'sic-partial' : 'sic-bad';
       const card = document.createElement('div');
       card.className = 'shop-item-card' +
         (craftable ? ' shop-craftable' : '') +
@@ -817,8 +907,21 @@ class Renderer {
         <span class="sic-tier-badge">T${item.tier}</span>
         ${owned
           ? '<span class="sic-owned">✓ Équipé</span>'
-          : `<span class="sic-cost ${affordable ? 'sic-ok' : 'sic-bad'}">${cost}g</span>`}
+          : `<span class="sic-cost ${priceClass}">${cost}g</span>`}
         ${craftable && !owned ? '<span class="sic-forge">⚒ Forger</span>' : ''}`;
+      card.addEventListener('mouseenter', () => {
+        document.querySelectorAll('.shop-item-card').forEach(c => {
+          const ci = EQUIPMENT[c.dataset.itemId];
+          if (!ci) return;
+          if (ci.recipe.includes(item.id)) c.classList.add('shop-highlight-upgrade');
+          if (item.recipe.includes(ci.id)) c.classList.add('shop-highlight-component');
+        });
+      });
+      card.addEventListener('mouseleave', () => {
+        document.querySelectorAll('.shop-highlight-upgrade,.shop-highlight-component').forEach(c => {
+          c.classList.remove('shop-highlight-upgrade', 'shop-highlight-component');
+        });
+      });
       grid.appendChild(card);
     };
 
@@ -837,28 +940,21 @@ class Renderer {
       return;
     }
 
-    // Onglet T1 : starters d'abord, puis reste du T1
-    if (cat === 't1') {
+    // Onglet Starter : items starters uniquement (1 max par héros)
+    if (cat === 'starter') {
       const hasStarter = hero.items.some(id => EQUIPMENT[id]?.isStarter);
-      const starters   = Object.values(EQUIPMENT).filter(i => i.tier === 1 && i.isStarter);
-      const others     = Object.values(EQUIPMENT).filter(i => i.tier === 1 && !i.isStarter);
-
-      const _starterLabel = () => {
-        const h = document.createElement('div');
-        h.className = 'shop-tier-header';
-        h.textContent = 'Starters — 1 maximum par héros';
-        grid.appendChild(h);
-      };
-
-      _starterLabel();
+      const starters   = Object.values(EQUIPMENT).filter(i => i.isStarter);
+      const h = document.createElement('div');
+      h.className = 'shop-tier-header';
+      h.textContent = 'Starters — 1 maximum par héros';
+      grid.appendChild(h);
       starters.forEach(item => {
-        const owned      = hero.items.includes(item.id);
+        const owned         = hero.items.includes(item.id);
         const starterLocked = !owned && hasStarter;
-        const cost       = this.game.getBuyCost(hero, item.id);
-        const affordable = !owned && !starterLocked && hero.gold >= cost;
+        const cost          = this.game.getBuyCost(hero, item.id);
+        const affordable    = !owned && !starterLocked && hero.gold >= cost;
         const card = document.createElement('div');
-        card.className = 'shop-item-card' +
-          (affordable || owned ? '' : ' shop-unaffordable');
+        card.className = 'shop-item-card' + (affordable || owned ? '' : ' shop-unaffordable');
         card.dataset.itemId = item.id;
         card.innerHTML = `
           ${this._itemIcon(item, 'sic-icon')}
@@ -871,35 +967,37 @@ class Renderer {
               : `<span class="sic-cost ${affordable ? 'sic-ok' : 'sic-bad'}">${cost}g</span>`}`;
         grid.appendChild(card);
       });
-
-      _tierHeader(1);
-      others.forEach(item => _addCard(item));
       return;
     }
 
-    // Onglets catégorie (bruiser, mage, dpt, support, assassin) : composants (tous tiers) + T2/T3, groupés par tier
-    const catItems = Object.values(EQUIPMENT).filter(i => i.tier >= 2 && i.categories.includes(cat));
-    const compIds = new Set();
-    function _addAllComponents(id) {
-      EQUIPMENT[id].recipe.forEach(cId => { compIds.add(cId); _addAllComponents(cId); });
+    // Onglets stats : filtrer par stat principale
+    const STAT_FILTERS = {
+      ad:   i => (i.stats.ad    || 0) > 0,
+      ap:   i => (i.stats.ap    || 0) > 0,
+      hp:   i => (i.stats.maxHP || 0) > 0,
+      res:  i => (i.stats.armor || 0) > 0 || (i.stats.mr || 0) > 0,
+      mana: i => (i.stats.maxMana || 0) > 0 || (i.stats.manaRegen || 0) > 0,
+      util: i => (i.stats.critChance    || 0) > 0 || (i.stats.lifeSteal      || 0) > 0 ||
+                 (i.stats.cdReduction   || 0) > 0 || (i.stats.bonusSpellRange || 0) > 0 ||
+                 (i.stats.hpRegen       || 0) > 0 || (i.stats.goldPerTurn     || 0) > 0 ||
+                 (i.stats.healEfficiency|| 0) > 0 || (i.stats.manaOnSpell     || 0) > 0 ||
+                 (i.stats.goldSharePct  || 0) > 0
+    };
+    const statFilter = STAT_FILTERS[cat];
+    if (statFilter) {
+      const items = Object.values(EQUIPMENT)
+        .filter(i => !i.isBoots && !i.isStarter && !i.notBuyable && statFilter(i))
+        .sort((a, b) => a.tier - b.tier);
+      if (!items.length) {
+        grid.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.8rem">Aucun item dans cette catégorie.</div>';
+        return;
+      }
+      let lastTier = null;
+      items.forEach(item => {
+        if (item.tier !== lastTier) { _tierHeader(item.tier); lastTier = item.tier; }
+        _addCard(item, { owned: hero.items.includes(item.id) });
+      });
     }
-    catItems.forEach(item => _addAllComponents(item.id));
-    Object.values(EQUIPMENT).filter(i => i.tier === 1 && i.roleRestriction === cat)
-      .forEach(i => compIds.add(i.id));
-    const catItemIds = new Set(catItems.map(i => i.id));
-    const items = [...compIds].filter(id => !catItemIds.has(id)).map(id => EQUIPMENT[id]).concat(catItems);
-    items.sort((a, b) => a.tier - b.tier);
-
-    if (!items.length) {
-      grid.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.8rem">Aucun item dans cette catégorie.</div>';
-      return;
-    }
-
-    let lastTier = null;
-    items.forEach(item => {
-      if (item.tier !== lastTier) { _tierHeader(item.tier); lastTier = item.tier; }
-      _addCard(item);
-    });
   }
 
   _showShopDetail(itemId) {
@@ -1020,9 +1118,15 @@ class Renderer {
     this.zoneSpellTarget   = null;
     this.highlightPushDirs = [];
     this.pushDirArrows     = [];
+    this.highlightWolfMove       = [];
+    this.highlightMoveTrapBlocked = [];
   }
 
-  setMoveHighlight()         { this.highlightMove   = this.game.getReachableCells(); }
+  setMoveHighlight() {
+    this.highlightMove            = this.game.getReachableCells(true);
+    this.highlightMoveTrapBlocked = this.game.getTrapBlockedCells();
+  }
+  setWolfMoveHighlight(wolf) { this.highlightWolfMove = this.game.getWolfReachableCells(wolf); }
   setAttackHighlight() {
     const hero = this.game.currentHero;
     const isLayia = hero?.passive === 'layia_passive';
@@ -1200,6 +1304,31 @@ class Renderer {
           return ef >= 1 && ef <= sp.range && el <= ef;
         });
         return { inZone: true, valid: hit };
+      }
+      case 'pibot_r': {
+        if (Math.abs(x - tx) + Math.abs(y - ty) > 1) return { inZone: false, valid: false };
+        const prdx = tx - hero.position.x, prdy = ty - hero.position.y;
+        if (prdx !== 0 && prdy !== 0) return { inZone: true, valid: false };
+        const prDist = Math.abs(prdx) + Math.abs(prdy);
+        if (prDist === 0 || prDist > sp.range) return { inZone: true, valid: false };
+        const prHit = g._getEnemies(hero.playerIdx).some(e =>
+          Math.abs(e.position.x - tx) + Math.abs(e.position.y - ty) <= 1
+        );
+        return { inZone: true, valid: prHit };
+      }
+      case 'faena_w': {
+        if (x !== tx || y !== ty) return { inZone: false, valid: false };
+        const dist1 = Math.abs(tx - hero.position.x) + Math.abs(ty - hero.position.y);
+        const free = !isWall(tx, ty) && !g.getHeroAt(tx, ty);
+        return { inZone: true, valid: dist1 === 1 && free };
+      }
+      case 'faena_r': {
+        if (Math.abs(x - tx) + Math.abs(y - ty) > 1) return { inZone: false, valid: false };
+        const inRange = g._manhattan(hero.position, { x: tx, y: ty }) <= sp.range;
+        const hit = g._getEnemies(hero.playerIdx).some(e =>
+          Math.abs(e.position.x - tx) + Math.abs(e.position.y - ty) <= 1
+        );
+        return { inZone: true, valid: inRange && hit };
       }
       default:
         return { inZone: false, valid: false };

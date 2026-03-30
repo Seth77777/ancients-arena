@@ -149,6 +149,11 @@ const EQUIPMENT = {
                      stats: { ad: 25 },
                      passive: 'Chaque sort ou attaque de base réduit l\'armure de la cible de 3% de son armure totale (max 20%) pendant 5 tours.' },
 
+  marteau_sinad:   { tier: 2, categories: [], name: 'Marteau de Sinad',       icon: 'img/items/marteau_sinad.png',   combineCost: 350,
+                     recipe: ['short_sword', 'short_sword'],
+                     stats: { ad: 35, cdReduction: 1 },
+                     passive: 'Réduit de 1 le CD de tous vos sorts lors de leur utilisation (minimum 1 ; minimum 2 pour les sorts infligeant un stun).' },
+
   life_crystal:    { tier: 1, categories: [], name: 'Cristal de Vie',        icon: 'img/items/life_crystal.png',    combineCost: 400, recipe: [],
                      stats: { maxHP: 100 } },
 
@@ -228,6 +233,35 @@ const EQUIPMENT = {
                          recipe: ['mana_crystal'],
                          stats: { maxMana: 80 },
                          passive: 'Vos attaques de base renforcées par un sort infligent 15% de dégâts supplémentaires.' },
+
+  bouclier_gele:       { tier: 2, categories: [], name: 'Bouclier Gelé',               icon: 'img/items/bouclier_gele.png',       combineCost: 300,
+                         recipe: ['small_armor', 'mana_crystal'],
+                         stats: { maxMana: 130, manaRegen: 10, armor: 13 } },
+
+  gantelet_refroidissant: { tier: 3, categories: ['bruiser'], name: 'Gantelet Refroidissant', icon: 'img/items/gantelet_refroidissant.png', combineCost: 0,
+                            recipe: ['bouclier_gele', 'blue_blade'],
+                            stats: { maxMana: 250, manaRegen: 15, armor: 15 },
+                            passive: 'Gelure — Vos attaques de base renforcées infligent 15% de dégâts supplémentaires et ralentissent la cible (−1 PM au prochain tour). La zone autour de la cible augmente avec votre armure totale (≥20% : 1-3-1 ; ≥30% : 1-3-5-3-1, cappé à 40%).' },
+
+  sceptre_de_mana: { tier: 3, categories: ['mage'], name: 'Sceptre de Mana',         icon: 'img/items/sceptre_de_mana.png',     combineCost: 450,
+                     recipe: ['grimoire_magique', 'mana_tear', 'petit_grimoire'],
+                     stats: { ap: 60, cdReduction: 1, manaOnSpell: 15, manaOnSpellMax: 700 },
+                     passive: 'Chaque sort lancé augmente votre Mana max de 15 (max +700 au total). Lorsque le cap est atteint, le Sceptre se transforme en Sceptre de l\'Ange.' },
+
+  sceptre_ange:    { tier: 4, categories: ['mage'], name: 'Sceptre de l\'Ange',      icon: 'img/items/sceptre_ange.png',        combineCost: 0,
+                     recipe: [], notBuyable: true,
+                     stats: { ap: 60, cdReduction: 1, manaOnSpell: 15, manaOnSpellMax: 700 },
+                     passive: 'Solde de mana — Vos sorts coûtent 15% de mana en moins. Dernier Recours — Lorsque vos HP tombent sous 30%, vous gagnez un bouclier égal à 35% de votre mana actuel pendant 3 tours (CD 8 tours).' },
+
+  epee_de_mana:    { tier: 3, categories: ['dpt'], name: 'Épée de Mana',             icon: 'img/items/epee_de_mana.png',        combineCost: 500,
+                     recipe: ['mana_tear', 'marteau_sinad'],
+                     stats: { ad: 35, cdReduction: 1, manaOnSpell: 15, manaOnSpellMax: 700 },
+                     passive: 'Chaque sort lancé augmente votre Mana max de 15 (max +700 au total). Lorsque le cap est atteint, l\'Épée se transforme en Épée de l\'Ange.' },
+
+  epee_ange:       { tier: 4, categories: ['dpt'], name: 'Épée de l\'Ange',          icon: 'img/items/epee_ange.png',           combineCost: 0,
+                     recipe: [], notBuyable: true,
+                     stats: { ad: 35, cdReduction: 1, manaOnSpell: 15, manaOnSpellMax: 700 },
+                     passive: 'Solde de mana — Vos sorts coûtent 15% de mana en moins. Mana Renforçant — Vos attaques de base infligent des dégâts supplémentaires égaux à 3% de votre mana max.' },
 
   // ─── TIER 3 — Assassin ──────────────────────────────────────
 

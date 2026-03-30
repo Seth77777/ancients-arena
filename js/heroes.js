@@ -693,7 +693,6 @@ HERO_TYPES['support_4'] = {
 
 HERO_TYPES['roam_3'] = {
   id: 'roam_3', name: 'Abyss', role: 'ROAM', roleId: 'roam', roleOrder: 2,
-  colorFill: '#1a1a2e', colorStroke: '#7f00ff',
   portrait: 'assets/heroes/abyss.png',
   passive: 'abyss_passive',
   maxHP: 500, maxMana: 200, hpRegen: 15, manaRegen: 20,
@@ -723,8 +722,188 @@ HERO_TYPES['roam_3'] = {
   ]
 };
 
+HERO_TYPES['dpt_3'] = {
+  id: 'dpt_3', name: 'Faëna', role: 'DPT', roleId: 'dpt', roleOrder: 4,
+  portrait: 'assets/heroes/faena.png',
+  passive: 'faena_passive',
+  maxHP: 320, maxMana: 250, hpRegen: 15, manaRegen: 30,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 5,
+  spells: [
+    {
+      id: 'faena_q', name: 'Tir en éclat',
+      description: '40 + 0,8 AD dégâts physiques dans une zone 1-3-1 (portée 6) — ralentit de 1 PM pendant 1 tour.',
+      manaCost: 70, range: 6, cooldown: 2, cdMin: 1,
+      damageType: 'physical', baseDamage: 40, adRatio: 0.8, apRatio: 0,
+      targetType: 'diamond_zone', zone: { size: 1 },
+      effects: [{ type: 'slow', pmReduction: 1, turns: 1 }]
+    },
+    {
+      id: 'faena_w', name: 'Boost',
+      description: 'Faëna se déplace d\'une case (sans consommer de PM) et gagne +1 PO d\'attaque pour ce tour.',
+      manaCost: 80, range: 1, cooldown: 3, cdMin: 1,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'faena_w', zone: null, effects: []
+    },
+    {
+      id: 'faena_r', name: 'Flèches de douleur',
+      description: 'Inflige 50 + 0,7 AD + % chance de coup critique dégâts physiques dans une zone 1-3-1 (portée 5). Peut être critique selon votre % de chance critique.',
+      manaCost: 130, range: 5, cooldown: 8, cdMin: 2,
+      damageType: 'physical', baseDamage: 50, adRatio: 0.7, apRatio: 0,
+      targetType: 'faena_r', zone: null, effects: []
+    }
+  ]
+};
+
+HERO_TYPES['mage_5'] = {
+  id: 'mage_5', name: 'Pibot', role: 'MAGE', roleId: 'mage', roleOrder: 3,
+  colorFill: '#154360', colorStroke: '#2980b9',
+  portrait: 'assets/heroes/pibot.png',
+  passive: 'pibot_passive',
+  maxHP: 450, maxMana: 220, hpRegen: 20, manaRegen: 30,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 6,
+  spells: [
+    {
+      id: 'pibot_q', name: 'Pinces robotiques',
+      description: 'Attire un ennemi de 2 cases en ligne droite et lui inflige 80 + 0,7 AP dégâts magiques.',
+      manaCost: 70, range: 4, cooldown: 3, cdMin: 1,
+      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.7,
+      targetType: 'enemy_hero', requiresLine: true, pullCells: 2, zone: null, effects: []
+    },
+    {
+      id: 'pibot_w', name: 'Station de recharge',
+      description: 'Téléporte Pibot sur sa batterie (si active, portée 5). Sa prochaine attaque de base inflige 0,6 AP dégâts magiques supplémentaires.',
+      manaCost: 100, range: 5, cooldown: 3, cdMin: 1,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0.6,
+      targetType: 'pibot_w', zone: null, effects: []
+    },
+    {
+      id: 'pibot_r', name: 'Méga-Pibot',
+      description: 'Inflige 110 + 0,9 AP dégâts magiques dans une zone 1-3-1 en ligne droite (portée 5) et gagne un bouclier égal à 1×AP pendant 2 tours.',
+      manaCost: 120, range: 5, cooldown: 8, cdMin: 2,
+      damageType: 'magical', baseDamage: 110, adRatio: 0, apRatio: 0.9,
+      targetType: 'pibot_r', zone: null, effects: []
+    }
+  ]
+};
+
 // Ordered list of role IDs for display
+HERO_TYPES['support_5'] = {
+  id: 'support_5', name: 'Gabriel', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
+  portrait: 'assets/heroes/gabriel.png', passive: 'gabriel_passive',
+  maxHP: 430, maxMana: 220, hpRegen: 15, manaRegen: 25,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
+  spells: [
+    {
+      id: 'gabriel_q', name: 'Bénédiction',
+      description: 'Zone 1-3-1 : les alliés présents gagnent un bouclier de 60 + 0,6×AP pendant 3 tours.',
+      manaCost: 120, range: 5, cooldown: 4,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 },
+      allyShield: true, shieldBase: 60, shieldAPRatio: 0.6, shieldTurns: 3,
+      effects: []
+    },
+    {
+      id: 'gabriel_w', name: 'Parole Divine',
+      description: 'Zone 1-3-1 : inflige 70 + 0,7×AP dégâts magiques et immobilise (PM et dash bloqués) les ennemis pendant 1 tour.',
+      manaCost: 80, range: 6, cooldown: 3,
+      damageType: 'magical', baseDamage: 70, adRatio: 0, apRatio: 0.7,
+      targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 },
+      effects: [{ type: 'root', turns: 1 }]
+    },
+    {
+      id: 'gabriel_r', name: 'Destinée',
+      description: 'Rend un allié invincible jusqu\'à la fin de son prochain tour (aucun dégât ni débuff). Supprime ses débuffs actuels.',
+      manaCost: 110, range: 5, cooldown: 9,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'ally_hero', invincibility: true,
+      effects: []
+    }
+  ]
+};
+
+HERO_TYPES['roam_4'] = {
+  id: 'roam_4', name: 'Noyala', role: 'ROAM', roleId: 'roam', roleOrder: 2,
+  portrait: 'assets/heroes/noyala.png', passive: 'noyala_passive',
+  maxHP: 500, maxMana: 200, hpRegen: 15, manaRegen: 20,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 5,
+  spells: [
+    {
+      id: 'noyala_q', name: 'Invocation de Loups',
+      description: 'Invoque un loup (100 PV, PM = Noyala) sur une case adjacente. Les loups collectent les zones ROAM. Quand un loup arrive adjacent à un ennemi, il meurt et lui inflige 50 + 0,7×AD dégâts physiques.',
+      manaCost: 80, range: 1, cooldown: 4,
+      damageType: 'physical', baseDamage: 50, adRatio: 0.7, apRatio: 0,
+      targetType: 'noyala_q', effects: []
+    },
+    {
+      id: 'noyala_w', name: 'Piège du Trappeur',
+      description: 'Pose un piège permanent (portée 3). L\'ennemi qui marche dessus subit 60 + 1,3×AD dégâts physiques.',
+      manaCost: 70, range: 3, cooldown: 3,
+      damageType: 'physical', baseDamage: 60, adRatio: 1.3, apRatio: 0,
+      targetType: 'trap', permanent: true, effects: []
+    },
+    {
+      id: 'noyala_r', name: 'Loup et Moi',
+      description: 'Échange la position de Noyala avec un de ses loups. Si elle finit son tour adjacent à un ennemi, celui-ci subit 130 + 1,1×AD dégâts physiques.',
+      manaCost: 110, range: 999, cooldown: 9,
+      damageType: 'physical', baseDamage: 130, adRatio: 1.1, apRatio: 0,
+      targetType: 'noyala_r', effects: []
+    }
+  ]
+};
+
+HERO_TYPES['solo_4'] = {
+  id: 'solo_4', name: 'Grolith', role: 'Solo', roleId: 'solo', roleOrder: 1,
+  portrait: 'assets/heroes/grolith.png', passive: 'grolith_passive',
+  maxHP: 900, maxMana: 400, hpRegen: 25, manaRegen: 50,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 1,
+  spells: [
+    {
+      id: 'grolith_q', name: 'Rock and Roll',
+      description: 'La prochaine attaque de base inflige 20 + 0,3×AP + 0,5×Bouclier dégâts magiques supplémentaires.',
+      manaCost: 110, range: 0, cooldown: 3,
+      damageType: null, baseDamage: 20, adRatio: 0, apRatio: 0.3,
+      targetType: 'self',
+      empoweredAttack: { baseDamage: 20, apRatio: 0.3, shieldRatio: 0.5, damageType: 'magical' },
+      effects: []
+    },
+    {
+      id: 'grolith_w', name: 'Tomber à Pic',
+      description: 'Pousse un ennemi adjacent de 3 cases et lui inflige 80 + 0,4×AP dégâts magiques.',
+      manaCost: 80, range: 1, cooldown: 3,
+      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.4,
+      targetType: 'push_enemy',
+      effects: []
+    },
+    {
+      id: 'grolith_r', name: 'Éboulement',
+      description: 'Tous les ennemis adjacents à un mur reçoivent 120 + 0,6×AP dégâts magiques et sont stun 1 tour.',
+      manaCost: 130, range: 0, cooldown: 9,
+      damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 0.6,
+      targetType: 'no_target',
+      grolihtEboulement: true,
+      effects: [{ type: 'stun', turns: 1 }]
+    }
+  ]
+};
+
 const ROLE_ORDER = ['solo', 'roam', 'mage', 'dpt', 'support'];
+
+// ============================================================
+// Couleurs par défaut par rôle
+const ROLE_COLORS = {
+  solo:    { fill: '#922b21', stroke: '#e74c3c' },
+  roam:    { fill: '#5b2c6f', stroke: '#9b59b6' },
+  mage:    { fill: '#154360', stroke: '#2980b9' },
+  dpt:     { fill: '#1d6a39', stroke: '#27ae60' },
+  support: { fill: '#9a6b0e', stroke: '#f39c12' },
+};
+
+// Appliquer les couleurs par rôle à tous les héros sans couleur explicite
+Object.values(HERO_TYPES).forEach(t => {
+  const rc = ROLE_COLORS[t.roleId] || ROLE_COLORS.mage;
+  if (!t.colorFill)   t.colorFill   = rc.fill;
+  if (!t.colorStroke) t.colorStroke = rc.stroke;
+});
 
 // ============================================================
 // HERO INSTANCE FACTORY
@@ -732,6 +911,7 @@ const ROLE_ORDER = ['solo', 'roam', 'mage', 'dpt', 'support'];
 
 function createHeroInstance(typeId, playerIdx, slotIdx) {
   const t = HERO_TYPES[typeId];
+  const _rc = ROLE_COLORS[t.roleId] || ROLE_COLORS.mage;
   return {
     // Identity
     id:          typeId,
@@ -740,8 +920,8 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     role:        t.role,
     roleId:      t.roleId,
     roleOrder:   t.roleOrder,
-    colorFill:   t.colorFill,
-    colorStroke: t.colorStroke,
+    colorFill:   t.colorFill   || _rc.fill,
+    colorStroke: t.colorStroke || _rc.stroke,
     playerIdx,
     slotIdx,
 
@@ -796,8 +976,10 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     passive:          t.passive ?? null,
     empoweredAttack:  null,   // { adRatio, apRatio } set by Renforcement
     statusEffects: [],
-    hemorrhageTurns:  0,      // reduces heals received (incl. lifesteal) by 50%
-    maledictionTurns: 0,      // reduces spell range by 3 (min 1)
+    hemorrhageTurns:   0,      // reduces heals received (incl. lifesteal) by 50%
+    maledictionTurns:  0,      // reduces spell range by 3 (min 1)
+    rootTurns:         0,      // blocks movement and dash spells
+    invincibleTurnsLeft: 0,    // blocks all damage and debuffs
 
     // Spells (deep copy so cooldowns are independent)
     spells:    t.spells.map(s => ({ ...s })),
