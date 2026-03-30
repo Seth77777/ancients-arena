@@ -82,8 +82,10 @@ class InputHandler {
 
     // Boutique — buy button in detail panel
     document.getElementById('shop-detail').addEventListener('click', e => {
-      const btn = e.target.closest('.sd-buy-btn');
-      if (btn) this._shopBuy(btn.dataset.itemId);
+      const btn  = e.target.closest('.sd-buy-btn');
+      if (btn) { this._shopBuy(btn.dataset.itemId); return; }
+      const comp = e.target.closest('.sd-comp[data-item-id]');
+      if (comp) this._shopBuy(comp.dataset.itemId);
     });
   }
 

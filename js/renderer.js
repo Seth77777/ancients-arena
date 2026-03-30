@@ -211,9 +211,9 @@ class Renderer {
 
       // Walls — solid grey, no other overlays
       if (isWall(x, y)) {
-        ctx.fillStyle = '#3a3f47';
+        ctx.fillStyle = '#6b7280';
         ctx.fillRect(px, py, cs, cs);
-        ctx.strokeStyle = '#2a2f36';
+        ctx.strokeStyle = '#4b5563';
         ctx.lineWidth   = 0.5;
         ctx.strokeRect(px, py, cs, cs);
         continue;
@@ -336,7 +336,7 @@ class Renderer {
 
       // Zone
       if (ZONE_CELL_SET.has(key)) {
-        ctx.fillStyle = 'rgba(212,172,13,0.18)';
+        ctx.fillStyle = 'rgba(212,172,13,0.35)';
         ctx.fillRect(px, py, cs, cs);
       }
 
@@ -1057,7 +1057,7 @@ class Renderer {
         const ok    = have >= needed;
         const color = ok ? '#2ecc71' : '#e74c3c';
         const label = needed > 1 ? `${comp.name} ×${needed}` : comp.name;
-        recipeHtml += `<span class="sd-comp" style="color:${color}">${this._itemIcon(comp, 'sd-comp-icon')} ${label} <span class="sd-check">[${have}/${needed}]</span></span>`;
+        recipeHtml += `<span class="sd-comp" data-item-id="${cId}" style="color:${color};cursor:pointer" title="Acheter ${comp.name}">${this._itemIcon(comp, 'sd-comp-icon')} ${label} <span class="sd-check">[${have}/${needed}]</span></span>`;
       });
       recipeHtml += '</div>';
     }

@@ -216,6 +216,19 @@ const EQUIPMENT = {
                      stats: { ap: 25 },
                      passive: 'Vos dégâts magiques appliquent Hémorragie à la cible pendant 1 tour (soins −50%).' },
 
+  feu_follet:      { tier: 2, categories: [], name: 'Feu Follet',                       icon: 'img/items/feu_follet.png',       combineCost: 400,
+                     recipe: ['petit_grimoire'],
+                     stats: { ap: 30, pm: 1 } },
+
+  livre_incantations: { tier: 2, categories: [], name: "Livre d'Incantations",          icon: 'img/items/livre_incantations.png', combineCost: 400,
+                        recipe: ['petit_grimoire'],
+                        stats: { ap: 30, cdReduction: 1 } },
+
+  casque_necrometien: { tier: 3, categories: [], name: 'Casque du Nécromentien',        icon: 'img/items/casque_necrometien.png', combineCost: 600,
+                        recipe: ['feu_follet', 'livre_incantations'],
+                        stats: { ap: 75, cdReduction: 1, pm: 1 },
+                        passive: 'Toucher Magique — Toucher une cible avec un sort infligeant des dégâts magiques vous donne +1 PM pour ce tour (une fois par sort).' },
+
   // ─── TIER 2 — Générique ─────────────────────────────────────
 
   black_blade:         { tier: 2, categories: [], name: 'Lame Noire',                 icon: 'img/items/black_blade.png',         combineCost: 350,
@@ -245,22 +258,22 @@ const EQUIPMENT = {
 
   sceptre_de_mana: { tier: 3, categories: ['mage'], name: 'Sceptre de Mana',         icon: 'img/items/sceptre_de_mana.png',     combineCost: 450,
                      recipe: ['grimoire_magique', 'mana_tear', 'petit_grimoire'],
-                     stats: { ap: 60, cdReduction: 1, manaOnSpell: 15, manaOnSpellMax: 700 },
+                     stats: { ap: 60, cdReduction: 1, maxMana: 300, manaOnSpell: 15, manaOnSpellMax: 700 },
                      passive: 'Chaque sort lancé augmente votre Mana max de 15 (max +700 au total). Lorsque le cap est atteint, le Sceptre se transforme en Sceptre de l\'Ange.' },
 
   sceptre_ange:    { tier: 4, categories: ['mage'], name: 'Sceptre de l\'Ange',      icon: 'img/items/sceptre_ange.png',        combineCost: 0,
                      recipe: [], notBuyable: true,
-                     stats: { ap: 60, cdReduction: 1, manaOnSpell: 15, manaOnSpellMax: 700 },
+                     stats: { ap: 60, cdReduction: 1, maxMana: 300, manaOnSpell: 15, manaOnSpellMax: 700 },
                      passive: 'Solde de mana — Vos sorts coûtent 15% de mana en moins. Dernier Recours — Lorsque vos HP tombent sous 30%, vous gagnez un bouclier égal à 35% de votre mana actuel pendant 3 tours (CD 8 tours).' },
 
   epee_de_mana:    { tier: 3, categories: ['dpt'], name: 'Épée de Mana',             icon: 'img/items/epee_de_mana.png',        combineCost: 500,
                      recipe: ['mana_tear', 'marteau_sinad'],
-                     stats: { ad: 35, cdReduction: 1, manaOnSpell: 15, manaOnSpellMax: 700 },
+                     stats: { ad: 35, cdReduction: 1, maxMana: 200, manaOnSpell: 15, manaOnSpellMax: 700 },
                      passive: 'Chaque sort lancé augmente votre Mana max de 15 (max +700 au total). Lorsque le cap est atteint, l\'Épée se transforme en Épée de l\'Ange.' },
 
   epee_ange:       { tier: 4, categories: ['dpt'], name: 'Épée de l\'Ange',          icon: 'img/items/epee_ange.png',           combineCost: 0,
                      recipe: [], notBuyable: true,
-                     stats: { ad: 35, cdReduction: 1, manaOnSpell: 15, manaOnSpellMax: 700 },
+                     stats: { ad: 35, cdReduction: 1, maxMana: 200, manaOnSpell: 15, manaOnSpellMax: 700 },
                      passive: 'Solde de mana — Vos sorts coûtent 15% de mana en moins. Mana Renforçant — Vos attaques de base infligent des dégâts supplémentaires égaux à 3% de votre mana max.' },
 
   // ─── TIER 3 — Assassin ──────────────────────────────────────

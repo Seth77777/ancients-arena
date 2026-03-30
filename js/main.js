@@ -7,7 +7,7 @@ const PASSIVE_LABELS = {
   skjer_passive:   'Instinct de prédateur — En tuant un ennemi, Skjer récupère tout son mana et tous ses points de mouvement, et tous ses cooldowns sont remis à zéro.',
   electro_passive:  'Surcharge — Chaque ennemi touché par un sort d\'Electro lui confère +5 AP (permanent).',
   masello_passive:  'Cohésion — Au début de son tour, Masello gagne +1 PM par allié à moins de 7 cases (distance Manhattan).',
-  decigeno_passive: 'Predator Mode — Lorsque Decigeno utilise une action (attaque ou sort), il consomme tous ses PM restants et gagne +25 AD par PM consommé jusqu\'à la fin du tour.',
+  decigeno_passive: 'Predator Mode — Lorsque Decigeno utilise une action (attaque ou sort), il consomme tous ses PM restants et gagne +5% dégâts par PM consommé jusqu\'à la fin du tour.',
   voodoo_passive:   'Hémorragie — Chaque sort de Voodoo qui touche un ennemi lui inflige Hémorragie : réduit les soins reçus de 50% (vol de vie inclus) pendant 1 tour.',
   vadro_passive:    'Soif de Sang — Vadro possède en permanence 50% de vol de vie.',
   shallah_passive:  'Architecte des Glyphes — Lorsque Shallah marche dans une glyphe qu\'il a posée, il gagne +1 PM pour ce tour.',

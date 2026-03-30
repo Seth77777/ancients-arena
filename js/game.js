@@ -20,31 +20,6 @@ function buildZoneCells(x1, y1, x2, y2) {
   return cells;
 }
 
-const ZONES = [
-  // Nord: cols 10-19, rows 1-3 (centered on a 30-wide map)
-  { id: 'N', name: 'Zone Nord',   cells: buildZoneCells(10, 1, 19, 3) },
-  // Centre: diamond shape centered at (14.5, 14.5)
-  { id: 'C', name: 'Zone Centre', cells: [
-    {x:14,y:11},{x:15,y:11},
-    {x:13,y:12},{x:14,y:12},{x:15,y:12},{x:16,y:12},
-    {x:12,y:13},{x:13,y:13},{x:14,y:13},{x:15,y:13},{x:16,y:13},{x:17,y:13},
-    {x:12,y:14},{x:13,y:14},{x:14,y:14},{x:15,y:14},{x:16,y:14},{x:17,y:14},
-    {x:12,y:15},{x:13,y:15},{x:14,y:15},{x:15,y:15},{x:16,y:15},{x:17,y:15},
-    {x:12,y:16},{x:13,y:16},{x:14,y:16},{x:15,y:16},{x:16,y:16},{x:17,y:16},
-    {x:13,y:17},{x:14,y:17},{x:15,y:17},{x:16,y:17},
-    {x:14,y:18},{x:15,y:18}
-  ]},
-  // Sud: mirror of Nord
-  { id: 'S', name: 'Zone Sud',    cells: buildZoneCells(10, 26, 19, 28) }
-];
-
-const ZONE_CELL_SET = new Set();
-ZONES.forEach(z => z.cells.forEach(c => ZONE_CELL_SET.add(`${c.x},${c.y}`)));
-
-function inZone(zone, pos) {
-  return zone.cells.some(c => c.x === pos.x && c.y === pos.y);
-}
-
 // ============================================================
 // MAP — WALLS, SPAWNS, DECORATIVE AREAS
 // ============================================================
@@ -64,25 +39,76 @@ function buildWallSet() {
     // Bottom arch (mirror)
     {x:10,y:24},{x:19,y:24},
     {x:9,y:23},{x:10,y:23},{x:19,y:23},{x:20,y:23},
+    // Nord zone cover walls — flanking pillars + split low wall
+    {x:11,y:2},{x:11,y:3},   // left pillar
+    {x:18,y:2},{x:18,y:3},   // right pillar  [29-11=18]
+    {x:12,y:4},{x:13,y:4},   // left bottom wall
+    {x:16,y:4},{x:17,y:4},   // right bottom wall [29-12=17, 29-13=16]
+    // Sud zone cover walls (mirror: y → 29-y)
+    {x:11,y:26},{x:11,y:27},
+    {x:18,y:26},{x:18,y:27},
+    {x:12,y:25},{x:13,y:25},
+    {x:16,y:25},{x:17,y:25},
     // Left outer-top diagonal
     {x:6,y:7},{x:7,y:8},
-    // Left vertical wall — wide gap between wall (x=5) and centre zone (x=12)
-    {x:5,y:9},{x:5,y:10},{x:5,y:11},{x:5,y:12},{x:5,y:13},
-    {x:5,y:14},{x:5,y:15},{x:5,y:16},{x:5,y:17},{x:5,y:18},{x:5,y:19},{x:5,y:20},
+    // Left vertical wall — gap of 4 in the middle (y=13-16)
+    {x:5,y:9},{x:5,y:10},{x:5,y:11},{x:5,y:12},
+    {x:5,y:17},{x:5,y:18},{x:5,y:19},{x:5,y:20},
     // Left outer-bottom diagonal
     {x:7,y:21},{x:6,y:22},
     // Right outer-top diagonal (mirror: 29-x)
     {x:23,y:7},{x:22,y:8},
-    // Right vertical wall
-    {x:24,y:9},{x:24,y:10},{x:24,y:11},{x:24,y:12},{x:24,y:13},
-    {x:24,y:14},{x:24,y:15},{x:24,y:16},{x:24,y:17},{x:24,y:18},{x:24,y:19},{x:24,y:20},
+    // Right vertical wall — gap of 4 in the middle (y=13-16)
+    {x:24,y:9},{x:24,y:10},{x:24,y:11},{x:24,y:12},
+    {x:24,y:17},{x:24,y:18},{x:24,y:19},{x:24,y:20},
     // Right outer-bottom diagonal
     {x:22,y:21},{x:23,y:22},
+    // Diamond walls centered at (14.5,14.5), double thickness — perfect symmetry
+    // Openings (2 cells wide) N/S/E/W cut through both layers
+    // Inner ring (a+b=2, corners only):
+    {x:13,y:13},{x:16,y:13},{x:13,y:16},{x:16,y:16},
+    // Outer ring (a+b=3, diagonals only):
+    {x:13,y:12},{x:16,y:12},{x:12,y:13},{x:17,y:13},
+    {x:12,y:16},{x:17,y:16},{x:13,y:17},{x:16,y:17},
   ].forEach(({x, y}) => set.add(`${x},${y}`));
   return set;
 }
 const WALL_SET = buildWallSet();
 function isWall(x, y) { return WALL_SET.has(`${x},${y}`); }
+
+const ZONES = [
+  // Nord: x=9-20, y=1-4, excluding cover walls
+  { id: 'N', name: 'Zone Nord', cells: (() => {
+    const r = [];
+    for (let x = 9; x <= 20; x++)
+      for (let y = 1; y <= 4; y++)
+        if (!isWall(x, y)) r.push({ x, y });
+    return r;
+  })() },
+  // Centre: ring autour du losange (distance ≤ 5 du centre, hors murs)
+  { id: 'C', name: 'Zone Centre', cells: (() => {
+    const r = [];
+    for (let x = 8; x <= 21; x++)
+      for (let y = 8; y <= 21; y++)
+        if (Math.abs(x - 14.5) + Math.abs(y - 14.5) <= 7 && !isWall(x, y)) r.push({ x, y });
+    return r;
+  })() },
+  // Sud: mirror de Nord (y → 29-y)
+  { id: 'S', name: 'Zone Sud', cells: (() => {
+    const r = [];
+    for (let x = 9; x <= 20; x++)
+      for (let y = 25; y <= 28; y++)
+        if (!isWall(x, y)) r.push({ x, y });
+    return r;
+  })() }
+];
+
+const ZONE_CELL_SET = new Set();
+ZONES.forEach(z => z.cells.forEach(c => ZONE_CELL_SET.add(`${c.x},${c.y}`)));
+
+function inZone(zone, pos) {
+  return zone.cells.some(c => c.x === pos.x && c.y === pos.y);
+}
 
 // Starting positions per player — order matches roleOrder: [Solo, Roam, Mage, DPT, Support]
 // Solo & Roam: top area, colonnes séparées (Solo joue avant Roam, pas de blocage)
@@ -329,10 +355,9 @@ class GameState {
     }
 
     // Retirer le bonus temporaire du passif Decigeno
-    if (hero.decigenoBonus) {
-      hero.ad -= hero.decigenoBonus;
-      this.addLog(`${hero.name} — bonus Passif expiré (−${hero.decigenoBonus} AD)`);
-      hero.decigenoBonus = 0;
+    if (hero.decigenoDmgPct) {
+      this.addLog(`${hero.name} — bonus Passif expiré (−${hero.decigenoDmgPct}% dégâts)`);
+      hero.decigenoDmgPct = 0;
     }
 
     // Passif Protection Divine : décrémenter le cooldown
@@ -413,6 +438,7 @@ class GameState {
           this.addLog(`${hero.name} — Zone de bombardement : −${dmg} HP`);
         }
       });
+      if (!hero.isAlive) { this._advance(); return; }
     }
 
     // Vaillance (Ondine) : réinitialisation du bouclier de débuff chaque tour de héros
@@ -992,14 +1018,13 @@ class GameState {
     if (this._manhattan(attacker.position, targetHero.position) > effectivePO)
       { this.addLog('Cible hors de portée !'); return false; }
 
-    // Passif Decigeno : consume PM restants → +25 AD par PM
+    // Passif Decigeno : consume PM restants → +5% dégâts par PM
     if (attacker.passive === 'decigeno_passive' && this.movementLeft > 0) {
       const pmLeft = this.movementLeft;
-      const bonus  = 25 * pmLeft;
-      attacker.ad           += bonus;
-      attacker.decigenoBonus = (attacker.decigenoBonus || 0) + bonus;
-      this.movementLeft      = 0;
-      this.addLog(`${attacker.name} — Passif : consume ${pmLeft} PM → +${bonus} AD`);
+      const bonus  = 5 * pmLeft;
+      attacker.decigenoDmgPct = (attacker.decigenoDmgPct || 0) + bonus;
+      this.movementLeft       = 0;
+      this.addLog(`${attacker.name} — Passif : consume ${pmLeft} PM → +${bonus}% dégâts`);
     }
 
     // Passif Layia : frappe tous les ennemis à portée effective
@@ -1291,14 +1316,16 @@ class GameState {
 
     caster.currentMana -= _effectiveManaCost;
 
-    // Passif Decigeno : consume PM restants → +25 AD par PM (avant calcul des dégâts)
+    // Passif Toucher Magique (casque_necrometien) — prêt à se déclencher pour ce sort
+    this._toucherMagiqueReady = caster.items.includes('casque_necrometien');
+
+    // Passif Decigeno : consume PM restants → +5% dégâts par PM (avant calcul des dégâts)
     if (caster.passive === 'decigeno_passive' && this.movementLeft > 0) {
       const pmLeft = this.movementLeft;
-      const bonus  = 25 * pmLeft;
-      caster.ad          += bonus;
-      caster.decigenoBonus = (caster.decigenoBonus || 0) + bonus;
-      this.movementLeft   = 0;
-      this.addLog(`${caster.name} — Passif : consume ${pmLeft} PM → +${bonus} AD`);
+      const bonus  = 5 * pmLeft;
+      caster.decigenoDmgPct = (caster.decigenoDmgPct || 0) + bonus;
+      this.movementLeft     = 0;
+      this.addLog(`${caster.name} — Passif : consume ${pmLeft} PM → +${bonus}% dégâts`);
     }
 
     let success = true;
@@ -2507,6 +2534,16 @@ class GameState {
     if ((target.invincibleTurnsLeft || 0) > 0) {
       this.addLog(`${target.name} est invincible — dégâts annulés !`);
       return;
+    }
+    // Passif Decigeno : multiplicateur de dégâts
+    if (attacker?.decigenoDmgPct) {
+      damage = Math.floor(damage * (1 + attacker.decigenoDmgPct / 100));
+    }
+    // Passif Toucher Magique (casque_necrometien) : +1 PM une fois par sort sur dégât magique
+    if (dmgType === 'magical' && this._toucherMagiqueReady) {
+      this.movementLeft += 1;
+      this._toucherMagiqueReady = false;
+      this.addLog(`${attacker?.name} — Toucher Magique : +1 PM`);
     }
     // Épée Cinglante : réduction d'armure sur chaque hit
     if (attacker && attacker.items.includes('epee_cinglante') && target.playerIdx !== attacker.playerIdx) {
