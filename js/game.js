@@ -370,6 +370,11 @@ class GameState {
       hero.epeesCroiseesCooldown--;
     }
 
+    // Passif Alternateur de Puissance : décrémenter le cooldown
+    if (hero.items.includes('alternateur_de_puissance') && (hero.alternateurCooldown || 0) > 0) {
+      hero.alternateurCooldown--;
+    }
+
     this.currentHero        = hero;
     this.actionsUsed        = 0;
     this.movementLeft       = hero.pm;
@@ -540,6 +545,12 @@ class GameState {
       this.movementLeft++;
       this.addLog(`${hero.name} — Passif Bottes : +1 PM`);
     }
+
+    // Passif Lame du Ninja : +1 PM si aucun dégât infligé au tour précédent
+    if (hero.items.includes('lame_du_ninja') && !hero.dealtDamageLastTurn) {
+      this.movementLeft++;
+      this.addLog(`${hero.name} — Lame du Ninja : +1 PM`);
+    }
     hero.dealtDamageLastTurn = false;
 
     // Passif Bouclier Basique : récupère 5% des HP manquants si HP < 30% max
@@ -647,6 +658,27 @@ class GameState {
       }
     }
 
+    // Flamme Intense / Flamme du Soleil Flamboyant : dégâts adjacents en fin de tour
+    if (hero && hero.position) {
+      const flammeItem = hero.items.includes('flamme_du_soleil_flamboyant') ? 'flamme_du_soleil_flamboyant'
+                       : hero.items.includes('flamme_intense') ? 'flamme_intense' : null;
+      if (flammeItem) {
+        const flammesPct = flammeItem === 'flamme_du_soleil_flamboyant' ? 0.03 : 0.01;
+        this._getEnemies(hero.playerIdx).forEach(e => {
+          if (!e.isAlive || !e.position) return;
+          if (this._chebyshev(hero.position, e.position) <= 1) {
+            const raw = Math.floor(hero.maxHP * flammesPct);
+            const dmg = this._reduceDmg(raw, 'magical', e);
+            if (dmg > 0) {
+              this._applyDamage(e, dmg, hero, 'magical');
+              this.addLog(`${hero.name} — Flamme : ${e.name} subit −${dmg} dégâts magiques`);
+            }
+          }
+        });
+        this._checkGameOver();
+      }
+    }
+
     this.currentHero  = null;
     this._advance();
   }
@@ -671,8 +703,13 @@ class GameState {
         if (!hero.isAlive) return;
         this._giveGold(hero, PASSIVE_GOLD);
         if (hero.goldPerTurn > 0) this._giveGold(hero, hero.goldPerTurn);
-        const _hpRegenMult = (hero.items.includes('anti_spell_boots') || hero.items.includes('reinforced_boots') || hero.items.includes('boots_of_celerity')) ? 1.5
-                           : hero.items.includes('speed_boots') ? 1.25 : 1;
+        if (hero.items.includes('compagnon_fidele') && hero.position && !ZONE_CELL_SET.has(`${hero.position.x},${hero.position.y}`)) {
+          this._giveGold(hero, 80);
+          this.addLog(`${hero.name} — Compagnion Fidèle : +80g (hors zone)`);
+        }
+        const _healEffMult = 1 + (hero.healEfficiency || 0) / 100;
+        const _hpRegenMult = ((hero.items.includes('anti_spell_boots') || hero.items.includes('reinforced_boots') || hero.items.includes('boots_of_celerity')) ? 1.5
+                           : hero.items.includes('speed_boots') ? 1.25 : 1) * _healEffMult;
         hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP   + Math.floor(hero.hpRegen * (hero.hemorrhageTurns > 0 ? 0.5 : 1) * _hpRegenMult));
         // Passif Armure de la Vie : +10% HP manquants si aucun dégât reçu ce tour
         if (hero.items.includes('armure_de_la_vie') && !hero.tookDmgThisGlobalTurn) {
@@ -680,6 +717,19 @@ class GameState {
           if (regen > 0) {
             hero.currentHP = Math.min(hero.maxHP, hero.currentHP + regen);
             this.addLog(`${hero.name} — Armure de la Vie : +${regen} HP (pas de dégâts)`);
+          }
+        }
+        // Passif Voile Antimagie : compteur de tours sans dégâts
+        if (hero.items.includes('voile_antimagie')) {
+          if (hero.tookDmgThisGlobalTurn) {
+            hero.voileTurnsNoDmg = 0;
+            hero.voileActive = false;
+          } else {
+            hero.voileTurnsNoDmg = (hero.voileTurnsNoDmg || 0) + 1;
+            if (hero.voileTurnsNoDmg >= 4 && !hero.voileActive) {
+              hero.voileActive = true;
+              this.addLog(`${hero.name} — Le Voile est prêt !`);
+            }
           }
         }
         hero.tookDmgThisGlobalTurn = false;
@@ -694,8 +744,8 @@ class GameState {
           });
           hero.dots = hero.dots.filter(d => d.turns > 0);
         }
-        const _manaRegenMult = hero.items.includes('sorcerer_boots') ? 1.5
-                             : hero.items.includes('speed_boots') ? 1.25 : 1;
+        const _manaRegenMult = ((hero.items.includes('sorcerer_boots') ? 1.5
+                             : hero.items.includes('speed_boots') ? 1.25 : 1)) * _healEffMult;
         hero.currentMana = Math.min(hero.maxMana, hero.currentMana + Math.floor(hero.manaRegen * _manaRegenMult));
         hero.spells.forEach(sp => { if (hero.cooldowns[sp.id] > 0) hero.cooldowns[sp.id]--; });
       });
@@ -711,7 +761,8 @@ class GameState {
         });
       });
       if (!present.length) return;
-      const share = Math.floor(ZONE_GOLD / present.length);
+      const zoneGold = zone.id === 'S' ? 700 : ZONE_GOLD;
+      const share = Math.floor(zoneGold / present.length);
       present.forEach(({ hero, pi }) => {
         const gold = hero.roleId === 'roam' ? Math.floor(share / 3) : share;
         this._giveGold(hero, gold);
@@ -1020,6 +1071,8 @@ class GameState {
     const effectivePO = attacker.po + (attacker.layiaBonusPOTurn || 0) + (attacker.faenaBonusPOTurn || 0);
     if (this._manhattan(attacker.position, targetHero.position) > effectivePO)
       { this.addLog('Cible hors de portée !'); return false; }
+    if (!this._hasLineOfSight(attacker.position, targetHero.position))
+      { this.addLog('Pas de ligne de vue !'); return false; }
 
     // Passif Decigeno : consume PM restants → +5% dégâts par PM
     if (attacker.passive === 'decigeno_passive' && this.movementLeft > 0) {
@@ -1041,7 +1094,7 @@ class GameState {
       const empowered     = attacker.empoweredAttack;
       const hadSpellBonus = wasEmpowered || bonusFlat > 0;
       if (wasEmpowered) attacker.empoweredAttack = null;
-      const armorPen = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0);
+      const armorPen = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
       const armorPenPct = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
@@ -1148,7 +1201,7 @@ class GameState {
     attacker.layiaBonusNextAttack = 0;
     const wasEmpowered  = !!attacker.empoweredAttack;
     const hadSpellBonus = wasEmpowered || bonusFlat2 > 0;
-    const armorPen2 = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0);
+    const armorPen2 = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
     const armorPenPct2 = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
     const _critMult2 = attacker.passive === 'faena_passive' ? 1.5 + Math.floor(attacker.ad / 10) / 100 : 1.5;
@@ -1717,7 +1770,7 @@ class GameState {
         const frCritChance  = caster.critChance || 0;
         const frIsCrit      = frCritChance > 0 && Math.random() * 100 < frCritChance;
         const frCritMult    = caster.passive === 'faena_passive' ? 1.5 + Math.floor(caster.ad / 10) / 100 : 1.5;
-        const armorPenFr    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0);
+        const armorPenFr    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
         const armorPenPctFr = caster.items.includes('arc_perforant_anges') ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
         frHit.forEach(e => {
           const baseRaw = spell.baseDamage + spell.adRatio * caster.ad + frCritChance;
@@ -2457,8 +2510,8 @@ class GameState {
 
   _calcSpellDmg(caster, spell, target) {
     const raw = spell.baseDamage + caster.ad * (spell.adRatio || 0) + this._effectiveAP(caster) * (spell.apRatio || 0);
-    const armorPen    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0);
-    const mrPen       = caster.items.includes('sorcerer_boots') ? 5 : 0;
+    const armorPen    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
+    const mrPen       = (caster.items.includes('sorcerer_boots') ? 5 : 0) + (caster.items.includes('furie_magique') ? 5 : 0);
     const armorPenPct = caster.items.includes('arc_perforant_anges') ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
     let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct);
     if (armorPen > 0 && target.armor - armorPen < 15) dmg = Math.floor(dmg * 1.1);
@@ -2505,6 +2558,13 @@ class GameState {
 
   // Applique dégâts d'un sort + passifs liés (hémorragie si physique ou magique)
   _applySpellDamage(caster, spell, target, dmg) {
+    // Passif Voile Antimagie : annule le prochain sort reçu
+    if (target.voileActive && target.items?.includes('voile_antimagie')) {
+      target.voileActive = false;
+      target.voileTurnsNoDmg = 0;
+      this.addLog(`${target.name} — Le Voile : sort annulé !`);
+      return;
+    }
     this._applyDamage(target, dmg, caster, spell.damageType || 'physical');
     if (spell.damageType === 'physical' || spell.damageType === 'magical') {
       this._applyHemorrhage(caster, target, 1, spell.damageType);
@@ -2542,11 +2602,26 @@ class GameState {
     if (attacker?.decigenoDmgPct) {
       damage = Math.floor(damage * (1 + attacker.decigenoDmgPct / 100));
     }
+    // Passif Flammes de Furie (furie_magique) : +20% dégâts magiques si cible < 40% HP
+    if (dmgType === 'magical' && attacker?.items?.includes('furie_magique')
+        && target.currentHP < target.maxHP * 0.4) {
+      damage = Math.floor(damage * 1.2);
+    }
     // Passif Toucher Magique (casque_necrometien) : +1 PM une fois par sort sur dégât magique
     if (dmgType === 'magical' && this._toucherMagiqueReady) {
       this.movementLeft += 1;
       this._toucherMagiqueReady = false;
       this.addLog(`${attacker?.name} — Toucher Magique : +1 PM`);
+    }
+    // Passif Alternateur de Puissance : 65 dégâts magiques bonus sur cible ennemie (CD 4 tours)
+    if (dmgType === 'magical' && attacker?.items?.includes('alternateur_de_puissance')
+        && !(attacker.alternateurCooldown > 0) && target.playerIdx !== attacker.playerIdx) {
+      attacker.alternateurCooldown = 4;
+      const alternateurDmg = this._reduceDmg(65, 'magical', target);
+      if (alternateurDmg > 0) {
+        this._applyDamage(target, alternateurDmg, attacker, 'magical');
+        this.addLog(`${attacker.name} — Alternateur : −${alternateurDmg} dégâts magiques bonus`);
+      }
     }
     // Épée Cinglante : réduction d'armure sur chaque hit
     if (attacker && attacker.items.includes('epee_cinglante') && target.playerIdx !== attacker.playerIdx) {
@@ -2880,8 +2955,8 @@ class GameState {
     // Collecte zone ROAM
     const brownIdx = this.brownSpots.findIndex(s => s.x === wolf.x && s.y === wolf.y);
     if (brownIdx !== -1 && noyala) {
-      this._giveGold(noyala, 150);
-      this.addLog(`Loup de ${noyala.name} collecte une zone de butin — +150g !`);
+      this._giveGold(noyala, 250);
+      this.addLog(`Loup de ${noyala.name} collecte une zone de butin — +250g !`);
       const candidates = this._brownCandidates();
       if (candidates.length) {
         const pick = candidates[Math.floor(Math.random() * candidates.length)];
@@ -2932,8 +3007,8 @@ class GameState {
     const key = `${hero.position.x},${hero.position.y}`;
     const idx = this.brownSpots.findIndex(s => `${s.x},${s.y}` === key);
     if (idx === -1) return;
-    this._giveGold(hero, 150);
-    this.addLog(`${hero.name} collecte une zone de butin — +150g !`);
+    this._giveGold(hero, 250);
+    this.addLog(`${hero.name} collecte une zone de butin — +250g !`);
     // Passif Layia : +1 PO d'attaque sur case de butin
     if (hero.passive === 'layia_passive') {
       hero.po++;

@@ -311,24 +311,24 @@ HERO_TYPES['mage_1'] = {
   spells: [
     {
       id: 'electro_q', name: 'Décharge',
-      description: 'Zone en losange (1-3-1). Inflige 70 + 1 AP dégâts magiques.',
+      description: 'Zone en losange (1-3-1). Inflige 20 + 0.9 AP dégâts magiques.',
       manaCost: 80, range: 6, cooldown: 1, cdMin: 1,
-      damageType: 'magical', baseDamage: 70, adRatio: 0, apRatio: 1,
+      damageType: 'magical', baseDamage: 20, adRatio: 0, apRatio: 0.9,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 }, effects: []
     },
     {
       id: 'electro_w', name: 'Zap Volt',
-      description: 'Zone en losange (1-3-5-3-1). Inflige 100 + 0.6 AP dégâts magiques. Ralentit de 1 PM pendant 1 tour.',
+      description: 'Zone en losange (1-3-5-3-1). Inflige 30 + 0.6 AP dégâts magiques. Ralentit de 1 PM pendant 1 tour.',
       manaCost: 100, range: 5, cooldown: 1, cdMin: 1,
-      damageType: 'magical', baseDamage: 100, adRatio: 0, apRatio: 0.6,
+      damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.6,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 2 },
       effects: [{ type: 'slow', pmReduction: 1, turns: 1 }]
     },
     {
       id: 'electro_r', name: 'Tonnerre',
-      description: 'Frappe tous les ennemis sur toute la carte. Inflige 100 + 0.6 AP dégâts magiques.',
+      description: 'Frappe tous les ennemis sur toute la carte. Inflige 30 + 0.7 AP dégâts magiques.',
       manaCost: 180, range: 0, cooldown: 6, cdMin: 1,
-      damageType: 'magical', baseDamage: 100, adRatio: 0, apRatio: 0.6,
+      damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.7,
       targetType: 'no_target', targetAll: true, zone: null, effects: []
     }
   ]
@@ -474,9 +474,9 @@ HERO_TYPES['mage_2'] = {
   spells: [
     {
       id: 'vadro_q', name: 'Morsure',
-      description: 'Inflige 80 + 0.8 AP dégâts magiques et applique Hémorragie.',
+      description: 'Inflige 30 + 0.8 AP dégâts magiques et applique Hémorragie.',
       manaCost: 70, range: 6, cooldown: 2,
-      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.8,
+      damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.8,
       targetType: 'enemy_hero', zone: null, effects: [{ type: 'hemorrhage', turns: 1 }]
     },
     {

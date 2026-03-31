@@ -61,7 +61,7 @@ const EQUIPMENT = {
 
   bottes_attaquant: { tier: 2, categories: [], name: 'Bottes de l\'Attaquant',  icon: 'img/items/bottes_attaquant.png', combineCost: 800, recipe: ['simple_boots'],
                       isBoots: true,
-                      stats: { pm: 2, ad: 10 },
+                      stats: { pm: 2, ad: 35 },
                       passive: 'Ignore 5% de l\'armure adverse (peut devenir négative).' },
 
   linked_names:    { tier: 1, categories: [], name: 'Nos Noms Sont Liés',    icon: 'img/items/linked_names.png',    combineCost: 300, recipe: [], isStarter: true,
@@ -104,6 +104,11 @@ const EQUIPMENT = {
   ceinture_de_vie:      { tier: 2, categories: ['bruiser'], name: 'Ceinture de Vie',        icon: 'img/items/ceinture_de_vie.png',      combineCost: 450, recipe: ['life_crystal'],
                           stats: { maxHP: 280 } },
 
+  armure_esprit_magique: { tier: 3, categories: ['bruiser'], name: 'Armure de l\'Esprit Magique', icon: 'img/items/armure_esprit_magique.png', combineCost: 550,
+                           recipe: ['coeur_de_vie', 'cape_antimagie_moyenne'],
+                           stats: { maxHP: 550, mr: 15, healEfficiency: 25 },
+                           passive: 'Tous vos soins et régénérations sont améliorés de 25%.' },
+
   armure_de_la_vie:     { tier: 3, categories: ['bruiser'], name: 'Armure de la Vie',       icon: 'img/items/armure_de_la_vie.png',     combineCost: 800,
                           recipe: ['coeur_de_vie', 'ceinture_de_vie'],
                           stats: { maxHP: 700, hpRegen: 25 },
@@ -145,6 +150,11 @@ const EQUIPMENT = {
                      recipe: ['grosse_lame', 'small_crit_cape'],
                      stats: { ad: 60, critChance: 15 },
                      passive: 'Vos attaques de base infligent 25 dégâts magiques supplémentaires à la cible et à tous les ennemis en chaîne (chaque ennemi à moins de 4 cases d\'un ennemi déjà touché est également touché).' },
+
+  lame_du_ninja:         { tier: 3, categories: ['dpt', 'assassin'], name: 'Lame du Ninja',              icon: 'img/items/lame_du_ninja.png',        combineCost: 550,
+                           recipe: ['dague_destructrice', 'grande_pioche'],
+                           stats: { ad: 70 },
+                           passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Si vous n\'avez pas infligé de dégâts à un héros ennemi lors de votre précédent tour, vous gagnez 1 PM pour ce tour.' },
 
   lame_tueuse_boucliers: { tier: 3, categories: ['dpt'], name: 'Lame Tueuse de Boucliers', icon: 'img/items/lame_tueuse_boucliers.png', combineCost: 600,
                            recipe: ['dague_destructrice', 'grande_pioche'],
@@ -207,23 +217,59 @@ const EQUIPMENT = {
                           passive: 'Jambes de Feu — Au début de votre tour, gagnez 1 PM ce tour (3 tours de CD).' },
 
   small_antimagic_cape: { tier: 1, categories: [], name: 'Petite Cape Antimagie',  icon: 'img/items/small_antimagic_cape.png', combineCost: 400, recipe: [],
-                          stats: { mr: 10 } },
+                          stats: { mr: 7 } },
 
   cape_antimagie_moyenne: { tier: 2, categories: [], name: 'Cape Moyenne d\'Antimagie', icon: 'img/items/cape_antimagie_moyenne.png', combineCost: 350,
                             recipe: ['life_crystal', 'small_antimagic_cape'],
                             stats: { maxHP: 180, mr: 12 } },
 
   small_armor:          { tier: 1, categories: [], name: 'Petite Armure',           icon: 'img/items/small_armor.png',       combineCost: 400, recipe: [],
-                          stats: { armor: 10 } },
+                          stats: { armor: 7 } },
+
+  moyenne_armure:       { tier: 2, categories: [], name: 'Moyenne Armure',           icon: 'img/items/moyenne_armure.png',    combineCost: 300, recipe: ['small_armor'],
+                          stats: { armor: 12 } },
+
+  flamme_intense:       { tier: 2, categories: ['bruiser'], name: 'Flamme Intense',  icon: 'img/items/flamme_intense.png',    combineCost: 350, recipe: ['life_crystal'],
+                          stats: { maxHP: 200 },
+                          passive: 'Les ennemis présents sur une case adjacente à la fin de votre tour subissent 1% de vos HP max en dégâts magiques.' },
+
+  flamme_du_soleil_flamboyant: { tier: 3, categories: ['bruiser'], name: 'Flamme du Soleil Flamboyant', icon: 'img/items/flamme_du_soleil_flamboyant.png', combineCost: 350,
+                                 recipe: ['flamme_intense', 'moyenne_armure', 'life_crystal'],
+                                 stats: { maxHP: 450, armor: 12 },
+                                 passive: 'Les ennemis présents sur une case adjacente à la fin de votre tour subissent 3% de vos HP max en dégâts magiques.' },
 
   petit_grimoire:  { tier: 1, categories: [], name: 'Petit Grimoire',          icon: 'img/items/petit_grimoire.png',   combineCost: 400, recipe: [],
                      stats: { ap: 15 } },
 
+  barriere_de_jade:    { tier: 2, categories: ['mage', 'support'], name: 'Barrière de Jade', icon: 'img/items/barriere_de_jade.png', combineCost: 0,
+                         recipe: ['petit_grimoire', 'petit_grimoire', 'small_antimagic_cape'],
+                         stats: { ap: 45, mr: 10 } },
+
+  voile_antimagie:     { tier: 3, categories: ['mage', 'support'], name: 'Voile Antimagie',   icon: 'img/items/voile_antimagie.png',   combineCost: 400,
+                         recipe: ['barriere_de_jade', 'gros_baton_magique'],
+                         stats: { ap: 100, mr: 12 },
+                         passive: 'Le Voile — Si vous ne recevez pas de dégâts pendant 4 tours, le prochain sort que vous subirez sera annulé (les auto-attaques ne comptent pas).' },
+
+  compagnon_fidele:    { tier: 3, categories: ['mage', 'support'], name: 'Compagnon Fidèle', icon: 'img/items/compagnon_fidele.png', combineCost: 350,
+                         recipe: ['barriere_de_jade', 'coeur_de_courage'],
+                         stats: { ap: 55, mr: 10, healEfficiency: 15 },
+                         passive: 'L\'efficacité de vos soins est améliorée de 15%. Vous gagnez 80 golds supplémentaires par tour lorsque vous n\'êtes pas sur une zone à golds.' },
+
   // ─── TIER 2 — Mage ──────────────────────────────────────────
+
+  alternateur_de_puissance: { tier: 2, categories: ['mage'], name: 'Alternateur de Puissance', icon: 'img/items/alternateur_de_puissance.png', combineCost: 300,
+                              recipe: ['petit_grimoire', 'petit_grimoire'],
+                              stats: { ap: 45 },
+                              passive: 'Infliger des dégâts magiques à un héros ennemi lui inflige 65 dégâts magiques bonus (CD 4 tours).' },
 
   grimoire_magique: { tier: 2, categories: [], name: 'Grimoire Magique',         icon: 'img/items/grimoire_magique.png',  combineCost: 500, recipe: ['petit_grimoire'],
                       stats: { ap: 25, maxMana: 100 },
                       passive: 'Récupérez 50 points de mana s\'il vous reste au moins 1 PM à la fin de votre tour.' },
+
+  furie_magique:      { tier: 3, categories: ['mage'], name: 'Furie Magique',           icon: 'img/items/furie_magique.png',      combineCost: 400,
+                        recipe: ['alternateur_de_puissance', 'gros_baton_magique'],
+                        stats: { ap: 130 },
+                        passive: 'Ignore 5% de la résistance magique adverse (peut devenir négative). Flammes de Furie — Vos dégâts magiques contre des cibles ayant moins de 40% de leurs HP max infligent 20% de dégâts en plus.' },
 
   gros_baton_magique: { tier: 2, categories: ['mage'], name: 'Gros Bâton Magique',    icon: 'img/items/gros_baton_magique.png', combineCost: 500,
                         recipe: ['baton_magique', 'petit_grimoire'],
