@@ -441,7 +441,7 @@ class GameState {
     if (hero.position) {
       this.bombZones.forEach(bz => {
         if (!hero.isAlive) return;
-        if (Math.abs(hero.position.x - bz.cx) + Math.abs(hero.position.y - bz.cy) <= bz.radius) {
+        if (hero.playerIdx !== bz.caster.playerIdx && Math.abs(hero.position.x - bz.cx) + Math.abs(hero.position.y - bz.cy) <= bz.radius) {
           const raw = Math.floor(bz.baseDamage + bz.caster.ad * bz.adRatio);
           const dmg = this._reduceDmg(raw, 'physical', hero, bz.caster.armorPenPct || 0);
           this._applyDamage(hero, dmg, bz.caster, 'physical');
@@ -705,7 +705,11 @@ class GameState {
         if (hero.goldPerTurn > 0) this._giveGold(hero, hero.goldPerTurn);
         if (hero.items.includes('compagnon_fidele') && hero.position && !ZONE_CELL_SET.has(`${hero.position.x},${hero.position.y}`)) {
           this._giveGold(hero, 80);
-          this.addLog(`${hero.name} — Compagnion Fidèle : +80g (hors zone)`);
+          this.addLog(`${hero.name} — Compagnon Fidèle : +80g (hors zone)`);
+        }
+        if ((hero.items.includes('couronne_de_la_reine') || hero.items.includes('diademe_de_la_reine')) && hero.position && !ZONE_CELL_SET.has(`${hero.position.x},${hero.position.y}`)) {
+          this._giveGold(hero, 80);
+          this.addLog(`${hero.name} — Couronne de la Reine : +80g (hors zone)`);
         }
         const _healEffMult = 1 + (hero.healEfficiency || 0) / 100;
         const _hpRegenMult = ((hero.items.includes('anti_spell_boots') || hero.items.includes('reinforced_boots') || hero.items.includes('boots_of_celerity')) ? 1.5
@@ -737,15 +741,18 @@ class GameState {
         if (hero.dots && hero.dots.length) {
           hero.dots.forEach(dot => {
             if (!hero.isAlive) return;
-            const dmg = this._reduceDmg(dot.dmgPerTurn, dot.type || 'magical', hero);
-            this._applyDamage(hero, dmg, dot.caster, dot.type || 'magical');
-            this.addLog(`${hero.name} — Nuisance noire : −${dmg} dégâts magiques`);
+            const dotType = dot.type || 'magical';
+            const dmg = dotType === 'raw' ? dot.dmgPerTurn : this._reduceDmg(dot.dmgPerTurn, dotType, hero);
+            this._applyDamage(hero, dmg, dot.caster, dotType);
+            const typeLabel = dotType === 'raw' ? 'bruts' : 'magiques';
+            this.addLog(`${hero.name} — ${dot.label || 'Nuisance noire'} : −${dmg} dégâts ${typeLabel}`);
             dot.turns--;
           });
           hero.dots = hero.dots.filter(d => d.turns > 0);
         }
         const _manaRegenMult = ((hero.items.includes('sorcerer_boots') ? 1.5
-                             : hero.items.includes('speed_boots') ? 1.25 : 1)) * _healEffMult;
+                             : hero.items.includes('speed_boots') ? 1.25 : 1)) * _healEffMult
+                             * (1 + (hero.manaRegenPct || 0) / 100);
         hero.currentMana = Math.min(hero.maxMana, hero.currentMana + Math.floor(hero.manaRegen * _manaRegenMult));
         hero.spells.forEach(sp => { if (hero.cooldowns[sp.id] > 0) hero.cooldowns[sp.id]--; });
       });
@@ -890,6 +897,7 @@ class GameState {
       Object.entries(comp.stats).forEach(([stat, val]) => {
         hero[stat] -= val;
         if (stat === 'pm') this.movementLeft = Math.max(0, this.movementLeft - val);
+        if (stat === 'extraAutoAttacks') this.autoAttacksAllowed = Math.max(1, this.autoAttacksAllowed - val);
       });
       hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP);
       hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
@@ -899,9 +907,10 @@ class GameState {
 
     Object.entries(item.stats).forEach(([stat, val]) => {
       hero[stat] += val;
-      if (stat === 'maxHP')   hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP   + val);
-      if (stat === 'maxMana') hero.currentMana = Math.min(hero.maxMana, hero.currentMana + val);
-      if (stat === 'pm')      this.movementLeft += val;
+      if (stat === 'maxHP')           hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP   + val);
+      if (stat === 'maxMana')         hero.currentMana = Math.min(hero.maxMana, hero.currentMana + val);
+      if (stat === 'pm')              this.movementLeft += val;
+      if (stat === 'extraAutoAttacks') this.autoAttacksAllowed += val;
     });
 
     if (item.instant?.currentHP)
@@ -1098,7 +1107,7 @@ class GameState {
       const armorPenPct = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
-        const _critMult = attacker.passive === 'faena_passive' ? 1.5 + Math.floor(attacker.ad / 10) / 100 : 1.5;
+        const _critMult = (attacker.items.includes('lame_d_infini') ? 2.0 : 1.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
         const rawBase = Math.floor((attacker.ad + bonusFlat) * (isCrit ? _critMult : 1));
         // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
         if (attacker.passive === 'abyss_passive') {
@@ -1185,7 +1194,7 @@ class GameState {
           this.addLog(`${attacker.name} — Lame du Diable : −${rawDmg} dégâts bruts`);
         });
       }
-      if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable'].includes(id))) {
+      if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable', 'couperet_du_demon'].includes(id))) {
         this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
         this.addLog(`${attacker.name} — Passif : +1 PM`);
       }
@@ -1204,7 +1213,7 @@ class GameState {
     const armorPen2 = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
     const armorPenPct2 = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
-    const _critMult2 = attacker.passive === 'faena_passive' ? 1.5 + Math.floor(attacker.ad / 10) / 100 : 1.5;
+    const _critMult2 = (attacker.items.includes('lame_d_infini') ? 2.0 : 1.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
     const rawBase2 = Math.floor((attacker.ad + bonusFlat2) * (isCrit2 ? _critMult2 : 1));
     // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
     if (attacker.passive === 'abyss_passive') {
@@ -1277,7 +1286,7 @@ class GameState {
       this._getEnemies(attacker.playerIdx)
         .filter(e => e !== targetHero && e.isAlive && e.position && this._chebyshev(targetHero.position, e.position) <= 1)
         .forEach(e => {
-          const splashDmg = this._reduceDmg(Math.floor(attacker.ad * (isCrit2 ? 1.5 : 1)), 'physical', e, armorPen2);
+          const splashDmg = this._reduceDmg(Math.floor(attacker.ad * (isCrit2 ? _critMult2 : 1)), 'physical', e, armorPen2);
           this._applyDamage(e, splashDmg, attacker);
           this.addLog(`${attacker.name} — Passif : Gros Calibre → ${e.name}: −${splashDmg} HP (splash)`);
         });
@@ -1301,7 +1310,7 @@ class GameState {
       this.addLog(`${attacker.name} — Lame du Diable : −${rawDmg} dégâts bruts`);
     }
     // Passif Marteau du Marcheur Blanc / Trinité Sacrée / Lame de Nargoth / Lame du Diable : +1 PM après attaque de base
-    if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable'].includes(id))) {
+    if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable', 'couperet_du_demon'].includes(id))) {
       this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
       this.addLog(`${attacker.name} — Passif : +1 PM`);
     }
@@ -1393,24 +1402,24 @@ class GameState {
         if (spell.targetAll) {
           // From Downtown — bypass range, target any enemy
         } else if (this._manhattan(caster.position, enemy.position) > spell.range) {
-          this.addLog('Hors de portée !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Hors de portée !'); success = false; break;
         }
         // Ligne de vue (sauf sorts globaux et ignoresLoS)
         if (!spell.targetAll && !spell.ignoresLoS && !this._hasLineOfSight(caster.position, enemy.position)) {
-          this.addLog('Ligne de vue bloquée !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Ligne de vue bloquée !'); success = false; break;
         }
         // Filet (Stank) : exige une ligne droite orthogonale
         if (spell.requiresLine) {
           const rdx = enemy.position.x - caster.position.x;
           const rdy = enemy.position.y - caster.position.y;
           if (rdx !== 0 && rdy !== 0) {
-            this.addLog('Sort en ligne droite uniquement !'); caster.currentMana += _effectiveManaCost; success = false; break;
+            this.addLog('Sort en ligne droite uniquement !'); success = false; break;
           }
         }
         // Condition : cible doit avoir plus de HP max que le lanceur (Appel du chevalier)
         if (spell.conditionHigherHP && enemy.maxHP <= caster.maxHP) {
           this.addLog(`${caster.name} → ${spell.name} : la cible n'a pas plus de HP max !`);
-          caster.currentMana += _effectiveManaCost; success = false; break;
+          success = false; break;
         }
         if (spell.splitRawPct) {
           // Dégâts mixtes : splitRawPct% bruts, reste en physiques
@@ -1449,7 +1458,7 @@ class GameState {
         const enemy = target?.hero;
         if (!enemy || enemy.playerIdx === caster.playerIdx) { success = false; break; }
         if (this._manhattan(caster.position, enemy.position) > spell.range) {
-          this.addLog('Hors de portée !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Hors de portée !'); success = false; break;
         }
         const casterPos = { ...caster.position };
         const enemyPos  = { ...enemy.position };
@@ -1481,8 +1490,8 @@ class GameState {
       case 'cone_zone': {
         const { x: cx2, y: cy2 } = target;
         const cdx = cx2 - caster.position.x, cdy = cy2 - caster.position.y;
-        if (cdx !== 0 && cdy !== 0) { this.addLog('Cône : direction orthogonale requise !'); caster.currentMana += _effectiveManaCost; success = false; break; }
-        if (cdx === 0 && cdy === 0) { this.addLog('Cible invalide !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (cdx !== 0 && cdy !== 0) { this.addLog('Cône : direction orthogonale requise !'); success = false; break; }
+        if (cdx === 0 && cdy === 0) { this.addLog('Cible invalide !'); success = false; break; }
         const fdx = Math.sign(cdx), fdy = Math.sign(cdy);
         const coneHit = [];
         for (let gx = 0; gx < MAP_SIZE; gx++) {
@@ -1495,7 +1504,7 @@ class GameState {
             }
           }
         }
-        if (!coneHit.length) { this.addLog('Aucune cible dans le cône !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (!coneHit.length) { this.addLog('Aucune cible dans le cône !'); success = false; break; }
         coneHit.forEach(e => {
           const dmg = this._calcSpellDmg(caster, spell, e);
           this._applySpellDamage(caster, spell, e, dmg);
@@ -1506,7 +1515,7 @@ class GameState {
       }
       case 'bomb_zone': {
         const { x: bx, y: by } = target;
-        if (isWall(bx, by)) { this.addLog('Position invalide !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (isWall(bx, by)) { this.addLog('Position invalide !'); success = false; break; }
         this.bombZones.push({ cx: bx, cy: by, radius: 2, turnsLeft: 3, caster,
           baseDamage: spell.baseDamage, adRatio: spell.adRatio });
         this.addLog(`${caster.name} → ${spell.name} : zone de bombardement en (${bx},${by}) — 3 tours`);
@@ -1516,7 +1525,7 @@ class GameState {
         const pushEnemy = target?.hero;
         if (!pushEnemy || pushEnemy.playerIdx === caster.playerIdx) { success = false; break; }
         if (this._manhattan(caster.position, pushEnemy.position) > spell.range) {
-          this.addLog('Hors de portée !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Hors de portée !'); success = false; break;
         }
         const { dx: pdx, dy: pdy } = target;
         let _px = pushEnemy.position.x, _py = pushEnemy.position.y;
@@ -1543,10 +1552,10 @@ class GameState {
         const { x: hwx, y: hwy } = target;
         const hwdx = hwx - caster.position.x, hwdy = hwy - caster.position.y;
         if ((hwdx !== 0 && hwdy !== 0) || (hwdx === 0 && hwdy === 0)) {
-          this.addLog('Direction orthogonale requise !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Direction orthogonale requise !'); success = false; break;
         }
         if (Math.abs(hwdx) + Math.abs(hwdy) !== spell.range) {
-          this.addLog(`Portée exacte ${spell.range} requise !`); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog(`Portée exacte ${spell.range} requise !`); success = false; break;
         }
         const perpDx = hwdy !== 0 ? 1 : 0, perpDy = hwdx !== 0 ? 1 : 0;
         const hwCells = [];
@@ -1555,7 +1564,7 @@ class GameState {
           if (wx >= 0 && wx < MAP_SIZE && wy >= 0 && wy < MAP_SIZE && !isWall(wx, wy))
             hwCells.push({ x: wx, y: wy });
         }
-        if (!hwCells.length) { this.addLog('Aucune case disponible pour le mur !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (!hwCells.length) { this.addLog('Aucune case disponible pour le mur !'); success = false; break; }
         this.hateWalls.push({ cells: hwCells, ownerPlayerIdx: caster.playerIdx, turnsLeft: 2 });
         this.addLog(`${caster.name} → ${spell.name} : mur de haine posé (${hwCells.length} cases, 2 tours)`);
         break;
@@ -1563,7 +1572,7 @@ class GameState {
       case 'swap_ally': {
         const ally = target?.hero;
         if (!ally || ally.playerIdx !== caster.playerIdx || ally === caster) {
-          this.addLog('Cible invalide !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Cible invalide !'); success = false; break;
         }
         const _cPos = { ...caster.position };
         const _aPos = { ...ally.position };
@@ -1620,7 +1629,8 @@ class GameState {
           this.addLog(`${caster.name} → ${spell.name} → ${ally.name}: +${spell.pmBuff} PM au prochain tour`);
           break;
         }
-        const baseHeal = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0));
+        const baseHeal = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0))
+                       + (caster.items.includes('diademe_de_la_reine') ? Math.floor(caster.maxMana * 0.03) : 0);
         const healFactor = ally.hemorrhageTurns > 0 ? 0.5 : 1;
         const heal = Math.floor(baseHeal * healFactor * (1 + (ally.healEfficiency || 0) / 100));
         ally.currentHP = Math.min(ally.maxHP, ally.currentHP + heal);
@@ -1702,9 +1712,9 @@ class GameState {
         const { x: wx, y: wy } = target;
         const wdx = wx - caster.position.x, wdy = wy - caster.position.y;
         if ((wdx !== 0 && wdy !== 0) || Math.abs(wdx) + Math.abs(wdy) > spell.range) {
-          this.addLog('Nuisance noire : destination en ligne droite uniquement !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Nuisance noire : destination en ligne droite uniquement !'); success = false; break;
         }
-        if (this.getHeroAt(wx, wy)) { this.addLog('Case occupée !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (this.getHeroAt(wx, wy)) { this.addLog('Case occupée !'); success = false; break; }
         caster.position = { x: wx, y: wy };
         this._checkBrownCollection(caster);
         this._checkTrap(caster);
@@ -1725,14 +1735,14 @@ class GameState {
       case 'abyss_r': {
         // Nuit infinie : dash sur un ennemi à 8-10 cases (sans ligne de vue)
         const rEnemy = target?.hero;
-        if (!rEnemy || rEnemy.playerIdx === caster.playerIdx) { caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (!rEnemy || rEnemy.playerIdx === caster.playerIdx) { success = false; break; }
         const rDist = this._manhattan(caster.position, rEnemy.position);
         if (rDist < (spell.minRange || 8) || rDist > spell.range) {
           this.addLog(`Nuit infinie : la cible doit être à ${spell.minRange || 8}–${spell.range} cases !`);
-          caster.currentMana += _effectiveManaCost; success = false; break;
+          success = false; break;
         }
         const rFreeAdj = this._getAdjacentFreeCells(rEnemy.position, caster);
-        if (!rFreeAdj.length) { this.addLog('Aucune case libre autour de la cible !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (!rFreeAdj.length) { this.addLog('Aucune case libre autour de la cible !'); success = false; break; }
         caster.position = rFreeAdj.reduce((best, c) =>
           this._manhattan(caster.position, c) < this._manhattan(caster.position, best) ? c : best
         );
@@ -1747,10 +1757,10 @@ class GameState {
         // Boost : se déplace d'une case (sans PM) + +1 PO ce tour
         const { x: fwx, y: fwy } = target;
         if (this._manhattan(caster.position, { x: fwx, y: fwy }) !== 1) {
-          this.addLog('Boost : case adjacente requise !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Boost : case adjacente requise !'); success = false; break;
         }
-        if (isWall(fwx, fwy)) { this.addLog('Case invalide !'); caster.currentMana += _effectiveManaCost; success = false; break; }
-        if (this.getHeroAt(fwx, fwy)) { this.addLog('Case occupée !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (isWall(fwx, fwy)) { this.addLog('Case invalide !'); success = false; break; }
+        if (this.getHeroAt(fwx, fwy)) { this.addLog('Case occupée !'); success = false; break; }
         caster.position = { x: fwx, y: fwy };
         caster.faenaBonusPOTurn = (caster.faenaBonusPOTurn || 0) + 1;
         this.addLog(`${caster.name} → ${spell.name}: déplacement en (${fwx},${fwy}) +1 PO ce tour`);
@@ -1761,15 +1771,15 @@ class GameState {
         // Flèches de douleur : zone 1-3-1, peut critiquer selon le % de chance de coup critique
         const { x: frx, y: fry } = target;
         if (this._manhattan(caster.position, { x: frx, y: fry }) > spell.range) {
-          this.addLog('Hors de portée !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Hors de portée !'); success = false; break;
         }
         const frHit = this._getEnemies(caster.playerIdx).filter(e =>
           Math.abs(e.position.x - frx) + Math.abs(e.position.y - fry) <= 1
         );
-        if (!frHit.length) { this.addLog('Aucune cible dans la zone !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (!frHit.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
         const frCritChance  = caster.critChance || 0;
         const frIsCrit      = frCritChance > 0 && Math.random() * 100 < frCritChance;
-        const frCritMult    = caster.passive === 'faena_passive' ? 1.5 + Math.floor(caster.ad / 10) / 100 : 1.5;
+        const frCritMult    = (caster.items.includes('lame_d_infini') ? 2.0 : 1.5) + (caster.passive === 'faena_passive' ? Math.floor(caster.ad / 10) / 100 : 0);
         const armorPenFr    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
         const armorPenPctFr = caster.items.includes('arc_perforant_anges') ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
         frHit.forEach(e => {
@@ -1785,9 +1795,9 @@ class GameState {
       case 'pibot_w': {
         // Station de recharge : téléportation sur la batterie + attaque boostée
         const battery = this.pibotBatteries.find(b => b.heroInstanceId === caster.instanceId);
-        if (!battery) { this.addLog('Aucune batterie active !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (!battery) { this.addLog('Aucune batterie active !'); success = false; break; }
         if (this._manhattan(caster.position, battery) > spell.range) {
-          this.addLog('Batterie hors de portée !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Batterie hors de portée !'); success = false; break;
         }
         caster.position = { x: battery.x, y: battery.y };
         caster.empoweredAttack = { adRatio: 0, apRatio: spell.apRatio };
@@ -1801,15 +1811,15 @@ class GameState {
         const { x: prx, y: pry } = target;
         const prdx = prx - caster.position.x, prdy = pry - caster.position.y;
         if (prdx !== 0 && prdy !== 0) {
-          this.addLog('Méga-Pibot : ligne droite orthogonale requise !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Méga-Pibot : ligne droite orthogonale requise !'); success = false; break;
         }
         if (this._manhattan(caster.position, { x: prx, y: pry }) > spell.range) {
-          this.addLog('Hors de portée !'); caster.currentMana += _effectiveManaCost; success = false; break;
+          this.addLog('Hors de portée !'); success = false; break;
         }
         const prHit = this._getEnemies(caster.playerIdx).filter(e =>
           Math.abs(e.position.x - prx) + Math.abs(e.position.y - pry) <= 1
         );
-        if (!prHit.length) { this.addLog('Aucune cible dans la zone !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (!prHit.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
         prHit.forEach(e => {
           const dmg = this._calcSpellDmg(caster, spell, e);
           this._applySpellDamage(caster, spell, e, dmg);
@@ -1898,7 +1908,8 @@ class GameState {
         }
         // Shana — À la Rescousse : soigne tous les alliés
         if (spell.healAllAllies) {
-          const baseHeal = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0));
+          const baseHeal = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0))
+                         + (caster.items.includes('diademe_de_la_reine') ? Math.floor(caster.maxMana * 0.03) : 0);
           const targets  = this._getAllies(caster.playerIdx);
           targets.forEach(ally => {
             const healFactor = ally.hemorrhageTurns > 0 ? 0.5 : 1;
@@ -1966,7 +1977,8 @@ class GameState {
           if (hadDebuff) {
             this.addLog(`${caster.name} → ${spell.name} → ${nearest.name}: tous les débuffs supprimés !`);
           } else {
-            const baseHeal  = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0));
+            const baseHeal  = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0))
+                            + (caster.items.includes('diademe_de_la_reine') ? Math.floor(caster.maxMana * 0.03) : 0);
             const heal      = Math.floor(baseHeal * (1 + (nearest.healEfficiency || 0) / 100));
             nearest.currentHP = Math.min(nearest.maxHP, nearest.currentHP + heal);
             this.addLog(`${caster.name} → ${spell.name} → ${nearest.name}: +${heal} HP`);
@@ -2011,8 +2023,8 @@ class GameState {
         if (!enemy || enemy.playerIdx === caster.playerIdx) { success = false; break; }
         const rdx = enemy.position.x - caster.position.x;
         const rdy = enemy.position.y - caster.position.y;
-        if (rdx !== 0 && rdy !== 0) { this.addLog('Sort en ligne droite uniquement !'); caster.currentMana += _effectiveManaCost; success = false; break; }
-        if (Math.abs(rdx) + Math.abs(rdy) > spell.range) { this.addLog('Hors de portée !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (rdx !== 0 && rdy !== 0) { this.addLog('Sort en ligne droite uniquement !'); success = false; break; }
+        if (Math.abs(rdx) + Math.abs(rdy) > spell.range) { this.addLog('Hors de portée !'); success = false; break; }
         const ddx = Math.sign(rdx), ddy = Math.sign(rdy);
         const bx = enemy.position.x + ddx, by = enemy.position.y + ddy;
         let dest;
@@ -2020,7 +2032,7 @@ class GameState {
           dest = { x: bx, y: by };
         } else {
           const freeAdj = this._getAdjacentFreeCells(enemy.position, caster);
-          if (!freeAdj.length) { this.addLog('Aucune case libre autour de la cible !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+          if (!freeAdj.length) { this.addLog('Aucune case libre autour de la cible !'); success = false; break; }
           dest = freeAdj.reduce((best, c) =>
             (Math.abs(c.x - bx) + Math.abs(c.y - by)) < (Math.abs(best.x - bx) + Math.abs(best.y - by)) ? c : best
           );
@@ -2044,8 +2056,8 @@ class GameState {
       case 'lame_eau': {
         const { x, y } = target;
         const rdx = x - caster.position.x, rdy = y - caster.position.y;
-        if (rdx !== 0 && rdy !== 0) { this.addLog('Lame d\'eau : direction orthogonale requise !'); caster.currentMana += _effectiveManaCost; success = false; break; }
-        if (Math.abs(rdx) + Math.abs(rdy) !== 2) { this.addLog('Lame d\'eau : portée exacte 2 requise !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (rdx !== 0 && rdy !== 0) { this.addLog('Lame d\'eau : direction orthogonale requise !'); success = false; break; }
+        if (Math.abs(rdx) + Math.abs(rdy) !== 2) { this.addLog('Lame d\'eau : portée exacte 2 requise !'); success = false; break; }
         const _leZone = {
           cx: x, cy: y,
           dx: Math.sign(rdx), dy: Math.sign(rdy),
@@ -2172,7 +2184,7 @@ class GameState {
       case 'noyala_r': {
         const { x: rx, y: ry } = target;
         const wolf = this.noyalaWolves.find(w => w.x === rx && w.y === ry && w.ownerInstanceId === caster.instanceId);
-        if (!wolf) { this.addLog('Aucun loup à cet endroit !'); caster.currentMana += _effectiveManaCost; success = false; break; }
+        if (!wolf) { this.addLog('Aucun loup à cet endroit !'); success = false; break; }
         const oldCasterPos = { ...caster.position };
         caster.position = { x: wolf.x, y: wolf.y };
         wolf.x = oldCasterPos.x; wolf.y = oldCasterPos.y;
@@ -2193,6 +2205,11 @@ class GameState {
         let _cd = Math.max(_minCd, spell.cooldown - (caster.cdReduction || 0));
         // Bottes de Célérité : -1 CD supplémentaire sur le sort 3 (index 2), seulement si CD > minimum
         if (caster.items.includes('boots_of_celerity')) {
+          const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
+          if (_spellIdx === 2 && _cd > _minCd) _cd--;
+        }
+        // Sceptre du Malin : -1 CD ultime (index 2)
+        if (caster.items.includes('sceptre_du_malin')) {
           const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
           if (_spellIdx === 2 && _cd > _minCd) _cd--;
         }
@@ -2222,6 +2239,7 @@ class GameState {
         if (caster.manaOnSpellGained >= caster.manaOnSpellMax) {
           if (caster.items.includes('sceptre_de_mana')) this._transformItem(caster, 'sceptre_de_mana', 'sceptre_ange');
           else if (caster.items.includes('epee_de_mana')) this._transformItem(caster, 'epee_de_mana', 'epee_ange');
+          else if (caster.items.includes('couronne_de_la_reine')) this._transformItem(caster, 'couronne_de_la_reine', 'diademe_de_la_reine');
         }
       }
       this._checkGameOver();
@@ -2509,7 +2527,9 @@ class GameState {
   // ============================================================
 
   _calcSpellDmg(caster, spell, target) {
-    const raw = spell.baseDamage + caster.ad * (spell.adRatio || 0) + this._effectiveAP(caster) * (spell.apRatio || 0);
+    let raw = spell.baseDamage + caster.ad * (spell.adRatio || 0) + this._effectiveAP(caster) * (spell.apRatio || 0);
+    if (caster.items.includes('pistolet_magique') && (spell.adRatio || 0) > 0 && (spell.apRatio || 0) > 0)
+      raw = Math.floor(raw * 1.2);
     const armorPen    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
     const mrPen       = (caster.items.includes('sorcerer_boots') ? 5 : 0) + (caster.items.includes('furie_magique') ? 5 : 0);
     const armorPenPct = caster.items.includes('arc_perforant_anges') ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
@@ -2575,20 +2595,43 @@ class GameState {
       this._applyDamage(target, bonusRaw, caster, 'raw');
       this.addLog(`${caster.name} — Passif : Dans la chair −${bonusRaw} HP bruts`);
     }
+    // Passif Torche Sombre : DOT magique 3 tours
+    if (caster.items?.includes('torche_sombre') && target.playerIdx !== caster.playerIdx && target.isAlive) {
+      const dotDmg = Math.floor(20 + 0.02 * this._effectiveAP(caster));
+      target.dots = (target.dots || []).filter(d => !(d.label === 'Torche Sombre' && d.caster === caster));
+      target.dots.push({ dmgPerTurn: dotDmg, type: 'magical', turns: 3, caster, label: 'Torche Sombre' });
+    }
+    // Passif Masque de Larme : DOT brut 3 tours (2% HP max cible)
+    if (caster.items?.includes('masque_de_larme') && target.playerIdx !== caster.playerIdx && target.isAlive) {
+      const dotDmg = Math.floor(target.maxHP * 0.02);
+      target.dots = (target.dots || []).filter(d => !(d.label === 'Masque de Larme' && d.caster === caster));
+      target.dots.push({ dmgPerTurn: dotDmg, type: 'raw', turns: 3, caster, label: 'Masque de Larme' });
+    }
+    // Passif Sceptre du Malin : si ultime (index 2) magique → 20+0.15AP dégâts magiques bonus
+    if (caster.items?.includes('sceptre_du_malin') && spell.damageType === 'magical'
+        && target.playerIdx !== caster.playerIdx && target.isAlive) {
+      const _ultIdx = caster.spells.findIndex(s => s.id === spell.id);
+      if (_ultIdx === 2) {
+        const bonusRaw = Math.floor(20 + 0.15 * this._effectiveAP(caster));
+        const bonusDmg = this._reduceDmg(bonusRaw, 'magical', target);
+        this._applyDamage(target, bonusDmg, caster, 'magical');
+        this.addLog(`${caster.name} — Sceptre du Malin : −${bonusDmg} dégâts magiques bonus`);
+      }
+    }
   }
 
-  _applyArmorShred(attacker, target) {
+  _applyArmorShred(attacker, target, pctPerHit = 0.03, maxPct = 0.20, itemName = 'Épée Cinglante') {
     if (!target.isAlive) return;
     const base     = target.armor + (target.armorShred || 0);  // armure totale sans réductions
     if (base <= 0) return;
-    const maxShred = Math.round(base * 0.20);
-    const perHit   = Math.max(1, Math.round(base * 0.03));
+    const maxShred = Math.round(base * maxPct);
+    const perHit   = Math.max(1, Math.round(base * pctPerHit));
     const current  = target.armorShred || 0;
     const delta    = Math.min(perHit, maxShred - current);
     if (delta > 0) {
       target.armor     -= delta;
       target.armorShred = current + delta;
-      this.addLog(`${attacker.name} — Épée Cinglante : armure ${target.name} −${delta} (${target.armor}% restant, shred ${target.armorShred}/${maxShred})`);
+      this.addLog(`${attacker.name} — ${itemName} : armure ${target.name} −${delta} (${target.armor}% restant, shred ${target.armorShred}/${maxShred})`);
     }
     target.armorShredTurns = 5;
   }
@@ -2623,9 +2666,12 @@ class GameState {
         this.addLog(`${attacker.name} — Alternateur : −${alternateurDmg} dégâts magiques bonus`);
       }
     }
-    // Épée Cinglante : réduction d'armure sur chaque hit
-    if (attacker && attacker.items.includes('epee_cinglante') && target.playerIdx !== attacker.playerIdx) {
-      this._applyArmorShred(attacker, target);
+    // Épée Cinglante / Couperet du Démon : réduction d'armure sur chaque hit
+    if (attacker && target.playerIdx !== attacker.playerIdx) {
+      if (attacker.items.includes('couperet_du_demon'))
+        this._applyArmorShred(attacker, target, 0.06, 0.30, 'Brise Armure');
+      else if (attacker.items.includes('epee_cinglante'))
+        this._applyArmorShred(attacker, target);
     }
     // Passif Combattant Anti-Mage : réduction des dégâts magiques de 0,1×AD
     if (dmgType === 'magical' && target.items?.includes('combattant_antimage')) {
@@ -2793,7 +2839,7 @@ class GameState {
     if (!hero.isAlive || !hero.position) return;
     this.bombZones.forEach(bz => {
       if (!hero.isAlive) return;
-      if (Math.abs(hero.position.x - bz.cx) + Math.abs(hero.position.y - bz.cy) <= bz.radius) {
+      if (hero.playerIdx !== bz.caster.playerIdx && Math.abs(hero.position.x - bz.cx) + Math.abs(hero.position.y - bz.cy) <= bz.radius) {
         const raw = Math.floor(bz.baseDamage + bz.caster.ad * bz.adRatio);
         const dmg = this._reduceDmg(raw, 'physical', hero, bz.caster.armorPenPct || 0);
         this._applyDamage(hero, dmg, bz.caster, 'physical');

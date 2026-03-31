@@ -234,7 +234,11 @@ class InputHandler {
         g.autoAttack(target);
         this._onlineSync();
       }
-      r.clearHighlights(); g.actionMode = null;
+      if (g.autoAttacksUsed < g.autoAttacksAllowed) {
+        r.clearHighlights(); r.setAttackHighlight();
+      } else {
+        r.clearHighlights(); g.actionMode = null;
+      }
       r.render(); r.updateUI();
       return;
     }

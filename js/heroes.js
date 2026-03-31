@@ -539,9 +539,9 @@ HERO_TYPES['mage_4'] = {
   spells: [
     {
       id: 'chronos_q', name: 'Distortion',
-      description: 'Échange sa position avec un ennemi à portée et lui inflige 50 + 1×AP dégâts magiques.',
-      manaCost: 110, range: 6, cooldown: 3,
-      damageType: 'magical', baseDamage: 50, adRatio: 0, apRatio: 1,
+      description: 'Échange sa position avec un ennemi à portée et lui inflige 70 + 1,2×AP dégâts magiques.',
+      manaCost: 70, range: 6, cooldown: 3,
+      damageType: 'magical', baseDamage: 70, adRatio: 0, apRatio: 1.2,
       targetType: 'swap_enemy', zone: null, effects: []
     },
     {
@@ -555,7 +555,7 @@ HERO_TYPES['mage_4'] = {
     {
       id: 'chronos_r', name: 'Rollback',
       description: 'Retourne à sa position de début de tour. Si celle-ci est occupée, se téléporte sur une case adjacente disponible.',
-      manaCost: 170, range: 0, cooldown: 11,
+      manaCost: 170, range: 0, cooldown: 8,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'no_target', rollback: true, zone: null, effects: []
     }

@@ -619,10 +619,12 @@ class Renderer {
     if (hero.dots && hero.dots.length > 0) {
       const totalDot = hero.dots.reduce((s, d) => s + d.dmgPerTurn, 0);
       const maxTurns = Math.max(...hero.dots.map(d => d.turns));
-      badges.push(b('debuff', '🌑', `Nuisance noire −${totalDot}/tour (${maxTurns}t)`));
+      const dotLabels = [...new Set(hero.dots.map(d => d.label || 'Nuisance noire'))].join(', ');
+      badges.push(b('debuff', '🌑', `${dotLabels} −${totalDot}/tour (${maxTurns}t)`));
     }
     if ((hero.hemorrhageTurns || 0) > 0) badges.push(b('debuff', '🩸', `Hémorragie soins −50% (${hero.hemorrhageTurns}t)`));
     if ((hero.maledictionTurns|| 0) > 0) badges.push(b('debuff', '🔮', `Malédiction portée −3 (${hero.maledictionTurns}t)`));
+    if ((hero.rootTurns       || 0) > 0) badges.push(b('debuff', '🌿', `Immobilisé (${hero.rootTurns}t)`));
 
     // Boucliers
     if ((hero.shield || 0) > 0) {
