@@ -294,14 +294,14 @@ class InputHandler {
       if (heroTargetTypes.includes(spell.targetType)) {
         const target = g.getHeroAt(cell.x, cell.y);
         if (target) {
-          if (isGuest) {
+          if (isGuest && target.instanceId) {
             window.OnlineMode.sendGuestAction({ type: 'spell', spellId: spell.id,
               target: { heroId: target.instanceId } });
-          } else {
+          } else if (!isGuest) {
             g.castSpell(spell, { hero: target });
             this._onlineSync();
           }
-          done = true;
+          done = !isGuest || !!target.instanceId;
         }
       } else if (cellTargetTypes.includes(spell.targetType)) {
         if (isGuest) {

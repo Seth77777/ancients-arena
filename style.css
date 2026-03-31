@@ -1575,7 +1575,7 @@ body {
 
 /* ── Scoreboard ── */
 #gameover-scoreboard { width: 100%; }
-.scoreboard { display: flex; gap: 24px; width: 100%; }
+.scoreboard { display: flex; flex-wrap: wrap; gap: 24px; width: 100%; }
 .scoreboard-team {
   flex: 1;
   background: #161b22;

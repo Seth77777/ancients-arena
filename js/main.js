@@ -24,7 +24,8 @@ const PASSIVE_LABELS = {
   pibot_passive:      'Batterie — Au début de chaque tour de Pibot, une case ⚡ apparaît à 5 cases ou moins. Passer dessus (ou utiliser Station de recharge) récupère 25% de la mana manquante.',
   gabriel_passive:    'Pas Léger — Au début du tour de chaque allié à moins de 7 cases de Gabriel, cet allié gagne +1 PM.',
   grolith_passive:    'Pierre qui roule — Grolith gagne 70 points de bouclier au début de chaque tour. Ce bouclier n\'expire jamais.',
-  noyala_passive:     'Chasse — Noyala gagne +1 PM au début de son tour si elle est adjacente à un mur. Ses loups récupèrent leurs PM à chaque début de son tour.'
+  noyala_passive:     'Chasse — Noyala gagne +1 PM au début de son tour si elle est adjacente à un mur. Ses loups récupèrent leurs PM à chaque début de son tour.',
+  salena_passive:     'Lame Magique — Chaque attaque de base de Salena inflige 0,3×AP dégâts magiques supplémentaires à la cible.'
 };
 
 const TARGET_LABELS = {

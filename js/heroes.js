@@ -691,8 +691,8 @@ HERO_TYPES['support_4'] = {
   ]
 };
 
-HERO_TYPES['roam_3'] = {
-  id: 'roam_3', name: 'Abyss', role: 'ROAM', roleId: 'roam', roleOrder: 2,
+HERO_TYPES['roam_5'] = {
+  id: 'roam_5', name: 'Abyss', role: 'ROAM', roleId: 'roam', roleOrder: 2,
   portrait: 'assets/heroes/abyss.png',
   passive: 'abyss_passive',
   maxHP: 1400, maxMana: 200, hpRegen: 15, manaRegen: 20,
@@ -882,6 +882,36 @@ HERO_TYPES['solo_4'] = {
       targetType: 'no_target',
       grolihtEboulement: true,
       effects: [{ type: 'stun', turns: 1 }]
+    }
+  ]
+};
+
+HERO_TYPES['solo_5'] = {
+  id: 'solo_5', name: 'Salena', role: 'Solo', roleId: 'solo', roleOrder: 1,
+  portrait: 'assets/heroes/salena.png', passive: 'salena_passive',
+  maxHP: 1700, maxMana: 400, hpRegen: 25, manaRegen: 50,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 1,
+  spells: [
+    {
+      id: 'salena_q', name: 'Destruction',
+      description: 'Salena se dasse sur une cible en ligne droite (portée 2) et lui inflige 50 + 0,7×AP dégâts magiques.',
+      manaCost: 70, range: 2, cooldown: 3,
+      damageType: 'magical', baseDamage: 50, adRatio: 0, apRatio: 0.7,
+      targetType: 'dash_to_enemy', lineOnly: true, zone: null, effects: []
+    },
+    {
+      id: 'salena_w', name: 'Découpage',
+      description: 'Ce tour-ci, vos attaques de base infligent 7% (+0,02×AP) des HP max de la cible en dégâts bruts supplémentaires.',
+      manaCost: 80, range: 0, cooldown: 4,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'no_target', decoupage: true, zone: null, effects: []
+    },
+    {
+      id: 'salena_r', name: 'Ligne de mire',
+      description: 'Les ennemis présents sur une ligne (1 à 5 cases) subissent 50 + 0,9×AP dégâts magiques.',
+      manaCost: 110, range: 5, minRange: 1, maxRange: 5, cooldown: 9,
+      damageType: 'magical', baseDamage: 50, adRatio: 0, apRatio: 0.9,
+      targetType: 'line_zone', zone: null, effects: []
     }
   ]
 };

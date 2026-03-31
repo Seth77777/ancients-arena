@@ -37,6 +37,7 @@ class Renderer {
       img.src = t.portrait;
       this._portraits[t.id] = img;
     });
+
   }
 
   // ============================================================
@@ -204,7 +205,6 @@ class Renderer {
     const _brownSet    = new Set(this.game.brownSpots.map(s => `${s.x},${s.y}`));
     const _batterySet  = new Set((this.game.pibotBatteries || []).map(b => `${b.x},${b.y}`));
     const _wolfMap     = new Map((this.game.noyalaWolves || []).map(w => [`${w.x},${w.y}`, w]));
-
     for (let x = 0; x < MAP_SIZE; x++) for (let y = 0; y < MAP_SIZE; y++) {
       const px = x * cs, py = y * cs;
       const key = `${x},${y}`;
@@ -526,8 +526,8 @@ class Renderer {
     document.getElementById('turn-label').textContent =
       cur ? `Tour ${g.globalTurn} — Joueur ${pi + 1} — ${cur.name}` : `Tour ${g.globalTurn}`;
 
-    // Team gold totals (sum of all heroes' current gold)
-    const _teamGold = g.players.map(p => p.heroes.reduce((sum, h) => sum + (h.gold || 0), 0));
+    // Team gold totals (total earned since game start)
+    const _teamGold = g.teamGoldEarned || [0, 0];
     document.getElementById('team-gold-p1').textContent = `J1 : ${_teamGold[0]}g`;
     document.getElementById('team-gold-p2').textContent = `J2 : ${_teamGold[1]}g`;
 
@@ -763,6 +763,7 @@ class Renderer {
     const STAT_LABELS = { ad:'AD', ap:'AP', armor:'Armure', mr:'Résist. Mag',
       maxHP:'HP max', maxMana:'Mana max', pm:'PM', po:'PO',
       lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana',
+      critChance:'Chance Critique %',
       goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
       goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort' };
 
@@ -1013,6 +1014,7 @@ class Renderer {
     const STAT_LABELS = { ad:'AD', ap:'AP', armor:'Armure', mr:'Résist. Mag',
                           maxHP:'HP max', maxMana:'Mana max', pm:'PM', po:'PO',
                           lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana',
+                          critChance:'Chance Critique %',
                           goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
                           goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort' };
     const netStats = { ...item.stats };

@@ -7,13 +7,13 @@ const Stats = (() => {
 
   // Per-game accumulators (reset at game start)
   let _cur = {
-    bans:    new Set(),          // heroIds banned this game
-    picks:   {},                 // heroId → playerIdx
-    damage:  {},                 // heroId → { phys, mag }
-    heals:   {},                 // heroId → total heals
-    shields: {},                 // heroId → total shields given
-    items:   {},                 // heroId → Set of itemIds bought
-    kda:     {},                 // heroId → { k, d, a }
+    bans:              new Set(), // heroIds banned this game
+    picks:             {},        // heroId → playerIdx
+    damage:            {},        // heroId → { phys, mag }
+    heals:             {},        // heroId → total heals
+    shields:           {},        // heroId → total shields given
+    items:             {},        // heroId → Set of itemIds bought
+    kda:               {},        // heroId → { k, d, a }
   };
 
   // Persistent data

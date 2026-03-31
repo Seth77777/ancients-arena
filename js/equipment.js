@@ -89,9 +89,19 @@ const EQUIPMENT = {
                           stats: { ad: 55, critChance: 20 },
                           passive: 'Ignore 35% de l\'armure de la cible lorsque vous lui infligez des dégâts physiques.' },
 
+  arc_des_morts:        { tier: 3, categories: ['dpt'], name: 'Arc des Morts',             icon: 'img/items/arc_des_morts.png',       combineCost: 0,
+                          recipe: ['arc_percant', 'small_crit_cape', 'lame_ensanglanté'],
+                          stats: { ad: 65, critChance: 18 },
+                          passive: 'Vos dégâts physiques appliquent Hémorragie pendant 1 tour aux cibles touchées (soins −50%). Ignore 35% de l\'armure de la cible lorsque vous lui infligez des dégâts physiques.' },
+
   coeur_de_courage:     { tier: 2, categories: [], name: 'Cœur de Courage',        icon: 'img/items/coeur_de_courage.png',     combineCost: 500, recipe: ['life_crystal'],
                           stats: { maxHP: 180, healEfficiency: 10 },
                           passive: 'L\'efficacité de vos soins augmente de 10%.' },
+
+  enchanteur_rouge:     { tier: 3, categories: ['support', 'bruiser'], name: 'Enchanteur Rouge', icon: 'img/items/enchanteur_rouge.png',     combineCost: 450,
+                          recipe: ['feu_follet', 'coeur_de_courage'],
+                          stats: { maxHP: 250, healEfficiency: 12, pm: 1, manaRegenPct: 50 },
+                          passive: 'Aura — Vos alliés à moins de 7 cases gagnent +30 AD et +30 AP. (Se recalcule à chaque fin de tour ou achat d\'item.)' },
 
   protection_divine:    { tier: 3, categories: ['support'], name: 'Protection Divine',      icon: 'img/items/protection_divine.png',    combineCost: 0,
                           recipe: ['coeur_de_courage', 'baton_magique'],
@@ -150,6 +160,11 @@ const EQUIPMENT = {
 
   grosse_lame:     { tier: 2, categories: [], name: 'Grosse Lame',           icon: 'img/items/grosse_lame.png',     combineCost: 900, recipe: ['short_sword'],
                      stats: { ad: 45 } },
+
+  revolver_d_or:   { tier: 3, categories: ['dpt', 'assassin'], name: 'Révolver d\'Or',       icon: 'img/items/revolver_d_or.png',   combineCost: 400,
+                     recipe: ['grande_pioche', 'dague_destructrice', 'small_crit_cape'],
+                     stats: { ad: 55, critChance: 15 },
+                     passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Collecte — Vous gagnez des golds équivalents à 35% des dégâts infligés. Exécution — Si une attaque ou un sort laisse un ennemi à 5% de ses HP max ou moins, il meurt.' },
 
   lame_d_infini:   { tier: 3, categories: ['dpt'], name: "Lame d'Infini",        icon: 'img/items/lame_d_infini.png',   combineCost: 400,
                      recipe: ['grande_pioche', 'grosse_lame', 'small_crit_cape'],
@@ -217,7 +232,7 @@ const EQUIPMENT = {
 
   time_glass:      { tier: 1, categories: [], name: 'Sablier Temporel',      icon: 'img/items/time_glass.png',      combineCost: 500, recipe: [],
                      stats: { cdReduction: 1 },
-                     passive: 'Réduit de 1 le CD de tous vos sorts lors de leur utilisation (minimum 1 ; minimum 2 pour les sorts infligeant un stun).' },
+                     passive: 'Passif Unique — Réduit de 1 le CD de tous vos sorts lors de leur utilisation (minimum 1 ; minimum 2 pour les sorts infligeant un stun). Ne se cumule pas avec plusieurs Sabliers Temporels.' },
 
   distant_vision:  { tier: 1, categories: [], name: 'Vision Lointaine',      icon: 'img/items/distant_vision.png',  combineCost: 500, recipe: [],
                      stats: { bonusSpellRange: 1 },
@@ -295,6 +310,16 @@ const EQUIPMENT = {
                         stats: { ap: 120 },
                         passive: 'Votre AP totale est multipliée par 1,4 (calculé après ajout des stats de cet item).' },
 
+  cristal_de_vide: { tier: 2, categories: ['mage'], name: 'Cristal de Vide',          icon: 'img/items/cristal_de_vide.png',  combineCost: 700,
+                     recipe: ['petit_grimoire'],
+                     stats: { ap: 25 },
+                     passive: 'Vos dégâts magiques ignorent 15% de la résistance magique adverse (peut devenir négative).' },
+
+  baton_des_abysses: { tier: 3, categories: ['mage'], name: 'Bâton des Abysses',      icon: 'img/items/baton_des_abysses.png', combineCost: 350,
+                       recipe: ['cristal_de_vide', 'baton_magique'],
+                       stats: { ap: 90 },
+                       passive: 'Vos dégâts magiques ignorent 35% de la résistance magique adverse (peut devenir négative).' },
+
   baton_magique:   { tier: 2, categories: ['mage'], name: 'Bâton Magique',            icon: 'img/items/baton_magique.png',    combineCost: 400,
                      recipe: ['petit_grimoire'],
                      stats: { ap: 35 } },
@@ -312,9 +337,19 @@ const EQUIPMENT = {
                         recipe: ['petit_grimoire'],
                         stats: { ap: 30, cdReduction: 1 } },
 
+  poignard_de_dieu:   { tier: 3, categories: ['mage', 'bruiser'], name: 'Poignard de Dieu',    icon: 'img/items/poignard_de_dieu.png',   combineCost: 350,
+                        recipe: ['livre_incantations', 'baton_magique', 'life_crystal'],
+                        stats: { maxHP: 180, ap: 80, cdReduction: 1 },
+                        passive: 'Vos attaques de base infligent 0,35×AP dégâts magiques supplémentaires (n\'active pas les passifs d\'items liés aux attaques de base).' },
+
   masque_hante:       { tier: 2, categories: ['mage', 'bruiser'], name: 'Masque Hanté',        icon: 'img/items/masque_hante.png',       combineCost: 300,
                         recipe: ['petit_grimoire', 'life_crystal'],
                         stats: { ap: 30, maxHP: 200 } },
+
+  oeil_demoniaque:    { tier: 3, categories: ['mage', 'bruiser'], name: 'Oeil Démoniaque',      icon: 'img/items/oeil_demoniaque.png',    combineCost: 350,
+                        recipe: ['masque_hante', 'livre_incantations'],
+                        stats: { ap: 70, cdReduction: 1, maxHP: 200, lifeSteal: 10 },
+                        passive: 'Chaque source de dégâts magiques inflige des dégâts bruts supplémentaires équivalents à 7% des dégâts magiques infligés.' },
 
   masque_de_larme:    { tier: 3, categories: ['mage', 'bruiser'], name: 'Masque de Larme',     icon: 'img/items/masque_de_larme.png',    combineCost: 0,
                         recipe: ['masque_hante', 'baton_magique'],

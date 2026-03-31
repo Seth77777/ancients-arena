@@ -482,6 +482,9 @@ class GameState {
     // Passif Faëna : reset bonus PO du W
     if (hero.passive === 'faena_passive') hero.faenaBonusPOTurn = 0;
 
+    // Salena — reset Découpage
+    if (hero.passive === 'salena_passive') hero.decoupageActive = false;
+
     // Passif Noyala — Chasse : +1 PM si adjacent à un mur
     if (hero.passive === 'noyala_passive' && hero.position) {
       const _wallDirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
@@ -803,6 +806,9 @@ class GameState {
     this.lameEauZones.forEach(z => z.damagedThisTurn = new Set());
     this.lameEauZones = this.lameEauZones.filter(z => z.turnsLeft > 0);
 
+    // Enchanteur Rouge : mise à jour de l'aura
+    this._recalcEnchanteurAura();
+
     this.addLog(`═══ Fin tour ${this.globalTurn - 1} ═══`);
     this.heroTurnIndex = 0;
     this._startHeroTurn();
@@ -924,6 +930,7 @@ class GameState {
     this.actionsUsed++;
     const verb = slotsFreed === item.recipe.length ? 'forge' : slotsFreed > 0 ? 'assemble' : 'achète';
     this.addLog(`${hero.name} ${verb} ${item.name} (−${cost}g) → reste ${hero.gold}g`);
+    this._recalcEnchanteurAura();
     if (window.renderer) renderer.closeShop();
     return true;
   }
@@ -944,6 +951,7 @@ class GameState {
     const refund = Math.floor(item.totalCost * 0.8);
     hero.gold += refund;
     this.addLog(`${hero.name} vend ${item.name} → +${refund}g`);
+    this._recalcEnchanteurAura();
     return true;
   }
 
@@ -1104,7 +1112,7 @@ class GameState {
       const hadSpellBonus = wasEmpowered || bonusFlat > 0;
       if (wasEmpowered) attacker.empoweredAttack = null;
       const armorPen = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
-      const armorPenPct = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
+      const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0);
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
         const _critMult = (attacker.items.includes('lame_d_infini') ? 2.0 : 1.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
@@ -1176,6 +1184,23 @@ class GameState {
         }
         const tag = [isCrit ? 'CRITIQUE' : null, wasEmpowered ? 'renforcé' : null, bonusFlat > 0 ? 'Petit Bond' : null, hasBlade ? 'Lame Bleue' : null, hasMagicSword ? 'Épée Magique' : null, armorPen > 0 ? 'Nargoth' : null].filter(Boolean).join(', ');
         this.addLog(`${attacker.name} → ${e.name}: −${dmg} HP${tag ? ` (${tag})` : ''}`);
+        // Passif Poignard de Dieu : 0.35×AP dégâts magiques bonus
+        if (attacker.items.includes('poignard_de_dieu') && e.isAlive) {
+          const pdgRaw = Math.floor(0.35 * this._effectiveAP(attacker));
+          const pdgDmg = this._reduceDmg(pdgRaw, 'magical', e);
+          if (pdgDmg > 0) { this._applyDamage(e, pdgDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Poignard de Dieu : −${pdgDmg} dégâts magiques`); }
+        }
+        // Passif Salena : 0.3×AP dégâts magiques bonus
+        if (attacker.passive === 'salena_passive' && e.isAlive) {
+          const salRaw = Math.floor(0.3 * this._effectiveAP(attacker));
+          const salDmg = this._reduceDmg(salRaw, 'magical', e);
+          if (salDmg > 0) { this._applyDamage(e, salDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Passif : −${salDmg} dégâts magiques`); }
+        }
+        // Découpage : 7%+0.02×AP HP max cible en dégâts bruts
+        if (attacker.decoupageActive && e.isAlive) {
+          const decRaw = Math.floor(0.07 * e.maxHP + 0.02 * this._effectiveAP(attacker));
+          if (decRaw > 0) { this._applyDamage(e, decRaw, attacker, 'raw'); this.addLog(`${attacker.name} — Découpage : −${decRaw} dégâts bruts`); }
+        }
       });
       if (!targets.length) this.addLog(`${attacker.name} — Aucune cible à portée`);
       // Dague du Soldat : seulement si encore au corps à corps (po ≤ 1)
@@ -1211,7 +1236,7 @@ class GameState {
     const wasEmpowered  = !!attacker.empoweredAttack;
     const hadSpellBonus = wasEmpowered || bonusFlat2 > 0;
     const armorPen2 = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
-    const armorPenPct2 = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
+    const armorPenPct2 = (attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
     const _critMult2 = (attacker.items.includes('lame_d_infini') ? 2.0 : 1.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
     const rawBase2 = Math.floor((attacker.ad + bonusFlat2) * (isCrit2 ? _critMult2 : 1));
@@ -1309,6 +1334,23 @@ class GameState {
       this._applyDamage(targetHero, rawDmg, attacker, 'raw');
       this.addLog(`${attacker.name} — Lame du Diable : −${rawDmg} dégâts bruts`);
     }
+    // Passif Poignard de Dieu : 0.35×AP dégâts magiques bonus
+    if (attacker.items.includes('poignard_de_dieu') && targetHero.isAlive) {
+      const pdgRaw = Math.floor(0.35 * this._effectiveAP(attacker));
+      const pdgDmg = this._reduceDmg(pdgRaw, 'magical', targetHero);
+      if (pdgDmg > 0) { this._applyDamage(targetHero, pdgDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Poignard de Dieu : −${pdgDmg} dégâts magiques`); }
+    }
+    // Passif Salena : 0.3×AP dégâts magiques bonus
+    if (attacker.passive === 'salena_passive' && targetHero.isAlive) {
+      const salRaw = Math.floor(0.3 * this._effectiveAP(attacker));
+      const salDmg = this._reduceDmg(salRaw, 'magical', targetHero);
+      if (salDmg > 0) { this._applyDamage(targetHero, salDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Passif : −${salDmg} dégâts magiques`); }
+    }
+    // Découpage : 7%+0.02×AP HP max cible en dégâts bruts
+    if (attacker.decoupageActive && targetHero.isAlive) {
+      const decRaw = Math.floor(0.07 * targetHero.maxHP + 0.02 * this._effectiveAP(attacker));
+      if (decRaw > 0) { this._applyDamage(targetHero, decRaw, attacker, 'raw'); this.addLog(`${attacker.name} — Découpage : −${decRaw} dégâts bruts`); }
+    }
     // Passif Marteau du Marcheur Blanc / Trinité Sacrée / Lame de Nargoth / Lame du Diable : +1 PM après attaque de base
     if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable', 'couperet_du_demon'].includes(id))) {
       this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
@@ -1405,8 +1447,10 @@ class GameState {
           this.addLog('Hors de portée !'); success = false; break;
         }
         // Ligne de vue (sauf sorts globaux et ignoresLoS)
-        if (!spell.targetAll && !spell.ignoresLoS && !this._hasLineOfSight(caster.position, enemy.position)) {
-          this.addLog('Ligne de vue bloquée !'); success = false; break;
+        if (!spell.targetAll && !spell.ignoresLoS) {
+          if (!this._hasLineOfSight(caster.position, enemy.position)) {
+            this.addLog('Ligne de vue bloquée !'); success = false; break;
+          }
         }
         // Filet (Stank) : exige une ligne droite orthogonale
         if (spell.requiresLine) {
@@ -1781,7 +1825,7 @@ class GameState {
         const frIsCrit      = frCritChance > 0 && Math.random() * 100 < frCritChance;
         const frCritMult    = (caster.items.includes('lame_d_infini') ? 2.0 : 1.5) + (caster.passive === 'faena_passive' ? Math.floor(caster.ad / 10) / 100 : 0);
         const armorPenFr    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
-        const armorPenPctFr = caster.items.includes('arc_perforant_anges') ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
+        const armorPenPctFr = (caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
         frHit.forEach(e => {
           const baseRaw = spell.baseDamage + spell.adRatio * caster.ad + frCritChance;
           const rawFr   = Math.floor(baseRaw * (frIsCrit ? frCritMult : 1));
@@ -1929,6 +1973,12 @@ class GameState {
               this.addLog(`${caster.name} — Passif : +${selfHeal} HP`);
             }
           });
+          break;
+        }
+        // Salena — Découpage : auto-attaques infligent 7%+0.02*AP HP max en dégâts bruts ce tour
+        if (spell.decoupage) {
+          caster.decoupageActive = true;
+          this.addLog(`${caster.name} → ${spell.name}: attaques de base renforcées ce tour`);
           break;
         }
         // Chronos — Rollback : retour à la position de début de tour
@@ -2202,7 +2252,9 @@ class GameState {
       if (spell.cooldown > 0) {
         const _hasStun = spell.effects?.some(e => e.type === 'stun');
         const _minCd   = _hasStun ? 2 : 1;
-        let _cd = Math.max(_minCd, spell.cooldown - (caster.cdReduction || 0));
+        const _timeGlassCount = caster.items.filter(id => id === 'time_glass').length;
+        const _effectiveCdRed = (caster.cdReduction || 0) - Math.max(0, _timeGlassCount - 1);
+        let _cd = Math.max(_minCd, spell.cooldown - _effectiveCdRed);
         // Bottes de Célérité : -1 CD supplémentaire sur le sort 3 (index 2), seulement si CD > minimum
         if (caster.items.includes('boots_of_celerity')) {
           const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
@@ -2296,11 +2348,13 @@ class GameState {
         return { heroes: [], heroesOutOfRange: [], cells: _rangeCells() };
       case 'dash_to_enemy': {
         const all = this._getEnemies(hero.playerIdx);
-        return {
-          heroes:           all.filter(e => this._manhattan(hero.position, e.position) <= effRange),
-          heroesOutOfRange: all.filter(e => this._manhattan(hero.position, e.position) >  effRange),
-          cells: _rangeCells()
-        };
+        let _dtInRange  = all.filter(e => this._manhattan(hero.position, e.position) <= effRange);
+        let _dtOutRange = all.filter(e => this._manhattan(hero.position, e.position) >  effRange);
+        if (spell.lineOnly) {
+          _dtInRange  = _dtInRange.filter(e => e.position.x === hero.position.x || e.position.y === hero.position.y);
+          _dtOutRange = _dtOutRange.filter(e => e.position.x === hero.position.x || e.position.y === hero.position.y);
+        }
+        return { heroes: _dtInRange, heroesOutOfRange: _dtOutRange, cells: _rangeCells() };
       }
       case 'diamond_zone':
         return { heroes: [], heroesOutOfRange: [], cells: _rangeCells() };
@@ -2532,8 +2586,9 @@ class GameState {
       raw = Math.floor(raw * 1.2);
     const armorPen    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
     const mrPen       = (caster.items.includes('sorcerer_boots') ? 5 : 0) + (caster.items.includes('furie_magique') ? 5 : 0);
-    const armorPenPct = caster.items.includes('arc_perforant_anges') ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
-    let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct);
+    const armorPenPct = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('revolver_d_or') ? 7 : 0);
+    const mrPenPct    = caster.items.includes('baton_des_abysses') ? 35 : caster.items.includes('cristal_de_vide') ? 15 : 0;
+    let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct, mrPenPct);
     if (armorPen > 0 && target.armor - armorPen < 15) dmg = Math.floor(dmg * 1.1);
     return dmg;
   }
@@ -2542,7 +2597,7 @@ class GameState {
     return hero.items.includes('chapeau_de_dieu') ? Math.floor(hero.ap * 1.4) : hero.ap;
   }
 
-  _reduceDmg(raw, dmgType, target, armorPen = 0, mrPen = 0, armorPenPct = 0) {
+  _reduceDmg(raw, dmgType, target, armorPen = 0, mrPen = 0, armorPenPct = 0, mrPenPct = 0) {
     if (dmgType === 'physical') {
       const effectiveArmor = Math.min(80, Math.floor(target.armor * (1 - armorPenPct / 100)) - armorPen);
       let dmg;
@@ -2555,7 +2610,7 @@ class GameState {
       return Math.max(0, dmg);
     }
     if (dmgType === 'magical') {
-      const effectiveMR = Math.min(80, target.mr - mrPen);
+      const effectiveMR = Math.min(80, Math.floor(target.mr * (1 - mrPenPct / 100)) - mrPen);
       if (effectiveMR >= 0) {
         return Math.max(0, Math.floor(raw * (1 - effectiveMR / 100)));
       } else {
@@ -2567,7 +2622,7 @@ class GameState {
 
   _applyHemorrhage(attacker, target, turns = 1, dmgType = 'physical') {
     if (!attacker || !target.isAlive || target.playerIdx === attacker.playerIdx) return;
-    if (dmgType === 'physical' && attacker.items.includes('lame_ensanglanté')) {
+    if (dmgType === 'physical' && (attacker.items.includes('lame_ensanglanté') || attacker.items.includes('arc_des_morts'))) {
       target.hemorrhageTurns = Math.max(target.hemorrhageTurns || 0, turns);
     }
     if (dmgType === 'magical' && (attacker.items.includes('boule_du_demon') || attacker.items.includes('livre_des_morts_vivants'))) {
@@ -2618,6 +2673,25 @@ class GameState {
         this.addLog(`${caster.name} — Sceptre du Malin : −${bonusDmg} dégâts magiques bonus`);
       }
     }
+  }
+
+  _recalcEnchanteurAura() {
+    // Retire l'ancienne aura de tous les héros
+    this.players.forEach(pl => pl.heroes.forEach(h => {
+      if ((h.enchanteurAD || 0) > 0) { h.ad -= h.enchanteurAD; h.enchanteurAD = 0; }
+      if ((h.enchanteurAP || 0) > 0) { h.ap -= h.enchanteurAP; h.enchanteurAP = 0; }
+    }));
+    // Applique la nouvelle aura
+    this.players.forEach(pl => pl.heroes.forEach(owner => {
+      if (!owner.isAlive || !owner.position || !owner.items.includes('enchanteur_rouge')) return;
+      this._getAllies(owner.playerIdx).forEach(ally => {
+        if (ally === owner || !ally.isAlive || !ally.position) return;
+        if (this._manhattan(owner.position, ally.position) <= 7) {
+          ally.ad += 30; ally.enchanteurAD = (ally.enchanteurAD || 0) + 30;
+          ally.ap += 30; ally.enchanteurAP = (ally.enchanteurAP || 0) + 30;
+        }
+      });
+    }));
   }
 
   _applyArmorShred(attacker, target, pctPerHit = 0.03, maxPct = 0.20, itemName = 'Épée Cinglante') {
@@ -2703,6 +2777,14 @@ class GameState {
       // Contribution tracking pour les assistances
       if (!target.damageContributors) target.damageContributors = {};
       target.damageContributors[attacker.id] = this.globalTurn;
+      // Passif Révolver d'Or — Collecte : 35% des dégâts → or
+      if (attacker.items?.includes('revolver_d_or')) {
+        const collecteGold = Math.floor(damage * 0.35);
+        if (collecteGold > 0) {
+          this._giveGold(attacker, collecteGold);
+          this.addLog(`${attacker.name} — Collecte : +${collecteGold}g`);
+        }
+      }
     }
     if (attacker?.lifeSteal > 0) {
       const lifeHeal = Math.floor(damage * attacker.lifeSteal / 100 * (attacker.hemorrhageTurns > 0 ? 0.5 : 1));
@@ -2710,6 +2792,15 @@ class GameState {
     }
     if (damage > 0) target.tookDmgThisGlobalTurn = true;
     target.currentHP -= damage;
+    // Passif Oeil Démoniaque : 7% des dégâts magiques en dégâts bruts supplémentaires
+    if (dmgType === 'magical' && damage > 0 && attacker?.items?.includes('oeil_demoniaque')
+        && target.playerIdx !== attacker.playerIdx) {
+      const oeildRaw = Math.floor(damage * 0.07);
+      if (oeildRaw > 0) {
+        this._applyDamage(target, oeildRaw, attacker, 'raw');
+        this.addLog(`${attacker.name} — Oeil Démoniaque : −${oeildRaw} dégâts bruts`);
+      }
+    }
     // Passif Dernier Recours (Sceptre de l'Ange)
     if (target.currentHP > 0 && target.currentHP < target.maxHP * 0.30
         && target.items?.includes('sceptre_ange')
@@ -2741,6 +2832,12 @@ class GameState {
           this.addLog(`${target.name} — Passif : renvoi ${reflectDmg} dégâts à ${attacker.name}`);
         }
       }
+    }
+    // Passif Révolver d'Or — Exécution : cible à ≤5% HP max → mort immédiate
+    if (attacker && attacker.items?.includes('revolver_d_or') && target.playerIdx !== attacker.playerIdx
+        && target.currentHP > 0 && target.currentHP <= Math.floor(target.maxHP * 0.05)) {
+      this.addLog(`${attacker.name} — Exécution : ${target.name} éliminé !`);
+      target.currentHP = 0;
     }
     if (target.currentHP <= 0) {
       target.currentHP = 0;
@@ -3130,7 +3227,8 @@ class GameState {
       if (g.type === 'pain' && hero.playerIdx !== g.playerIdx) {
         const raw = Math.floor(g.baseDamage + g.ownerHero.ap * g.apRatio);
         const dmg = this._reduceDmg(raw, g.damageType, hero);
-        this._applyDamage(hero, dmg, g.ownerHero);
+        this._applyDamage(hero, dmg, g.ownerHero, g.damageType);
+        this._applyHemorrhage(g.ownerHero, hero, 1, g.damageType);
         this.addLog(`${hero.name} déclenche la Glyphe de Douleur de ${g.ownerHero.name} — ${dmg} dégâts magiques !`);
         this.glyphs.splice(i, 1);
         this._checkGameOver();
@@ -3359,6 +3457,6 @@ class GameState {
     this.glyphs       = relink(s.glyphs);
     this.bombZones    = relink(s.bombZones);
     this.hateWalls    = relink(s.hateWalls);
-    this.lameEauZones = relink(s.lameEauZones);
+    this.lameEauZones     = relink(s.lameEauZones);
   }
 }
