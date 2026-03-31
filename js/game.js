@@ -365,6 +365,11 @@ class GameState {
       hero.protectionDivineCooldown--;
     }
 
+    // Passif Épées Croisées : décrémenter le cooldown
+    if (hero.items.includes('epees_croisees') && (hero.epeesCroiseesCooldown || 0) > 0) {
+      hero.epeesCroiseesCooldown--;
+    }
+
     this.currentHero        = hero;
     this.actionsUsed        = 0;
     this.movementLeft       = hero.pm;
@@ -377,6 +382,7 @@ class GameState {
     this.selectedWolf       = null;
 
     // Apply and tick status effects
+    hero.maledictionTurns = 0;
     for (const e of (hero.statusEffects || [])) {
       if (e.type === 'slow') {
         this.movementLeft = Math.max(0, this.movementLeft - e.pmReduction);
@@ -396,7 +402,6 @@ class GameState {
       e.turns--;
     }
     hero.statusEffects = (hero.statusEffects || []).filter(e => e.turns > 0);
-    if (hero.maledictionTurns > 0) hero.maledictionTurns--;
 
     // Reset bouclier Dague du Soldat
     hero.daggerShield = 0;
@@ -444,18 +449,6 @@ class GameState {
     // Vaillance (Ondine) : réinitialisation du bouclier de débuff chaque tour de héros
     if (hero.passive === 'vaillance') hero.debuffDodgedThisTurn = false;
 
-    // Cape Moyenne d'Antimagie : bouclier magique si dégâts magiques reçus depuis le dernier tour
-    if (hero.items.includes('cape_antimagie_moyenne')) {
-      if (hero.tookMagicDmgSinceLastTurn) {
-        hero.magicShield = Math.floor(hero.currentHP * 0.08);
-        this.addLog(`${hero.name} — Cape Antimagie : Bouclier magique +${hero.magicShield} HP`);
-      } else {
-        hero.magicShield = 0;
-      }
-      hero.tookMagicDmgSinceLastTurn = false;
-    } else {
-      hero.magicShield = 0;
-    }
 
     // Buff PM Tour (Miaou Miaou ! de Shana)
     if (hero.bonusPMNextTurn > 0) {
@@ -533,6 +526,13 @@ class GameState {
         hero.po++;
         this.addLog(`${hero.name} — Passif : PO d'attaque → ${hero.po} !`);
       }
+    }
+
+    // Passif Épées Croisées — Jambes de Feu : +1 PM si CD = 0
+    if (hero.items.includes('epees_croisees') && !(hero.epeesCroiseesCooldown > 0)) {
+      this.movementLeft++;
+      hero.epeesCroiseesCooldown = 3;
+      this.addLog(`${hero.name} — Jambes de Feu : +1 PM`);
     }
 
     // Passif Bottes de Grande Vitesse : +1 PM si aucun dégât infligé au tour précédent
@@ -671,7 +671,9 @@ class GameState {
         if (!hero.isAlive) return;
         this._giveGold(hero, PASSIVE_GOLD);
         if (hero.goldPerTurn > 0) this._giveGold(hero, hero.goldPerTurn);
-        hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP   + Math.floor(hero.hpRegen * (hero.hemorrhageTurns > 0 ? 0.5 : 1)));
+        const _hpRegenMult = (hero.items.includes('anti_spell_boots') || hero.items.includes('reinforced_boots') || hero.items.includes('boots_of_celerity')) ? 1.5
+                           : hero.items.includes('speed_boots') ? 1.25 : 1;
+        hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP   + Math.floor(hero.hpRegen * (hero.hemorrhageTurns > 0 ? 0.5 : 1) * _hpRegenMult));
         // Passif Armure de la Vie : +10% HP manquants si aucun dégât reçu ce tour
         if (hero.items.includes('armure_de_la_vie') && !hero.tookDmgThisGlobalTurn) {
           const regen = Math.floor((hero.maxHP - hero.currentHP) * 0.10);
@@ -692,7 +694,9 @@ class GameState {
           });
           hero.dots = hero.dots.filter(d => d.turns > 0);
         }
-        hero.currentMana = Math.min(hero.maxMana, hero.currentMana + hero.manaRegen);
+        const _manaRegenMult = hero.items.includes('sorcerer_boots') ? 1.5
+                             : hero.items.includes('speed_boots') ? 1.25 : 1;
+        hero.currentMana = Math.min(hero.maxMana, hero.currentMana + Math.floor(hero.manaRegen * _manaRegenMult));
         hero.spells.forEach(sp => { if (hero.cooldowns[sp.id] > 0) hero.cooldowns[sp.id]--; });
       });
     });
@@ -782,7 +786,7 @@ class GameState {
     return true;
   }
 
-  // Cost to buy: combineCost + coût des composants manquants (remise partielle si composant possédé)
+  // Cost to buy: combineCost + coût des composants manquants (les possédés seront consommés)
   getBuyCost(hero, itemId) {
     const item = EQUIPMENT[itemId];
     if (!item.recipe.length) return item.combineCost;
@@ -791,9 +795,9 @@ class GameState {
     for (const cId of item.recipe) {
       const idx = ownedCopy.indexOf(cId);
       if (idx !== -1) {
-        ownedCopy.splice(idx, 1); // composant possédé : pas de coût
+        ownedCopy.splice(idx, 1); // possédé → sera consommé, pas de coût
       } else {
-        missingCost += _itemTotalCost(cId); // composant manquant : ajouter son coût total
+        missingCost += _itemTotalCost(cId); // manquant → ajouter au coût
       }
     }
     return item.combineCost + missingCost;
@@ -810,36 +814,35 @@ class GameState {
       { this.addLog(`${item.name} est réservé aux ${item.roleRestriction}s !`); return false; }
     if (item.isStarter && hero.items.some(id => EQUIPMENT[id]?.isStarter))
       { this.addLog('Vous possédez déjà un item Starter !'); return false; }
-    const crafting = item.recipe.length > 0 && this._hasComponents(hero, item.recipe);
-    // Le slot bottes libéré par le craft ne compte pas (les composants bottes sont consommés)
-    const bootsAfterCraft = item.recipe.filter(cId => EQUIPMENT[cId]?.isBoots).length;
-    const bootsInInv      = hero.items.filter(id => EQUIPMENT[id]?.isBoots).length;
-    if (item.isBoots && bootsInInv - (crafting ? bootsAfterCraft : 0) >= 1)
+    // Calculer les composants possédés (seront toujours consommés, même si incomplet)
+    const _ownedComps = [...hero.items];
+    let slotsFreed = 0, bootsFreed = 0;
+    for (const cId of item.recipe) {
+      const idx = _ownedComps.indexOf(cId);
+      if (idx !== -1) { _ownedComps.splice(idx, 1); slotsFreed++; if (EQUIPMENT[cId]?.isBoots) bootsFreed++; }
+    }
+    const bootsInInv = hero.items.filter(id => EQUIPMENT[id]?.isBoots).length;
+    if (item.isBoots && bootsInInv - bootsFreed >= 1)
       { this.addLog('Vous portez déjà des bottes !'); return false; }
-    // Slots libérés par les composants consommés au craft
-    const slotsFreed = crafting ? item.recipe.length : 0;
     if (hero.items.length - slotsFreed >= 6)
       { this.addLog('Inventaire plein (6 items maximum) !'); return false; }
 
     const cost = this.getBuyCost(hero, itemId);
     if (hero.gold < cost) { this.addLog('Pas assez d\'or !'); return false; }
 
-    // Consume & remove component items (reverse their stats)
-    if (crafting) {
-      const toRemove = [...item.recipe];
-      toRemove.forEach(cId => {
-        const idx = hero.items.indexOf(cId);
-        if (idx === -1) return;
-        hero.items.splice(idx, 1);
-        const comp = EQUIPMENT[cId];
-        Object.entries(comp.stats).forEach(([stat, val]) => {
-          hero[stat] -= val;
-          if (stat === 'pm') this.movementLeft = Math.max(0, this.movementLeft - val);
-        });
-        hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP);
-        hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
+    // Consommer tous les composants possédés (toujours, même si recipe incomplet)
+    item.recipe.forEach(cId => {
+      const idx = hero.items.indexOf(cId);
+      if (idx === -1) return;
+      hero.items.splice(idx, 1);
+      const comp = EQUIPMENT[cId];
+      Object.entries(comp.stats).forEach(([stat, val]) => {
+        hero[stat] -= val;
+        if (stat === 'pm') this.movementLeft = Math.max(0, this.movementLeft - val);
       });
-    }
+      hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP);
+      hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
+    });
 
     hero.gold -= cost;
 
@@ -859,7 +862,7 @@ class GameState {
     }
 
     this.actionsUsed++;
-    const verb = crafting ? 'forge' : 'achète';
+    const verb = slotsFreed === item.recipe.length ? 'forge' : slotsFreed > 0 ? 'assemble' : 'achète';
     this.addLog(`${hero.name} ${verb} ${item.name} (−${cost}g) → reste ${hero.gold}g`);
     if (window.renderer) renderer.closeShop();
     return true;
@@ -1038,7 +1041,7 @@ class GameState {
       const empowered     = attacker.empoweredAttack;
       const hadSpellBonus = wasEmpowered || bonusFlat > 0;
       if (wasEmpowered) attacker.empoweredAttack = null;
-      const armorPen = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0);
+      const armorPen = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0);
       const armorPenPct = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
@@ -1145,7 +1148,7 @@ class GameState {
     attacker.layiaBonusNextAttack = 0;
     const wasEmpowered  = !!attacker.empoweredAttack;
     const hadSpellBonus = wasEmpowered || bonusFlat2 > 0;
-    const armorPen2 = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0);
+    const armorPen2 = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0);
     const armorPenPct2 = attacker.items.includes('arc_perforant_anges') ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
     const _critMult2 = attacker.passive === 'faena_passive' ? 1.5 + Math.floor(attacker.ad / 10) / 100 : 1.5;
@@ -1714,7 +1717,7 @@ class GameState {
         const frCritChance  = caster.critChance || 0;
         const frIsCrit      = frCritChance > 0 && Math.random() * 100 < frCritChance;
         const frCritMult    = caster.passive === 'faena_passive' ? 1.5 + Math.floor(caster.ad / 10) / 100 : 1.5;
-        const armorPenFr    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0);
+        const armorPenFr    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0);
         const armorPenPctFr = caster.items.includes('arc_perforant_anges') ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
         frHit.forEach(e => {
           const baseRaw = spell.baseDamage + spell.adRatio * caster.ad + frCritChance;
@@ -2454,7 +2457,7 @@ class GameState {
 
   _calcSpellDmg(caster, spell, target) {
     const raw = spell.baseDamage + caster.ad * (spell.adRatio || 0) + this._effectiveAP(caster) * (spell.apRatio || 0);
-    const armorPen    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0);
+    const armorPen    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0);
     const mrPen       = caster.items.includes('sorcerer_boots') ? 5 : 0;
     const armorPenPct = caster.items.includes('arc_perforant_anges') ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
     let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct);
@@ -2559,18 +2562,20 @@ class GameState {
       damage              -= absorbed;
     }
     if (target.shield > 0) {
-      const absorbed = Math.min(target.shield, damage);
-      target.shield  -= absorbed;
-      damage         -= absorbed;
+      // Passif Lame Tueuse de Boucliers : dégâts doublés contre le bouclier, normaux contre les HP
+      if (attacker?.items?.includes('lame_tueuse_boucliers')) {
+        const shieldBefore = target.shield;
+        const shieldDmg = Math.min(shieldBefore, damage * 2);
+        target.shield -= shieldDmg;
+        damage = Math.max(0, damage - shieldBefore);
+        if (shieldDmg > 0) this.addLog(`${attacker.name} — Lame Tueuse : bouclier −${shieldDmg}`);
+      } else {
+        const absorbed = Math.min(target.shield, damage);
+        target.shield  -= absorbed;
+        damage         -= absorbed;
+      }
     }
     // Bouclier magique (Cape Antimagie) : absorbe uniquement les dégâts magiques
-    if (dmgType === 'magical' && (target.magicShield || 0) > 0) {
-      const absorbed = Math.min(target.magicShield, damage);
-      target.magicShield -= absorbed;
-      damage             -= absorbed;
-    }
-    // Tracker les dégâts magiques reçus (après absorption) pour le passif de la cape
-    if (dmgType === 'magical' && damage > 0) target.tookMagicDmgSinceLastTurn = true;
     if (attacker && target.playerIdx !== attacker.playerIdx && damage > 0) {
       attacker.dealtDamageLastTurn = true;
       Stats.addDamage(attacker.id, damage, dmgType);

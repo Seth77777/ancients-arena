@@ -36,26 +36,28 @@ const EQUIPMENT = {
 
   reinforced_boots: { tier: 2, categories: [], name: 'Bottes Renforcées',       icon: 'img/items/reinforced_boots.png', combineCost: 800, recipe: ['simple_boots'],
                       isBoots: true,
-                      stats: { pm: 2, armor: 10 } },
+                      stats: { pm: 2, armor: 10 },
+                      passive: 'Augmente votre régénération de HP de 50%.' },
 
   anti_spell_boots: { tier: 2, categories: [], name: 'Bottes Anti-Sort',        icon: 'img/items/anti_spell_boots.png', combineCost: 800, recipe: ['simple_boots'],
                       isBoots: true,
-                      stats: { pm: 2, mr: 10 } },
+                      stats: { pm: 2, mr: 10 },
+                      passive: 'Augmente votre régénération de HP de 50%.' },
 
   sorcerer_boots:  { tier: 2, categories: [], name: 'Bottes du Sorcier',        icon: 'img/items/sorcerer_boots.png', combineCost: 800, recipe: ['simple_boots'],
                      isBoots: true,
                      stats: { pm: 2, ap: 15 },
-                     passive: 'Ignore 5% de la résistance magique adverse (peut devenir négative).' },
+                     passive: 'Ignore 5% de la résistance magique adverse (peut devenir négative). Augmente votre régénération de mana de 50%.' },
 
   boots_of_celerity: { tier: 2, categories: [], name: 'Bottes de Célérité',      icon: 'img/items/boots_of_celerity.png', combineCost: 800, recipe: ['simple_boots'],
                        isBoots: true,
                        stats: { pm: 2, maxHP: 100 },
-                       passive: 'Réduit de 1 supplémentaire le CD de votre ultime (sort au CD le plus élevé).' },
+                       passive: 'Réduit de 1 supplémentaire le CD de votre ultime (sort au CD le plus élevé). Augmente votre régénération de HP de 50%.' },
 
   speed_boots:     { tier: 2, categories: [], name: 'Bottes de Grande Vitesse', icon: 'img/items/speed_boots.png',  combineCost: 800, recipe: ['simple_boots'],
                      isBoots: true,
                      stats: { pm: 2 },
-                     passive: 'Si vous n\'avez pas infligé de dégâts à un héros lors de votre dernier tour, recevez +1 PM ce tour.' },
+                     passive: 'Si vous n\'avez pas infligé de dégâts à un héros lors de votre dernier tour, recevez +1 PM ce tour. Augmente votre régénération de HP de 25% et de mana de 25%.' },
 
   bottes_attaquant: { tier: 2, categories: [], name: 'Bottes de l\'Attaquant',  icon: 'img/items/bottes_attaquant.png', combineCost: 800, recipe: ['simple_boots'],
                       isBoots: true,
@@ -70,6 +72,13 @@ const EQUIPMENT = {
 
   short_sword:     { tier: 1, categories: [], name: 'Petite Épée',           icon: 'img/items/short_sword.png',     combineCost: 400, recipe: [],
                      stats: { ad: 10 } },
+
+  grande_pioche:   { tier: 2, categories: [], name: 'Grande Pioche',          icon: 'img/items/grande_pioche.png',   combineCost: 350, recipe: ['short_sword'],
+                     stats: { ad: 30 } },
+
+  dague_destructrice: { tier: 2, categories: [], name: 'Dague Destructrice',    icon: 'img/items/dague_destructrice.png', combineCost: 500, recipe: ['short_sword'],
+                        stats: { ad: 25 },
+                        passive: 'Ignore 5% de l\'armure adverse (peut devenir négative).' },
 
   arc_percant:          { tier: 2, categories: [], name: 'Arc Perçant',           icon: 'img/items/arc_percant.png',          combineCost: 750, recipe: ['short_sword'],
                           stats: { ad: 25 },
@@ -137,6 +146,21 @@ const EQUIPMENT = {
                      stats: { ad: 60, critChance: 15 },
                      passive: 'Vos attaques de base infligent 25 dégâts magiques supplémentaires à la cible et à tous les ennemis en chaîne (chaque ennemi à moins de 4 cases d\'un ennemi déjà touché est également touché).' },
 
+  lame_tueuse_boucliers: { tier: 3, categories: ['dpt'], name: 'Lame Tueuse de Boucliers', icon: 'img/items/lame_tueuse_boucliers.png', combineCost: 600,
+                           recipe: ['dague_destructrice', 'grande_pioche'],
+                           stats: { ad: 60 },
+                           passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Lorsque vous attaquez une cible qui a un bouclier, les dégâts infligés sont doublés contre le bouclier (normaux contre les HP).' },
+
+  canon_de_feu:    { tier: 3, categories: ['dpt'], name: 'Canon de Feu',          icon: 'img/items/canon_de_feu.png',    combineCost: 500,
+                     recipe: ['epees_croisees', 'distant_vision', 'short_sword'],
+                     stats: { ad: 30, critChance: 20, bonusSpellRange: 1, po: 1 },
+                     passive: 'Votre attaque de base gagne 1 PO.' },
+
+  epee_double_feu: { tier: 3, categories: ['dpt'], name: 'Épée Double de Feu',   icon: 'img/items/epee_double_feu.png', combineCost: 400,
+                     recipe: ['life_crystal', 'grande_pioche', 'petit_grimoire'],
+                     stats: { ad: 35, ap: 20, maxHP: 250, extraAutoAttacks: 1 },
+                     passive: 'Vous pouvez effectuer 2 attaques de base par tour.' },
+
   // ─── TIER 2 — Générique (suite) ─────────────────────────────
 
   lame_ensanglanté: { tier: 2, categories: [], name: 'Lame Ensanglantée',       icon: 'img/items/lame_ensanglantee.png', combineCost: 450,
@@ -178,13 +202,16 @@ const EQUIPMENT = {
                           stats: { critChance: 10 },
                           passive: 'Les attaques de base ont 10% de chance d\'infliger un coup critique (+50% de dégâts).' },
 
+  epees_croisees:       { tier: 2, categories: [], name: 'Épées Croisées',          icon: 'img/items/epees_croisees.png',    combineCost: 700, recipe: ['small_crit_cape'],
+                          stats: { critChance: 15 },
+                          passive: 'Jambes de Feu — Au début de votre tour, gagnez 1 PM ce tour (3 tours de CD).' },
+
   small_antimagic_cape: { tier: 1, categories: [], name: 'Petite Cape Antimagie',  icon: 'img/items/small_antimagic_cape.png', combineCost: 400, recipe: [],
                           stats: { mr: 10 } },
 
   cape_antimagie_moyenne: { tier: 2, categories: [], name: 'Cape Moyenne d\'Antimagie', icon: 'img/items/cape_antimagie_moyenne.png', combineCost: 350,
                             recipe: ['life_crystal', 'small_antimagic_cape'],
-                            stats: { maxHP: 180, mr: 14 },
-                            passive: 'Si vous avez subi des dégâts magiques depuis votre dernier tour, vous gagnez un bouclier magique de 8% de vos HP actuels au début de votre tour (bloque uniquement les dégâts magiques).' },
+                            stats: { maxHP: 180, mr: 12 } },
 
   small_armor:          { tier: 1, categories: [], name: 'Petite Armure',           icon: 'img/items/small_armor.png',       combineCost: 400, recipe: [],
                           stats: { armor: 10 } },

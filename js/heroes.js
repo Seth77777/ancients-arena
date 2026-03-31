@@ -173,7 +173,7 @@ HERO_TYPES['solo_1'] = {
   colorFill: '#922b21', colorStroke: '#e74c3c',
   portrait: 'assets/heroes/shamrock.png',
   passive: 'rock_solid',
-  maxHP: 900, maxMana: 400, hpRegen: 25, manaRegen: 50,
+  maxHP: 2100, maxMana: 400, hpRegen: 25, manaRegen: 50,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 1,
   spells: [
     {
@@ -207,7 +207,7 @@ HERO_TYPES['solo_2'] = {
   colorFill: '#922b21', colorStroke: '#e74c3c',
   portrait: 'assets/heroes/frigiel.png',
   passive: 'dans_la_chair',
-  maxHP: 900, maxMana: 400, hpRegen: 25, manaRegen: 50,
+  maxHP: 1700, maxMana: 400, hpRegen: 25, manaRegen: 50,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 1,
   spells: [
     {
@@ -241,7 +241,7 @@ HERO_TYPES['solo_3'] = {
   colorFill: '#922b21', colorStroke: '#e74c3c',
   portrait: 'assets/heroes/ondine.png',
   passive: 'vaillance',
-  maxHP: 900, maxMana: 400, hpRegen: 25, manaRegen: 50,
+  maxHP: 1650, maxMana: 400, hpRegen: 25, manaRegen: 50,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 1,
   spells: [
     {
@@ -274,7 +274,7 @@ HERO_TYPES['roam_1'] = {
   colorFill: '#5b2c6f', colorStroke: '#9b59b6',
   portrait: 'assets/heroes/skjer.png',
   passive: 'skjer_passive',
-  maxHP: 500, maxMana: 200, hpRegen: 15, manaRegen: 20,
+  maxHP: 1200, maxMana: 200, hpRegen: 15, manaRegen: 20,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 6, po: 1,
   spells: [
     {
@@ -306,7 +306,7 @@ HERO_TYPES['mage_1'] = {
   colorFill: '#154360', colorStroke: '#2980b9',
   portrait: 'assets/heroes/electro.png',
   passive: 'electro_passive',
-  maxHP: 450, maxMana: 220, hpRegen: 20, manaRegen: 30,
+  maxHP: 1200, maxMana: 220, hpRegen: 20, manaRegen: 30,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -339,7 +339,7 @@ HERO_TYPES['roam_2'] = {
   colorFill: '#5b2c6f', colorStroke: '#9b59b6',
   portrait: 'assets/heroes/masello.png',
   passive: 'masello_passive',
-  maxHP: 520, maxMana: 240, hpRegen: 20, manaRegen: 25,
+  maxHP: 1350, maxMana: 240, hpRegen: 20, manaRegen: 25,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 1,
   spells: [
     {
@@ -405,7 +405,7 @@ HERO_TYPES['dpt_1'] = {
   colorFill: '#1d6a39', colorStroke: '#27ae60',
   portrait: 'assets/heroes/decigeno.png',
   passive: 'decigeno_passive',
-  maxHP: 320, maxMana: 250, hpRegen: 15, manaRegen: 30,
+  maxHP: 1000, maxMana: 250, hpRegen: 15, manaRegen: 30,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 7,
   spells: [
     {
@@ -437,7 +437,7 @@ HERO_TYPES['dpt_2'] = {
   colorFill: '#1d6a39', colorStroke: '#27ae60',
   portrait: 'assets/heroes/stank.png',
   passive: 'gros_calibre',
-  maxHP: 320, maxMana: 250, hpRegen: 15, manaRegen: 30,
+  maxHP: 1200, maxMana: 250, hpRegen: 15, manaRegen: 30,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 5,
   spells: [
     {
@@ -469,7 +469,7 @@ HERO_TYPES['mage_2'] = {
   id: 'mage_2', name: 'Vadro', role: 'MAGE', roleId: 'mage', roleOrder: 3,
   portrait: 'assets/heroes/vadro.png', passive: 'vadro_passive',
   colorFill: '#154360', colorStroke: '#2980b9',
-  maxHP: 450, maxMana: 220, hpRegen: 20, manaRegen: 30,
+  maxHP: 1300, maxMana: 220, hpRegen: 20, manaRegen: 30,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 50, pm: 4, po: 4,
   spells: [
     {
@@ -500,7 +500,7 @@ HERO_TYPES['mage_3'] = {
   id: 'mage_3', name: 'Shallah', role: 'MAGE', roleId: 'mage', roleOrder: 3,
   portrait: 'assets/heroes/shallah.png', passive: 'shallah_passive',
   colorFill: '#154360', colorStroke: '#2980b9',
-  maxHP: 450, maxMana: 220, hpRegen: 20, manaRegen: 30,
+  maxHP: 1350, maxMana: 220, hpRegen: 20, manaRegen: 30,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -534,7 +534,7 @@ HERO_TYPES['mage_4'] = {
   id: 'mage_4', name: 'Chronos', role: 'Mage', roleId: 'mage', roleOrder: 3,
   colorFill: '#154360', colorStroke: '#2980b9',
   portrait: 'assets/heroes/chronos.png', passive: 'chronos_passive',
-  maxHP: 450, maxMana: 220, hpRegen: 20, manaRegen: 30,
+  maxHP: 1200, maxMana: 220, hpRegen: 20, manaRegen: 30,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -566,7 +566,7 @@ HERO_TYPES['support_2'] = {
   id: 'support_2', name: 'Shana', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
   colorFill: '#9a6b0e', colorStroke: '#f39c12',
   portrait: 'assets/heroes/shana.png', passive: 'shana_passive',
-  maxHP: 430, maxMana: 220, hpRegen: 15, manaRegen: 25,
+  maxHP: 1300, maxMana: 220, hpRegen: 15, manaRegen: 25,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -597,7 +597,7 @@ HERO_TYPES['support_3'] = {
   id: 'support_3', name: 'Anastasia', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
   colorFill: '#9a6b0e', colorStroke: '#f39c12',
   portrait: 'assets/heroes/anastasia.png', passive: 'anastasia_passive',
-  maxHP: 430, maxMana: 220, hpRegen: 15, manaRegen: 25,
+  maxHP: 1300, maxMana: 220, hpRegen: 15, manaRegen: 25,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -631,7 +631,7 @@ HERO_TYPES['support_1'] = {
   id: 'support_1', name: 'Voodoo', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
   portrait: 'assets/heroes/voodoo.png', passive: 'voodoo_passive',
   colorFill: '#9a6b0e', colorStroke: '#f39c12',
-  maxHP: 430, maxMana: 220, hpRegen: 15, manaRegen: 25,
+  maxHP: 1500, maxMana: 220, hpRegen: 15, manaRegen: 25,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -664,7 +664,7 @@ HERO_TYPES['support_4'] = {
   id: 'support_4', name: 'Sharagoth', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
   portrait: 'assets/heroes/sharagoth.png', passive: 'sharagoth_passive',
   colorFill: '#9a6b0e', colorStroke: '#f39c12',
-  maxHP: 900, maxMana: 400, hpRegen: 25, manaRegen: 50,
+  maxHP: 1900, maxMana: 400, hpRegen: 25, manaRegen: 50,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
   spells: [
     {
@@ -695,7 +695,7 @@ HERO_TYPES['roam_3'] = {
   id: 'roam_3', name: 'Abyss', role: 'ROAM', roleId: 'roam', roleOrder: 2,
   portrait: 'assets/heroes/abyss.png',
   passive: 'abyss_passive',
-  maxHP: 500, maxMana: 200, hpRegen: 15, manaRegen: 20,
+  maxHP: 1400, maxMana: 200, hpRegen: 15, manaRegen: 20,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 6, po: 1,
   spells: [
     {
@@ -726,7 +726,7 @@ HERO_TYPES['dpt_3'] = {
   id: 'dpt_3', name: 'Faëna', role: 'DPT', roleId: 'dpt', roleOrder: 4,
   portrait: 'assets/heroes/faena.png',
   passive: 'faena_passive',
-  maxHP: 320, maxMana: 250, hpRegen: 15, manaRegen: 30,
+  maxHP: 1200, maxMana: 250, hpRegen: 15, manaRegen: 30,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 5,
   spells: [
     {
@@ -759,7 +759,7 @@ HERO_TYPES['mage_5'] = {
   colorFill: '#154360', colorStroke: '#2980b9',
   portrait: 'assets/heroes/pibot.png',
   passive: 'pibot_passive',
-  maxHP: 450, maxMana: 220, hpRegen: 20, manaRegen: 30,
+  maxHP: 1300, maxMana: 220, hpRegen: 20, manaRegen: 30,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 6,
   spells: [
     {
@@ -790,7 +790,7 @@ HERO_TYPES['mage_5'] = {
 HERO_TYPES['support_5'] = {
   id: 'support_5', name: 'Gabriel', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
   portrait: 'assets/heroes/gabriel.png', passive: 'gabriel_passive',
-  maxHP: 430, maxMana: 220, hpRegen: 15, manaRegen: 25,
+  maxHP: 1450, maxMana: 220, hpRegen: 15, manaRegen: 25,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -824,7 +824,7 @@ HERO_TYPES['support_5'] = {
 HERO_TYPES['roam_4'] = {
   id: 'roam_4', name: 'Noyala', role: 'ROAM', roleId: 'roam', roleOrder: 2,
   portrait: 'assets/heroes/noyala.png', passive: 'noyala_passive',
-  maxHP: 500, maxMana: 200, hpRegen: 15, manaRegen: 20,
+  maxHP: 1350, maxMana: 200, hpRegen: 15, manaRegen: 20,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 5,
   spells: [
     {
@@ -854,7 +854,7 @@ HERO_TYPES['roam_4'] = {
 HERO_TYPES['solo_4'] = {
   id: 'solo_4', name: 'Grolith', role: 'Solo', roleId: 'solo', roleOrder: 1,
   portrait: 'assets/heroes/grolith.png', passive: 'grolith_passive',
-  maxHP: 900, maxMana: 400, hpRegen: 25, manaRegen: 50,
+  maxHP: 2200, maxMana: 400, hpRegen: 25, manaRegen: 50,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 1,
   spells: [
     {
