@@ -312,14 +312,14 @@ HERO_TYPES['mage_1'] = {
     {
       id: 'electro_q', name: 'Décharge',
       description: 'Zone en losange (1-3-1). Inflige 20 + 0.9 AP dégâts magiques.',
-      manaCost: 80, range: 6, cooldown: 1, cdMin: 1,
+      manaCost: 80, range: 6, cooldown: 2, cdMin: 1,
       damageType: 'magical', baseDamage: 20, adRatio: 0, apRatio: 0.9,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 }, effects: []
     },
     {
       id: 'electro_w', name: 'Zap Volt',
       description: 'Zone en losange (1-3-5-3-1). Inflige 30 + 0.6 AP dégâts magiques. Ralentit de 1 PM pendant 1 tour.',
-      manaCost: 100, range: 5, cooldown: 1, cdMin: 1,
+      manaCost: 100, range: 5, cooldown: 2, cdMin: 1,
       damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.6,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 2 },
       effects: [{ type: 'slow', pmReduction: 1, turns: 1 }]
@@ -475,14 +475,14 @@ HERO_TYPES['mage_2'] = {
     {
       id: 'vadro_q', name: 'Morsure',
       description: 'Inflige 30 + 0.8 AP dégâts magiques et applique Hémorragie.',
-      manaCost: 70, range: 6, cooldown: 2,
+      manaCost: 70, range: 6, cooldown: 3,
       damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.8,
       targetType: 'enemy_hero', zone: null, effects: [{ type: 'hemorrhage', turns: 1 }]
     },
     {
       id: 'vadro_w', name: 'Flaque de sang',
       description: 'Zone 1-3-1 : inflige 60 + 0.7 AP dégâts magiques à tous les ennemis touchés.',
-      manaCost: 80, range: 5, cooldown: 2,
+      manaCost: 80, range: 5, cooldown: 3,
       damageType: 'magical', baseDamage: 60, adRatio: 0, apRatio: 0.7,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 }, effects: []
     },
@@ -505,11 +505,11 @@ HERO_TYPES['mage_3'] = {
   spells: [
     {
       id: 'shallah_q', name: 'Glyphe de Douleur',
-      description: 'Pose une glyphe (zone 1-3-5-3-1, dure 3 tours) en ligne droite. Tout champion ennemi entrant dans la zone subit 120 + 1.3 AP dégâts magiques.',
+      description: 'Pose une glyphe (zone 1-3-5-3-1, dure 3 tours) n\'importe où à portée. Tout champion ennemi qui se déplace dans la zone subit 120 + 1.3 AP dégâts magiques.',
       manaCost: 100, range: 5, cooldown: 1,
       damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 1.3,
       targetType: 'place_glyph', glyphType: 'pain', glyphZoneSize: 2,
-      lineOnly: true, zone: null, effects: []
+      zone: null, effects: []
     },
     {
       id: 'shallah_w', name: 'Glyphe de Vent',
@@ -521,11 +521,11 @@ HERO_TYPES['mage_3'] = {
     },
     {
       id: 'shallah_r', name: 'Glyphe Ultime',
-      description: 'Pose une glyphe de protection (zone 1-3-5-7-5-3-1) en ligne droite. Les héros alliés à l\'intérieur sont immunisés aux débuffs jusqu\'au prochain tour de Shallah.',
+      description: 'Pose une glyphe de protection (zone 1-3-5-7-5-3-1) n\'importe où à portée. Les héros alliés à l\'intérieur sont immunisés aux débuffs jusqu\'au prochain tour de Shallah.',
       manaCost: 230, range: 2, cooldown: 8,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'place_glyph', glyphType: 'ultimate', glyphZoneSize: 3,
-      lineOnly: true, zone: null, effects: []
+      zone: null, effects: []
     }
   ]
 };

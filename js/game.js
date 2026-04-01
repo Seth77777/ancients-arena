@@ -2158,10 +2158,6 @@ class GameState {
         const glyphSize  = spell.glyphZoneSize ?? 2;
         const glyphCells = this._diamondCells(gx, gy, glyphSize);
         if (spell.glyphType === 'pain') {
-          const allHeroes = [...this.players[0].heroes, ...this.players[1].heroes].filter(h => h.isAlive && h.position);
-          if (allHeroes.some(h => glyphCells.some(c => c.x === h.position.x && c.y === h.position.y))) {
-            this.addLog('Un champion se trouve dans la zone !'); success = false; break;
-          }
           this.glyphs.push({ type: 'pain', centerX: gx, centerY: gy, cells: glyphCells,
             turnsLeft: 3, playerIdx: caster.playerIdx, ownerHero: caster,
             baseDamage: spell.baseDamage, apRatio: spell.apRatio, damageType: spell.damageType });
@@ -2412,7 +2408,18 @@ class GameState {
             if (!isWall(gx, gy)) allCells.push({ x: gx, y: gy });
         return { heroes: [], heroesOutOfRange: [], cells: allCells };
       }
-      case 'place_glyph':
+      case 'place_glyph': {
+        const cells = [];
+        for (let x = 0; x < MAP_SIZE; x++) {
+          for (let y = 0; y < MAP_SIZE; y++) {
+            if (!isWall(x, y) && this._manhattan(hero.position, { x, y }) <= effRange
+                && (x !== hero.position.x || y !== hero.position.y)) {
+              cells.push({ x, y });
+            }
+          }
+        }
+        return { heroes: [], heroesOutOfRange: [], cells };
+      }
       case 'wind_glyph': {
         const cells = [];
         const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
@@ -3054,11 +3061,20 @@ class GameState {
       b.x === hero.position.x && b.y === hero.position.y
     );
     if (idx === -1) return;
+    const battery = this.pibotBatteries[idx];
     const missingMana = hero.maxMana - hero.currentMana;
     const regen = Math.floor(missingMana * 0.25);
     hero.currentMana = Math.min(hero.maxMana, hero.currentMana + regen);
+    // Si Pibot marche sur sa propre batterie : applique Station de Recharge (attaque renforcée)
+    if (battery.heroInstanceId === hero.instanceId) {
+      const wSpell = (hero.spells || []).find(s => s.id === 'pibot_w');
+      const apRatio = wSpell ? wSpell.apRatio : 0.6;
+      hero.empoweredAttack = { adRatio: 0, apRatio };
+      this.addLog(`${hero.name} collecte une batterie — +${regen} mana + prochaine AA renforcée !`);
+    } else {
+      this.addLog(`${hero.name} collecte une batterie — +${regen} mana !`);
+    }
     this.pibotBatteries.splice(idx, 1);
-    this.addLog(`${hero.name} collecte une batterie — +${regen} mana !`);
     if (window.renderer) { renderer.render(); renderer.updateUI(); }
   }
 
