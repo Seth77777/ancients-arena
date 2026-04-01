@@ -360,6 +360,28 @@ class InputHandler {
     if (window.OnlineMode?.active && !this._isMyTurn()) return;
     if (g.actionMode === 'attack') { this._cancelMode(); return; }
     r.closeShop();
+
+    // Layia — attaque instantanée sur tous les ennemis à portée
+    if (g.currentHero?.passive === 'layia_passive') {
+      const isGuest = window.OnlineMode?.active && !window.OnlineMode.isHost;
+      const effPO = g.currentHero.po + (g.currentHero.layiaBonusPOTurn || 0);
+      const firstTarget = g._getEnemies(g.currentHero.playerIdx)
+        .find(e => e.position && g._manhattan(g.currentHero.position, e.position) <= effPO);
+      if (firstTarget) {
+        if (isGuest) {
+          window.OnlineMode.sendGuestAction({ type: 'attack', heroId: firstTarget.instanceId });
+        } else {
+          g.autoAttack(firstTarget);
+          this._onlineSync();
+        }
+        r.clearHighlights();
+        if (g.autoAttacksUsed < g.autoAttacksAllowed) r.setAttackHighlight();
+        else g.actionMode = null;
+        r.render(); r.updateUI();
+        return;
+      }
+    }
+
     g.actionMode = 'attack'; g.selectedSpell = null;
     r.clearHighlights(); r.setAttackHighlight();
     r.render(); r.updateUI();

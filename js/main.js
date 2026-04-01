@@ -11,7 +11,7 @@ const PASSIVE_LABELS = {
   voodoo_passive:   'Hémorragie — Chaque sort de Voodoo qui touche un ennemi lui inflige Hémorragie : réduit les soins reçus de 50% (vol de vie inclus) pendant 1 tour.',
   vadro_passive:    'Soif de Sang — Vadro possède en permanence 50% de vol de vie.',
   shallah_passive:  'Architecte des Glyphes — Lorsque Shallah marche dans une glyphe qu\'il a posée, il gagne +1 PM pour ce tour.',
-  layia_passive:    'Chasseresse — Les attaques de base touchent tous les ennemis à portée. Tous les 5 tours ou en collectant une zone de butin, Layia gagne +1 PO (commence à 1 ; héros à distance dès 2 PO).',
+  layia_passive:    'Chasseresse — Les attaques de base touchent tous les ennemis à portée (commence à 1 PO ; héros à distance dès 2 PO).',
   chronos_passive:  'Maître du Temps — Chaque sort lancé rapporte 50 PO à Chronos.',
   shana_passive:    'Félin pour l\'autre — Quand Shana soigne un allié, elle se soigne aussi du même montant.',
   anastasia_passive: 'Soins Intéressés — Chaque fois qu\'Anastasia soigne un héros (allié ou elle-même), elle gagne 10 PO. Elle peut soigner des cibles à pleine vie.',

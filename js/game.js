@@ -526,14 +526,9 @@ class GameState {
       }
     }
 
-    // Passif Layia : reset bonus PO; +1 PO d'attaque tous les 5 tours
+    // Passif Layia : reset bonus PO temporaire
     if (hero.passive === 'layia_passive') {
       hero.layiaBonusPOTurn = 0;
-      hero.layiaTurnCount   = (hero.layiaTurnCount || 0) + 1;
-      if (hero.layiaTurnCount % 5 === 0) {
-        hero.po++;
-        this.addLog(`${hero.name} — Passif : PO d'attaque → ${hero.po} !`);
-      }
     }
 
     // Passif Épées Croisées — Jambes de Feu : +1 PM si CD = 0
@@ -2839,7 +2834,7 @@ class GameState {
       this.addLog(`${attacker.name} — Exécution : ${target.name} éliminé !`);
       target.currentHP = 0;
     }
-    if (target.currentHP <= 0) {
+    if (target.currentHP <= 0 && target.isAlive !== false) {
       target.currentHP = 0;
       target.isAlive   = false;
       target.position  = null;
