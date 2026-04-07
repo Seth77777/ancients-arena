@@ -388,6 +388,7 @@ class GameState {
 
     // Apply and tick status effects
     hero.maledictionTurns = 0;
+    hero.mutedThisTurn = false;
     for (const e of (hero.statusEffects || [])) {
       if (e.type === 'slow') {
         this.movementLeft = Math.max(0, this.movementLeft - e.pmReduction);
@@ -402,11 +403,12 @@ class GameState {
         this.addLog(`${hero.name} est maudit (portée sorts -3)`);
       }
       if (e.type === 'mute') {
+        hero.mutedThisTurn = true;
         this.addLog(`${hero.name} est muet — sorts bloqués ce tour`);
       }
       e.turns--;
     }
-    hero.statusEffects = (hero.statusEffects || []).filter(e => e.turns > 0);
+    hero.statusEffects = (hero.statusEffects || []).filter(e => e.turns >= 0);
 
     // Reset bouclier Dague du Soldat
     hero.daggerShield = 0;
@@ -551,16 +553,16 @@ class GameState {
     }
     hero.dealtDamageLastTurn = false;
 
-    // Passif Bouclier Basique : récupère 5% des HP manquants si HP < 30% max
-    if (hero.items.includes('basic_shield') && hero.currentHP < hero.maxHP * 0.30) {
-      const gain = Math.max(1, Math.floor((hero.maxHP - hero.currentHP) * 0.05));
+    // Passif Bouclier Basique : récupère 8% des HP manquants si HP < 50% max
+    if (hero.items.includes('basic_shield') && hero.currentHP < hero.maxHP * 0.50) {
+      const gain = Math.max(1, Math.floor((hero.maxHP - hero.currentHP) * 0.08));
       hero.currentHP = Math.min(hero.maxHP, hero.currentHP + gain);
       this.addLog(`${hero.name} — Passif Bouclier Basique : +${gain} HP`);
     }
 
-    // Passif Anneau du Mage Mineur : récupère 5% du mana manquant si mana < 25% max
-    if (hero.items.includes('minor_mage_ring') && hero.currentMana < hero.maxMana * 0.25) {
-      const gain = Math.max(1, Math.floor((hero.maxMana - hero.currentMana) * 0.05));
+    // Passif Anneau du Mage Mineur : récupère 8% du mana max si mana < 40% max
+    if (hero.items.includes('minor_mage_ring') && hero.currentMana < hero.maxMana * 0.40) {
+      const gain = Math.max(1, Math.floor(hero.maxMana * 0.08));
       hero.currentMana = Math.min(hero.maxMana, hero.currentMana + gain);
       this.addLog(`${hero.name} — Passif Anneau du Mage Mineur : +${gain} Mana`);
     }
@@ -599,7 +601,7 @@ class GameState {
     this.selectedSpell = null;
     this.selectedWolf  = null;
 
-    // Passif Anneau Magique : +5% or si seul dans une zone à gold
+    // Passif Anneau Magique : +15% or si seul dans une zone à gold
     const hero = this.currentHero;
     if (hero && hero.items.includes('magic_ring') && hero.position) {
       const zone = ZONES.find(z => inZone(z, hero.position));
@@ -607,10 +609,18 @@ class GameState {
         const allyInZone = this._getAllies(hero.playerIdx)
           .some(a => a !== hero && a.isAlive && a.position && inZone(zone, a.position));
         if (!allyInZone) {
-          const bonus = Math.max(1, Math.floor(hero.gold * 0.05));
+          const bonus = Math.max(1, Math.floor(hero.gold * 0.15));
           this._giveGold(hero, bonus);
           this.addLog(`${hero.name} — Passif Anneau Magique : +${bonus}g (zone solitaire)`);
         }
+      }
+    }
+
+    // Passif Nos Noms Sont Liés : +100g si hors zone à gold en fin de tour
+    if (hero && hero.items.includes('linked_names') && hero.position) {
+      if (!ZONE_CELL_SET.has(`${hero.position.x},${hero.position.y}`)) {
+        this._giveGold(hero, 100);
+        this.addLog(`${hero.name} — Nos Noms Sont Liés : +100g (hors zone)`);
       }
     }
 
@@ -625,6 +635,9 @@ class GameState {
       });
       this.lameEauZones = this.lameEauZones.filter(z => z.turnsLeft > 0);
     }
+
+    // Purge des effets de statut expirés (turns=0 conservés pendant le tour pour l'affichage)
+    if (hero) hero.statusEffects = (hero.statusEffects || []).filter(e => e.turns > 0);
 
     // Passif Grimoire Magique : +50 mana si au moins 1 PM restant
     if (hero && hero.items.includes('grimoire_magique') && this.movementLeft >= 1) {
@@ -708,6 +721,16 @@ class GameState {
         if ((hero.items.includes('couronne_de_la_reine') || hero.items.includes('diademe_de_la_reine')) && hero.position && !ZONE_CELL_SET.has(`${hero.position.x},${hero.position.y}`)) {
           this._giveGold(hero, 80);
           this.addLog(`${hero.name} — Couronne de la Reine : +80g (hors zone)`);
+        }
+        // Passif Le Voyageur : +50g aux alliés à ≤6 cases si hors zone
+        if (hero.items.includes('le_voyageur') && hero.position && !ZONE_CELL_SET.has(`${hero.position.x},${hero.position.y}`)) {
+          this._getAllies(hero.playerIdx).forEach(ally => {
+            if (ally === hero || !ally.isAlive || !ally.position) return;
+            if (this._manhattan(hero.position, ally.position) <= 6) {
+              this._giveGold(ally, 50);
+              this.addLog(`${ally.name} — Le Voyageur (${hero.name}) : +50g`);
+            }
+          });
         }
         const _healEffMult = 1 + (hero.healEfficiency || 0) / 100;
         const _hpRegenMult = ((hero.items.includes('anti_spell_boots') || hero.items.includes('reinforced_boots') || hero.items.includes('boots_of_celerity')) ? 1.5
@@ -978,7 +1001,6 @@ class GameState {
     if (hero.roleId === 'roam') this._checkBrownCollection(hero);
     this._checkPibotBattery(hero);
     this._checkTrap(hero);
-    this._checkGlyph(hero);
     this._checkBombZone(hero);
     return true;
   }
@@ -1106,11 +1128,11 @@ class GameState {
       const empowered     = attacker.empoweredAttack;
       const hadSpellBonus = wasEmpowered || bonusFlat > 0;
       if (wasEmpowered) attacker.empoweredAttack = null;
-      const armorPen = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
-      const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0);
+      const armorPen = (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
+      const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0);
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
-        const _critMult = (attacker.items.includes('lame_d_infini') ? 2.0 : 1.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
+        const _critMult = (attacker.items.includes('lame_d_infini') ? 2.5 : 2.0) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
         const rawBase = Math.floor((attacker.ad + bonusFlat) * (isCrit ? _critMult : 1));
         // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
         if (attacker.passive === 'abyss_passive') {
@@ -1124,7 +1146,8 @@ class GameState {
           this._applyHemorrhage(attacker, e);
           return;
         }
-        let dmg = this._reduceDmg(rawBase, 'physical', e, armorPen, 0, armorPenPct);
+        const _tdRawL = attacker.items.includes('tueur_de_dieux') ? Math.floor(rawBase * 0.30) : 0;
+        let dmg = this._reduceDmg(_tdRawL > 0 ? Math.floor(rawBase * 0.70) : rawBase, 'physical', e, armorPen, 0, armorPenPct);
         let empMagicalDmg = 0;
         if (wasEmpowered) {
           if (empowered.damageType === 'magical') {
@@ -1145,16 +1168,24 @@ class GameState {
         // Passif Lame Bleue / Trinité Sacrée / Gantelet Refroidissant : +15% si attaque boostée
         const hasBlade = hadSpellBonus && attacker.items.some(id => ['blue_blade', 'holy_trinity', 'gantelet_refroidissant'].includes(id));
         if (hasBlade) {
-          dmg = Math.floor(dmg * 1.15);
-          empMagicalDmg = Math.floor(empMagicalDmg * 1.15);
+          dmg = Math.floor(dmg * 1.22);
+          empMagicalDmg = Math.floor(empMagicalDmg * 1.22);
         }
         if (empMagicalDmg > 0) {
           this._applyDamage(e, empMagicalDmg, attacker, 'magical');
           this.addLog(`${attacker.name} — Rock and Roll : +${empMagicalDmg} dégâts magiques${hasBlade ? ' (Lame Bleue)' : ''}`);
         }
-        // Passif Vigilance Sombre (Lame de Nargoth) : +10% si armure cible < 15%
-        if (armorPen > 0 && e.armor - armorPen < 15) dmg = Math.floor(dmg * 1.1);
+        // Passif Vigilance Sombre (Lame de Nargoth) : +10% si armure effective cible < 15
+        if (attacker.items.includes('lame_de_nargoth') && Math.floor(e.armor * (1 - 7 / 100)) < 15) dmg = Math.floor(dmg * 1.1);
         this._applyDamage(e, dmg, attacker);
+        // Passif Arc Perforant des Anges : 0–30% bonus selon HP max cible (0% à 1000, 30% à 4000)
+        if (attacker.items.includes('arc_perforant_anges') && e.isAlive) {
+          const _apaBonusPct = Math.min(30, Math.max(0, (e.maxHP - 1000) / 3000 * 30)) / 100;
+          if (_apaBonusPct > 0) {
+            const _apaBonusDmg = this._reduceDmg(Math.floor(dmg * _apaBonusPct), 'physical', e, armorPen, 0, armorPenPct);
+            if (_apaBonusDmg > 0) { this._applyDamage(e, _apaBonusDmg, attacker, 'physical'); this.addLog(`${attacker.name} — Arc des Anges : +${_apaBonusDmg} dégâts (${Math.round(_apaBonusPct * 100)}%)`); }
+          }
+        }
         this._applyHemorrhage(attacker, e);
         // Passif Gelure (Gantelet Refroidissant) : slow + zone si attaque boostée
         if (hadSpellBonus && attacker.items.includes('gantelet_refroidissant') && e.isAlive) {
@@ -1191,25 +1222,30 @@ class GameState {
           const salDmg = this._reduceDmg(salRaw, 'magical', e);
           if (salDmg > 0) { this._applyDamage(e, salDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Passif : −${salDmg} dégâts magiques`); }
         }
-        // Découpage : 7%+0.02×AP HP max cible en dégâts bruts
+        // Découpage : 10%+0.04×AP HP max cible en dégâts bruts
         if (attacker.decoupageActive && e.isAlive) {
-          const decRaw = Math.floor(0.07 * e.maxHP + 0.02 * this._effectiveAP(attacker));
+          const decRaw = Math.floor(0.10 * e.maxHP + 0.04 * this._effectiveAP(attacker));
           if (decRaw > 0) { this._applyDamage(e, decRaw, attacker, 'raw'); this.addLog(`${attacker.name} — Découpage : −${decRaw} dégâts bruts`); }
+        }
+        // Passif Tueur de Dieux : 30% bruts
+        if (_tdRawL > 0 && e.isAlive) {
+          this._applyDamage(e, _tdRawL, attacker, 'raw');
+          this.addLog(`${attacker.name} — Tueur de Dieux : −${_tdRawL} dégâts bruts`);
         }
       });
       if (!targets.length) this.addLog(`${attacker.name} — Aucune cible à portée`);
       // Dague du Soldat : seulement si encore au corps à corps (po ≤ 1)
       if (attacker.items.includes('soldier_dagger') && attacker.po <= 1) {
         if (targets.some(e => this._manhattan(attacker.position, e.position) <= 1)) {
-          attacker.daggerShield = (attacker.daggerShield || 0) + 15;
-          this.addLog(`${attacker.name} — Passif Dague : bouclier +15`);
+          attacker.daggerShield = (attacker.daggerShield || 0) + 25;
+          this.addLog(`${attacker.name} — Passif Dague : bouclier +25`);
         }
       }
-      // Passif Lame du Diable : 6% HP max en dégâts bruts sur chaque cible
+      // Passif Lame du Diable : 8% HP max en dégâts bruts sur chaque cible
       if (attacker.items.includes('lame_du_diable')) {
         targets.forEach(e => {
           if (!e.isAlive) return;
-          const rawDmg = Math.floor(e.maxHP * 0.06);
+          const rawDmg = Math.floor(e.maxHP * 0.08);
           this._applyDamage(e, rawDmg, attacker, 'raw');
           this.addLog(`${attacker.name} — Lame du Diable : −${rawDmg} dégâts bruts`);
         });
@@ -1230,10 +1266,10 @@ class GameState {
     attacker.layiaBonusNextAttack = 0;
     const wasEmpowered  = !!attacker.empoweredAttack;
     const hadSpellBonus = wasEmpowered || bonusFlat2 > 0;
-    const armorPen2 = (attacker.items.includes('lame_de_nargoth') ? 3 : 0) + (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
-    const armorPenPct2 = (attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
+    const armorPen2 = (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
+    const armorPenPct2 = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0);
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
-    const _critMult2 = (attacker.items.includes('lame_d_infini') ? 2.0 : 1.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
+    const _critMult2 = (attacker.items.includes('lame_d_infini') ? 2.5 : 2.0) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
     const rawBase2 = Math.floor((attacker.ad + bonusFlat2) * (isCrit2 ? _critMult2 : 1));
     // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
     if (attacker.passive === 'abyss_passive') {
@@ -1251,7 +1287,8 @@ class GameState {
       this._checkGameOver();
       return true;
     }
-    let dmg = this._reduceDmg(rawBase2, 'physical', targetHero, armorPen2, 0, armorPenPct2);
+    const _tdRaw = attacker.items.includes('tueur_de_dieux') ? Math.floor(rawBase2 * 0.30) : 0;
+    let dmg = this._reduceDmg(_tdRaw > 0 ? Math.floor(rawBase2 * 0.70) : rawBase2, 'physical', targetHero, armorPen2, 0, armorPenPct2);
     let empMagicalDmg2 = 0;
     if (wasEmpowered) {
       const emp2 = attacker.empoweredAttack;
@@ -1274,15 +1311,23 @@ class GameState {
     // Passif Lame Bleue / Trinité Sacrée / Gantelet Refroidissant : +15% si attaque boostée
     const hasBlade2 = hadSpellBonus && attacker.items.some(id => ['blue_blade', 'holy_trinity', 'gantelet_refroidissant'].includes(id));
     if (hasBlade2) {
-      dmg = Math.floor(dmg * 1.15);
-      empMagicalDmg2 = Math.floor(empMagicalDmg2 * 1.15);
+      dmg = Math.floor(dmg * 1.22);
+      empMagicalDmg2 = Math.floor(empMagicalDmg2 * 1.22);
     }
-    // Passif Vigilance Sombre (Lame de Nargoth) : +10% si armure cible < 15%
-    if (armorPen2 > 0 && targetHero.armor - armorPen2 < 15) dmg = Math.floor(dmg * 1.1);
+    // Passif Vigilance Sombre (Lame de Nargoth) : +10% si armure effective cible < 15
+    if (attacker.items.includes('lame_de_nargoth') && Math.floor(targetHero.armor * (1 - 7 / 100)) < 15) dmg = Math.floor(dmg * 1.1);
     const hasMagicSword2 = hadSpellBonus && attacker.items.includes('magic_sword');
     const tag2 = [isCrit2 ? 'CRITIQUE' : null, wasEmpowered ? 'renforcé' : null, bonusFlat2 > 0 ? 'Petit Bond' : null, hasBlade2 ? 'Lame Bleue' : null, hasMagicSword2 ? 'Épée Magique' : null, armorPen2 > 0 ? 'Nargoth' : null].filter(Boolean).join(', ');
     this.addLog(`${attacker.name} attaque ${targetHero.name} — ${dmg} dégâts physiques${tag2 ? ` (${tag2})` : ''}`);
     this._applyDamage(targetHero, dmg, attacker);
+    // Passif Arc Perforant des Anges : 0–30% bonus selon HP max cible (0% à 1000, 30% à 4000)
+    if (attacker.items.includes('arc_perforant_anges') && targetHero.isAlive) {
+      const _apaBonusPct2 = Math.min(30, Math.max(0, (targetHero.maxHP - 1000) / 3000 * 30)) / 100;
+      if (_apaBonusPct2 > 0) {
+        const _apaBonusDmg2 = this._reduceDmg(Math.floor(dmg * _apaBonusPct2), 'physical', targetHero, armorPen2, 0, armorPenPct2);
+        if (_apaBonusDmg2 > 0) { this._applyDamage(targetHero, _apaBonusDmg2, attacker, 'physical'); this.addLog(`${attacker.name} — Arc des Anges : +${_apaBonusDmg2} dégâts (${Math.round(_apaBonusPct2 * 100)}%)`); }
+      }
+    }
     if (empMagicalDmg2 > 0 && targetHero.isAlive) {
       this._applyDamage(targetHero, empMagicalDmg2, attacker, 'magical');
       this.addLog(`${attacker.name} — Rock and Roll : +${empMagicalDmg2} dégâts magiques${hasBlade2 ? ' (Lame Bleue)' : ''}`);
@@ -1318,14 +1363,14 @@ class GameState {
       this._applyDamage(targetHero, magicBonusDmg, attacker, 'magical');
       this.addLog(`${attacker.name} — Épée Magique : +${magicBonusDmg} dégâts magiques`);
     }
-    // Passif Dague du Soldat : bouclier +15 si attaque corps à corps (distance ≤ 1)
+    // Passif Dague du Soldat : bouclier +25 si attaque corps à corps (distance ≤ 1)
     if (attacker.items.includes('soldier_dagger') && this._manhattan(attacker.position, targetHero.position) <= 1) {
-      attacker.daggerShield = (attacker.daggerShield || 0) + 15;
-      this.addLog(`${attacker.name} — Passif Dague : bouclier +15`);
+      attacker.daggerShield = (attacker.daggerShield || 0) + 25;
+      this.addLog(`${attacker.name} — Passif Dague : bouclier +25`);
     }
-    // Passif Lame du Diable : 6% HP max de la cible en dégâts bruts
+    // Passif Lame du Diable : 8% HP max de la cible en dégâts bruts
     if (attacker.items.includes('lame_du_diable')) {
-      const rawDmg = Math.floor(targetHero.maxHP * 0.06);
+      const rawDmg = Math.floor(targetHero.maxHP * 0.08);
       this._applyDamage(targetHero, rawDmg, attacker, 'raw');
       this.addLog(`${attacker.name} — Lame du Diable : −${rawDmg} dégâts bruts`);
     }
@@ -1341,10 +1386,15 @@ class GameState {
       const salDmg = this._reduceDmg(salRaw, 'magical', targetHero);
       if (salDmg > 0) { this._applyDamage(targetHero, salDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Passif : −${salDmg} dégâts magiques`); }
     }
-    // Découpage : 7%+0.02×AP HP max cible en dégâts bruts
+    // Découpage : 10%+0.04×AP HP max cible en dégâts bruts
     if (attacker.decoupageActive && targetHero.isAlive) {
-      const decRaw = Math.floor(0.07 * targetHero.maxHP + 0.02 * this._effectiveAP(attacker));
+      const decRaw = Math.floor(0.10 * targetHero.maxHP + 0.04 * this._effectiveAP(attacker));
       if (decRaw > 0) { this._applyDamage(targetHero, decRaw, attacker, 'raw'); this.addLog(`${attacker.name} — Découpage : −${decRaw} dégâts bruts`); }
+    }
+    // Passif Tueur de Dieux : 30% bruts
+    if (_tdRaw > 0 && targetHero.isAlive) {
+      this._applyDamage(targetHero, _tdRaw, attacker, 'raw');
+      this.addLog(`${attacker.name} — Tueur de Dieux : −${_tdRaw} dégâts bruts`);
     }
     // Passif Marteau du Marcheur Blanc / Trinité Sacrée / Lame de Nargoth / Lame du Diable : +1 PM après attaque de base
     if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable', 'couperet_du_demon'].includes(id))) {
@@ -1394,7 +1444,7 @@ class GameState {
     const _effectiveManaCost = _hasManaDisco ? Math.floor(spell.manaCost * 0.85) : spell.manaCost;
     if (caster.currentMana < _effectiveManaCost){ this.addLog('Pas assez de mana !');                       return false; }
     if (this.actionsUsed >= MAX_ACTIONS)    { this.addLog('Limite d\'actions atteinte !');               return false; }
-    if ((caster.statusEffects || []).some(e => e.type === 'mute')) {
+    if (caster.mutedThisTurn || (caster.statusEffects || []).some(e => e.type === 'mute')) {
       this.addLog(`${caster.name} est muet — sorts bloqués !`); return false;
     }
     const _dashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy','swap_enemy','swap_ally','faena_w','pibot_w'];
@@ -1520,6 +1570,9 @@ class GameState {
         if (this.getHeroAt(x, y))       { this.addLog('Un héros est sur cette case !');      success = false; break; }
         if (this.traps.some(t => t.x === x && t.y === y)) { this.addLog('Piège déjà posé ici !'); success = false; break; }
         if (this._manhattan(caster.position, { x, y }) > spell.range) { this.addLog('Hors de portée !'); success = false; break; }
+        if (!spell.ignoresLoS && !this._hasLineOfSight(caster.position, { x, y })) {
+          this.addLog('Ligne de vue bloquée !'); success = false; break;
+        }
         this.traps.push({ x, y, turnsLeft: 3, permanent: !!spell.permanent,
           playerIdx: caster.playerIdx, ownerHero: caster,
           baseDamage: spell.baseDamage, adRatio: spell.adRatio, apRatio: spell.apRatio, damageType: spell.damageType });
@@ -1818,9 +1871,9 @@ class GameState {
         if (!frHit.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
         const frCritChance  = caster.critChance || 0;
         const frIsCrit      = frCritChance > 0 && Math.random() * 100 < frCritChance;
-        const frCritMult    = (caster.items.includes('lame_d_infini') ? 2.0 : 1.5) + (caster.passive === 'faena_passive' ? Math.floor(caster.ad / 10) / 100 : 0);
-        const armorPenFr    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
-        const armorPenPctFr = (caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
+        const frCritMult    = (caster.items.includes('lame_d_infini') ? 2.5 : 2.0) + (caster.passive === 'faena_passive' ? Math.floor(caster.ad / 10) / 100 : 0);
+        const armorPenFr    = (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
+        const armorPenPctFr = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0);
         frHit.forEach(e => {
           const baseRaw = spell.baseDamage + spell.adRatio * caster.ad + frCritChance;
           const rawFr   = Math.floor(baseRaw * (frIsCrit ? frCritMult : 1));
@@ -1896,6 +1949,9 @@ class GameState {
       }
       case 'zone': {
         const { x, y } = target;
+        if (!spell.ignoresLoS && !this._hasLineOfSight(caster.position, { x, y })) {
+          this.addLog('Ligne de vue bloquée !'); success = false; break;
+        }
         const sz  = spell.zone.size;
         const hit = this._getEnemies(caster.playerIdx).filter(e =>
           Math.abs(e.position.x - x) <= sz && Math.abs(e.position.y - y) <= sz
@@ -1970,7 +2026,7 @@ class GameState {
           });
           break;
         }
-        // Salena — Découpage : auto-attaques infligent 7%+0.02*AP HP max en dégâts bruts ce tour
+        // Salena — Découpage : auto-attaques infligent 10%+0.04*AP HP max en dégâts bruts ce tour
         if (spell.decoupage) {
           caster.decoupageActive = true;
           this.addLog(`${caster.name} → ${spell.name}: attaques de base renforcées ce tour`);
@@ -2121,6 +2177,9 @@ class GameState {
       }
       case 'diamond_zone': {
         const { x, y } = target;
+        if (!spell.ignoresLoS && !this._hasLineOfSight(caster.position, { x, y })) {
+          this.addLog('Ligne de vue bloquée !'); success = false; break;
+        }
         const sz = spell.zone?.size ?? 2;
         // Anastasia — Barrière Protectrice : bouclier sur les alliés dans la zone
         if (spell.allyShield) {
@@ -2155,6 +2214,9 @@ class GameState {
       }
       case 'place_glyph': {
         const { x: gx, y: gy } = target;
+        if (!spell.ignoresLoS && !this._hasLineOfSight(caster.position, { x: gx, y: gy })) {
+          this.addLog('Ligne de vue bloquée !'); success = false; break;
+        }
         const glyphSize  = spell.glyphZoneSize ?? 2;
         const glyphCells = this._diamondCells(gx, gy, glyphSize);
         if (spell.glyphType === 'pain') {
@@ -2196,7 +2258,6 @@ class GameState {
           if (nx >= 0 && nx < MAP_SIZE && ny >= 0 && ny < MAP_SIZE && !isWall(nx, ny) && !this.getHeroAt(nx, ny)) {
             enemy.position = { x: nx, y: ny };
             this.addLog(`${enemy.name} repoussé vers (${nx},${ny})`);
-            this._checkGlyph(enemy);
             this._checkTrap(enemy);
             if (enemy.roleId === 'roam') this._checkBrownCollection(enemy);
           }
@@ -2246,11 +2307,8 @@ class GameState {
         const _timeGlassCount = caster.items.filter(id => id === 'time_glass').length;
         const _effectiveCdRed = (caster.cdReduction || 0) - Math.max(0, _timeGlassCount - 1);
         let _cd = Math.max(_minCd, spell.cooldown - _effectiveCdRed);
-        // Bottes de Célérité : -1 CD supplémentaire sur le sort 3 (index 2), seulement si CD > minimum
-        if (caster.items.includes('boots_of_celerity')) {
-          const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
-          if (_spellIdx === 2 && _cd > _minCd) _cd--;
-        }
+        // Bottes de Célérité : -1 CD supplémentaire sur tous les sorts
+        if (caster.items.includes('boots_of_celerity') && _cd > _minCd) _cd--;
         // Sceptre du Malin : -1 CD ultime (index 2)
         if (caster.items.includes('sceptre_du_malin')) {
           const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
@@ -2336,7 +2394,7 @@ class GameState {
       }
       case 'cell':
       case 'zone':
-        return { heroes: [], heroesOutOfRange: [], cells: _rangeCells() };
+        return { heroes: [], heroesOutOfRange: [], cells: spell.ignoresLoS ? _rangeCells() : _rangeCells().filter(c => this._hasLineOfSight(hero.position, c)) };
       case 'dash_to_enemy': {
         const all = this._getEnemies(hero.playerIdx);
         let _dtInRange  = all.filter(e => this._manhattan(hero.position, e.position) <= effRange);
@@ -2348,7 +2406,7 @@ class GameState {
         return { heroes: _dtInRange, heroesOutOfRange: _dtOutRange, cells: _rangeCells() };
       }
       case 'diamond_zone':
-        return { heroes: [], heroesOutOfRange: [], cells: _rangeCells() };
+        return { heroes: [], heroesOutOfRange: [], cells: spell.ignoresLoS ? _rangeCells() : _rangeCells().filter(c => this._hasLineOfSight(hero.position, c)) };
       case 'stealth_dash': {
         const cells = [];
         const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
@@ -2413,7 +2471,8 @@ class GameState {
         for (let x = 0; x < MAP_SIZE; x++) {
           for (let y = 0; y < MAP_SIZE; y++) {
             if (!isWall(x, y) && this._manhattan(hero.position, { x, y }) <= effRange
-                && (x !== hero.position.x || y !== hero.position.y)) {
+                && (x !== hero.position.x || y !== hero.position.y)
+                && (spell.ignoresLoS || this._hasLineOfSight(hero.position, { x, y }))) {
               cells.push({ x, y });
             }
           }
@@ -2586,9 +2645,9 @@ class GameState {
     let raw = spell.baseDamage + caster.ad * (spell.adRatio || 0) + this._effectiveAP(caster) * (spell.apRatio || 0);
     if (caster.items.includes('pistolet_magique') && (spell.adRatio || 0) > 0 && (spell.apRatio || 0) > 0)
       raw = Math.floor(raw * 1.2);
-    const armorPen    = (caster.items.includes('lame_de_nargoth') ? 3 : 0) + (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
+    const armorPen    = (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
     const mrPen       = (caster.items.includes('sorcerer_boots') ? 5 : 0) + (caster.items.includes('furie_magique') ? 5 : 0);
-    const armorPenPct = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('revolver_d_or') ? 7 : 0);
+    const armorPenPct = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('revolver_d_or') ? 7 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0);
     const mrPenPct    = caster.items.includes('baton_des_abysses') ? 35 : caster.items.includes('cristal_de_vide') ? 15 : 0;
     let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct, mrPenPct);
     if (armorPen > 0 && target.armor - armorPen < 15) dmg = Math.floor(dmg * 1.1);
@@ -2601,18 +2660,21 @@ class GameState {
 
   _reduceDmg(raw, dmgType, target, armorPen = 0, mrPen = 0, armorPenPct = 0, mrPenPct = 0) {
     if (dmgType === 'physical') {
-      const effectiveArmor = Math.min(80, Math.floor(target.armor * (1 - armorPenPct / 100)) - armorPen);
+      const effectiveArmor = Math.min(80, Math.floor(target.armor * (1 + (target.armorPct || 0) / 100) * (1 - armorPenPct / 100)) - armorPen);
       let dmg;
       if (effectiveArmor >= 0) {
         dmg = Math.floor(raw * (1 - effectiveArmor / 100));
       } else {
         dmg = Math.floor(raw * (1 + Math.pow(-effectiveArmor, 1.3) / 100));
       }
-      if (target.passive === 'rock_solid') dmg = Math.floor(dmg * 0.5);
+      if (target.passive === 'rock_solid') dmg = Math.floor(dmg * 0.75);
       return Math.max(0, dmg);
     }
     if (dmgType === 'magical') {
-      const effectiveMR = Math.min(80, Math.floor(target.mr * (1 - mrPenPct / 100)) - mrPen);
+      const mrShredMult = (target.statusEffects || [])
+        .filter(e => e.type === 'mr_shred')
+        .reduce((m, e) => m * (1 - e.pct / 100), 1);
+      const effectiveMR = Math.min(80, Math.floor(target.mr * mrShredMult * (1 - mrPenPct / 100)) - mrPen);
       if (effectiveMR >= 0) {
         return Math.max(0, Math.floor(raw * (1 - effectiveMR / 100)));
       } else {
@@ -3043,16 +3105,19 @@ class GameState {
     const idx = this.traps.findIndex(t =>
       t.x === hero.position.x && t.y === hero.position.y && t.playerIdx !== hero.playerIdx
     );
-    if (idx === -1) return;
-    const trap  = this.traps[idx];
-    const owner = trap.ownerHero;
-    const raw   = trap.baseDamage + owner.ad * (trap.adRatio || 0) + owner.ap * (trap.apRatio || 0);
-    const dmg   = this._reduceDmg(raw, trap.damageType, hero);
-    this._applyDamage(hero, dmg, owner);
-    this.addLog(`${hero.name} déclenche un piège de ${owner.name} — ${dmg} dégâts magiques !`);
-    this.traps.splice(idx, 1);
-    this._checkGameOver();
-    if (window.renderer) { renderer.render(); renderer.updateUI(); }
+    if (idx !== -1) {
+      const trap  = this.traps[idx];
+      const owner = trap.ownerHero;
+      const raw   = trap.baseDamage + owner.ad * (trap.adRatio || 0) + owner.ap * (trap.apRatio || 0);
+      const dmg   = this._reduceDmg(raw, trap.damageType, hero);
+      this._applyDamage(hero, dmg, owner);
+      this.addLog(`${hero.name} déclenche un piège de ${owner.name} — ${dmg} dégâts magiques !`);
+      this.traps.splice(idx, 1);
+      this._checkGameOver();
+      if (window.renderer) { renderer.render(); renderer.updateUI(); }
+    }
+    // Glyphe de Douleur : déclenchement à l'entrée (appelé ici pour couvrir tous les déplacements)
+    if (hero.isAlive) this._checkGlyph(hero);
   }
 
   _checkPibotBattery(hero) {
@@ -3163,10 +3228,15 @@ class GameState {
     if (idx === -1) return;
     this._giveGold(hero, 250);
     this.addLog(`${hero.name} collecte une zone de butin — +250g !`);
-    // Passif Layia : +1 PO d'attaque sur case de butin
+    // Passif Layia : +1 PO d'attaque toutes les 2 zones de butin
     if (hero.passive === 'layia_passive') {
-      hero.po++;
-      this.addLog(`${hero.name} — Passif : PO d'attaque → ${hero.po} !`);
+      hero.layiaBrownCount = (hero.layiaBrownCount || 0) + 1;
+      if (hero.layiaBrownCount % 2 === 0) {
+        hero.po++;
+        this.addLog(`${hero.name} — Passif : PO d'attaque → ${hero.po} ! (${hero.layiaBrownCount} zones)`);
+      } else {
+        this.addLog(`${hero.name} — Passif : zone ${hero.layiaBrownCount} (PO au prochain)`);
+      }
     }
     // Move spot to new random position immediately
     const candidates = this._brownCandidates();
@@ -3238,8 +3308,8 @@ class GameState {
       if (g.type === 'pain' && hero.playerIdx !== g.playerIdx) {
         const raw = Math.floor(g.baseDamage + g.ownerHero.ap * g.apRatio);
         const dmg = this._reduceDmg(raw, g.damageType, hero);
-        this._applyDamage(hero, dmg, g.ownerHero, g.damageType);
-        this._applyHemorrhage(g.ownerHero, hero, 1, g.damageType);
+        const _glyphSpell = { damageType: g.damageType };
+        this._applySpellDamage(g.ownerHero, _glyphSpell, hero, dmg);
         this.addLog(`${hero.name} déclenche la Glyphe de Douleur de ${g.ownerHero.name} — ${dmg} dégâts magiques !`);
         this.glyphs.splice(i, 1);
         this._checkGameOver();
@@ -3308,6 +3378,18 @@ class GameState {
           t.rootTurns = Math.max(t.rootTurns || 0, eff.turns);
           this.addLog(`${t.name} est immobilisé (PM et dash bloqués) pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''} !`);
           if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+        } else if (eff.type === 'mr_shred') {
+          (t.statusEffects = t.statusEffects || []).push({ ...eff });
+          this.addLog(`${t.name} perd 20% de RM pendant ${eff.turns} tours`);
+          if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+        }
+        // Passif Blason Glorieux : débuff → 10% HP max dégâts magiques
+        if (this.currentHero?.items.includes('blason_glorieux') && t.isAlive) {
+          const blasonDmg = this._reduceDmg(Math.floor(t.maxHP * 0.10), 'magical', t);
+          if (blasonDmg > 0) {
+            this._applyDamage(t, blasonDmg, this.currentHero, 'magical');
+            this.addLog(`${t.name} — Blason Glorieux : −${blasonDmg} dégâts magiques`);
+          }
         }
       });
     });

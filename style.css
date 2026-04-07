@@ -851,6 +851,31 @@ body {
 .st-used   { color: #7ee787; background: rgba(126,231,135,0.1); }
 .st-nomana { color: #79c0ff; background: rgba(121,192,255,0.1); }
 
+.map-hero-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  background: #1c2230;
+  border: 1px solid #3a4460;
+  border-radius: 7px;
+  padding: 8px 11px;
+  min-width: 180px;
+  max-width: 230px;
+  pointer-events: none;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.6);
+  font-size: 0.75rem;
+}
+.mht-name    { font-weight: bold; font-size: 0.85rem; margin-bottom: 5px; }
+.mht-row     { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 2px; color: #c9d1d9; }
+.mht-row span:first-child { color: #8b949e; }
+.mht-pct     { color: #8b949e; font-size: 0.7rem; }
+.mht-shield  { color: #79c0ff; font-weight: bold; }
+.mht-statuses { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.mht-status  { background: #2d3348; color: #e2c98a; border-radius: 3px; padding: 1px 5px; font-size: 0.68rem; }
+.mht-items   { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; border-top: 1px solid #2d3a50; padding-top: 5px; }
+.mht-item-icon { width: 22px; height: 22px; border-radius: 3px; object-fit: cover; border: 1px solid #3a4460; }
+.mht-none    { color: #8b949e; font-style: italic; font-size: 0.68rem; }
+
 #action-counter {
   font-size: 0.72rem;
   color: var(--muted);

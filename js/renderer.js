@@ -28,6 +28,11 @@ class Renderer {
     document.body.appendChild(this._spellTooltip);
     this._initSpellTooltip();
 
+    // Tooltip héros sur la map
+    this._mapHeroTooltip = document.createElement('div');
+    this._mapHeroTooltip.className = 'map-hero-tooltip';
+    document.body.appendChild(this._mapHeroTooltip);
+
     // Preload hero portraits
     this._portraits = {};
     Object.values(HERO_TYPES).forEach(t => {
@@ -756,6 +761,51 @@ class Renderer {
   }
 
   // ============================================================
+  // MAP HERO TOOLTIP
+  // ============================================================
+
+  showMapHeroTooltip(hero, clientX, clientY) {
+    const tip = this._mapHeroTooltip;
+    const hpPct  = Math.round(hero.currentHP  / hero.maxHP  * 100);
+    const manaPct = Math.round(hero.currentMana / hero.maxMana * 100);
+    const shieldHtml = (hero.shield || 0) > 0
+      ? `<div class="mht-row"><span>Bouclier</span><span class="mht-shield">${hero.shield}</span></div>` : '';
+    const statusHtml = (hero.statusEffects || []).filter(e => e.turns > 0).map(e =>
+      `<span class="mht-status">${e.label || e.type} (${e.turns}t)</span>`
+    ).join('');
+    const itemsHtml = hero.items.length
+      ? hero.items.map(id => {
+          const it = EQUIPMENT[id];
+          return it ? `<img src="${it.icon}" alt="${it.name}" title="${it.name}" class="mht-item-icon">` : '';
+        }).join('')
+      : '<span class="mht-none">Aucun item</span>';
+
+    tip.innerHTML = `
+      <div class="mht-name" style="color:${hero.playerIdx === 0 ? '#00d2ff' : '#ff6b35'}">${hero.name}</div>
+      <div class="mht-row"><span>❤ HP</span><span>${hero.currentHP}/${hero.maxHP} <span class="mht-pct">(${hpPct}%)</span></span></div>
+      <div class="mht-row"><span>🔵 Mana</span><span>${hero.currentMana}/${hero.maxMana} <span class="mht-pct">(${manaPct}%)</span></span></div>
+      ${shieldHtml}
+      <div class="mht-row"><span>AD / AP</span><span>${hero.ad} / ${hero.ap}</span></div>
+      <div class="mht-row"><span>Armure / RM</span><span>${hero.armor} / ${hero.mr}</span></div>
+      <div class="mht-row"><span>PM / PO</span><span>${hero.pm} / ${hero.po}</span></div>
+      ${statusHtml ? `<div class="mht-statuses">${statusHtml}</div>` : ''}
+      <div class="mht-items">${itemsHtml}</div>`;
+
+    tip.style.display = 'block';
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = clientX + 14, top = clientY - th / 2;
+    if (left + tw > window.innerWidth)  left = clientX - tw - 14;
+    if (top < 4)                        top  = 4;
+    if (top + th > window.innerHeight)  top  = window.innerHeight - th - 4;
+    tip.style.left = left + 'px';
+    tip.style.top  = top  + 'px';
+  }
+
+  hideMapHeroTooltip() {
+    this._mapHeroTooltip.style.display = 'none';
+  }
+
+  // ============================================================
   // SHOP OVERLAY
   // ============================================================
 
@@ -765,7 +815,7 @@ class Renderer {
       lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana',
       critChance:'Chance Critique %',
       goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
-      goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort' };
+      goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort', armorPct:'Armure %' };
 
     const show = (itemId, el) => {
       const item = EQUIPMENT[itemId];
@@ -979,7 +1029,7 @@ class Renderer {
       ap:   i => (i.stats.ap    || 0) > 0,
       hp:   i => (i.stats.maxHP || 0) > 0,
       res:  i => (i.stats.armor || 0) > 0 || (i.stats.mr || 0) > 0,
-      mana: i => (i.stats.maxMana || 0) > 0 || (i.stats.manaRegen || 0) > 0,
+      mana: i => (i.stats.maxMana || 0) > 0 || (i.stats.manaRegen || 0) > 0 || (i.stats.manaRegenPct || 0) > 0,
       util: i => (i.stats.critChance    || 0) > 0 || (i.stats.lifeSteal      || 0) > 0 ||
                  (i.stats.cdReduction   || 0) > 0 || (i.stats.bonusSpellRange || 0) > 0 ||
                  (i.stats.hpRegen       || 0) > 0 || (i.stats.goldPerTurn     || 0) > 0 ||

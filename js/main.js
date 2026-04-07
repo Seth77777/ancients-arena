@@ -3,7 +3,7 @@
 // ============================================================
 
 const PASSIVE_LABELS = {
-  rock_solid:    'Roche Solide — Les dégâts physiques subis sont réduits de 50%.',
+  rock_solid:    'Roche Solide — Les dégâts physiques subis sont réduits de 25%.',
   skjer_passive:   'Instinct de prédateur — En tuant un ennemi, Skjer récupère tout son mana et tous ses points de mouvement, et tous ses cooldowns sont remis à zéro.',
   electro_passive:  'Surcharge — Chaque ennemi touché par un sort d\'Electro lui confère +5 AP (permanent).',
   masello_passive:  'Cohésion — Au début de son tour, Masello gagne +1 PM par allié à moins de 7 cases (distance Manhattan).',
@@ -20,7 +20,7 @@ const PASSIVE_LABELS = {
   sharagoth_passive:  'Plus forts ensemble — Au début de son tour, Sharagoth gagne un bouclier de 10% de ses HP max par allié présent à moins de 10 cases (Manhattan), pendant 2 tours.',
   vaillance:          'Vaillance — Le premier débuff appliqué à Ondine chaque tour est automatiquement annulé.',
   abyss_passive:      'Équilibre des abysses — Les attaques de base d\'Abyss infligent 40% de dégâts physiques, 40% de dégâts magiques et 20% de dégâts bruts.',
-  faena_passive:      'Coups critiques mortels — Chaque tranche de 10 AD donne +1% de dégâts critiques (base 150%). S\'applique aux attaques de base et aux Flèches de douleur.',
+  faena_passive:      'Coups critiques mortels — Chaque tranche de 10 AD donne +1% de dégâts critiques (base 200%). S\'applique aux attaques de base et aux Flèches de douleur.',
   pibot_passive:      'Batterie — Au début de chaque tour de Pibot, une case ⚡ apparaît à 5 cases ou moins. Passer dessus (ou utiliser Station de recharge) récupère 25% de la mana manquante.',
   gabriel_passive:    'Pas Léger — Au début du tour de chaque allié à moins de 7 cases de Gabriel, cet allié gagne +1 PM.',
   grolith_passive:    'Pierre qui roule — Grolith gagne 70 points de bouclier au début de chaque tour. Ce bouclier n\'expire jamais.',
@@ -229,7 +229,7 @@ function _renderItemsSection() {
   const STAT_LABELS = {
     ad: '⚔ AD', ap: '✨ AP', maxHP: '❤ HP max', maxMana: '🔵 Mana max',
     armor: '🛡 Armure', mr: '🔮 RM', lifeSteal: '🩸 Vol de vie',
-    hpRegen: '♻ Rég. HP', manaRegen: '💧 Rég. Mana', pm: '👟 PM',
+    hpRegen: '♻ Rég. HP', manaRegen: '💧 Rég. Mana', manaRegenPct: '💧 Rég. Mana %', pm: '👟 PM',
     cdReduction: '⏬ Réd. CD', bonusSpellRange: '🎯 Portée sorts',
     goldPerTurn: '💰 Or/tour', healEfficiency: '💚 Efficacité soins',
     goldSharePct: '🤝 Partage or', manaOnSpell: '💧 Mana/sort',
@@ -249,7 +249,7 @@ function _renderItemsSection() {
       const statsLines = Object.entries(it.stats || {}).map(([k, v]) => {
         if (k === 'manaOnSpellMax') return null;
         const lbl = STAT_LABELS[k] || k;
-        const suffix = ['armor','mr','lifeSteal','healEfficiency','goldSharePct'].includes(k) ? '%' : '';
+        const suffix = ['armor','mr','lifeSteal','healEfficiency','goldSharePct','manaRegenPct'].includes(k) ? '%' : '';
         return `<div class="ic-stat"><span class="ic-stat-lbl">${lbl}</span><span>+${v}${suffix}</span></div>`;
       }).filter(Boolean).join('');
 
@@ -666,7 +666,7 @@ window.addEventListener('DOMContentLoaded', () => {
         break;
       }
       case 'endTurn':
-        g.endHeroTurn();
+        if (g.currentHero?.playerIdx === 1) g.endHeroTurn();
         break;
       case 'buy':
         g.buyItem(action.itemId);
@@ -701,9 +701,47 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Adversaire déconnecté
+  // Soi-même en cours de reconnexion
+  document.addEventListener('online:reconnecting', () => {
+    _showOnlineBanner('🔄 Connexion perdue — reconnexion en cours…', 'warn');
+  });
+
+  // Soi-même reconnecté
+  document.addEventListener('online:reconnected', () => {
+    _showOnlineBanner('✅ Reconnecté !', 'ok', 3000);
+  });
+
+  // Adversaire en cours de reconnexion
+  document.addEventListener('online:opponent-reconnecting', () => {
+    _showOnlineBanner('⏳ Adversaire en cours de reconnexion… (30 s)', 'warn');
+  });
+
+  // Adversaire reconnecté
+  document.addEventListener('online:opponent-reconnected', () => {
+    _showOnlineBanner('✅ Adversaire reconnecté !', 'ok', 3000);
+  });
+
+  // Adversaire définitivement déconnecté (timeout expiré)
   document.addEventListener('online:disconnected', () => {
     alert('Votre adversaire s\'est déconnecté. La partie est terminée.');
     location.reload();
   });
 });
+
+function _showOnlineBanner(msg, type, autoDismissMs = 0) {
+  let banner = document.getElementById('online-reconnect-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'online-reconnect-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;padding:8px 20px;border-radius:0 0 8px 8px;font-weight:bold;font-size:0.9rem;pointer-events:none;transition:opacity 0.4s';
+    document.body.appendChild(banner);
+  }
+  banner.textContent = msg;
+  banner.style.opacity = '1';
+  banner.style.background = type === 'ok' ? '#2ecc71' : '#e67e22';
+  banner.style.color = '#fff';
+  if (banner._dismissTimer) clearTimeout(banner._dismissTimer);
+  if (autoDismissMs > 0) {
+    banner._dismissTimer = setTimeout(() => { banner.style.opacity = '0'; }, autoDismissMs);
+  }
+}

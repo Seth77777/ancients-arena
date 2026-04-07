@@ -13,6 +13,7 @@ class InputHandler {
     // Canvas
     this.renderer.canvas.addEventListener('click',       e => this._onCanvasClick(e));
     this.renderer.canvas.addEventListener('mousemove',   e => this._onCanvasHover(e));
+    this.renderer.canvas.addEventListener('mouseleave',  () => this.renderer.hideMapHeroTooltip());
     this.renderer.canvas.addEventListener('contextmenu', e => { e.preventDefault(); this._cancelMode(); });
 
     // Action buttons
@@ -331,11 +332,22 @@ class InputHandler {
   _onCanvasHover(e) {
     const g = this.game, r = this.renderer;
     if (g.phase !== 'playing') return;
+
+    // Hero tooltip on the map
+    const cell = this._cellFromEvent(e);
+    const heroAtCell = cell
+      ? g.players.flatMap(p => p.heroes).find(h => h.isAlive && h.position && h.position.x === cell.x && h.position.y === cell.y)
+      : null;
+    if (heroAtCell) {
+      r.showMapHeroTooltip(heroAtCell, e.clientX, e.clientY);
+    } else {
+      r.hideMapHeroTooltip();
+    }
+
     if (g.actionMode !== 'spell') return;
     const spell = g.selectedSpell;
     if (!spell || spell.targetType === 'self' || spell.targetType === 'no_target' || spell.targetType === 'pm_sacrifice') return;
     if (spell.targetType === 'push_enemy' && g.pushTarget) return;
-    const cell = this._cellFromEvent(e);
     if (!cell) { r.zoneSpellTarget = null; r.render(); return; }
     r.zoneSpellTarget = cell;
     r.render();
