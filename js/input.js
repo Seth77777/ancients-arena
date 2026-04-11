@@ -485,4 +485,19 @@ class InputHandler {
     this.renderer._refreshShopGrid(this.renderer._shopCurrentTier);
     this.renderer._clearShopDetail();
   }
+
+  _shopSell(itemId) {
+    const online  = window.OnlineMode?.active;
+    if (online && !this._isMyTurn()) return;
+    const isGuest = online && !window.OnlineMode.isHost;
+
+    if (isGuest) {
+      window.OnlineMode.sendGuestAction({ type: 'sell', itemId });
+      return;
+    }
+    if (!this.game.sellItem(itemId)) return;
+    this._onlineSync();
+    this.renderer._refreshShopHero();
+    this.renderer._refreshShopGrid(this.renderer._shopCurrentCategory);
+  }
 }

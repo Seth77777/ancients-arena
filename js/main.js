@@ -457,7 +457,7 @@ function renderInfoScreen(tab) {
   });
 }
 
-let game, renderer, input, editorUI;
+let game, renderer, input, editorUI, bot;
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -474,8 +474,24 @@ window.addEventListener('DOMContentLoaded', () => {
   window.input    = input    = new InputHandler(game, renderer);
   editorUI = new EditorUI();
 
+  // Monkey-patch openShop pour déclencher le bot
+  const _origOpenShop = renderer.openShop.bind(renderer);
+  renderer.openShop = function() {
+    _origOpenShop();
+    if (bot && game.currentHero?.playerIdx === 1) {
+      renderer.closeShop();
+      setTimeout(() => bot.maybeAct(), 150);
+    }
+  };
+
   // ── Menu principal ───────────────────────────────────────
   document.getElementById('btn-menu-draft').addEventListener('click', () => {
+    showScreen('draft-screen');
+    renderer.renderDraft();
+  });
+
+  document.getElementById('btn-menu-bot').addEventListener('click', () => {
+    bot = new GameBot(game, () => { renderer.render(); renderer.updateUI(); });
     showScreen('draft-screen');
     renderer.renderDraft();
   });
@@ -603,6 +619,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Les deux : réception de l'état mis à jour par l'hôte
   document.addEventListener('online:state', e => {
     const prevPhase = game.phase;
+    const prevHeroIdx = game.currentHeroIdx;
     game.applySerializedState(e.detail);
 
     if (game.phase === 'gameover') {
@@ -634,6 +651,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if (game.phase === 'playing') {
       renderer.render();
       renderer.updateUI();
+      // If it's now the guest's turn, open the shop
+      if (window.OnlineMode?.active && !window.OnlineMode.isHost && game.currentHeroIdx !== prevHeroIdx && game.currentHero?.playerIdx === 1) {
+        renderer.openShop();
+      }
     } else if (game.phase === 'draft') {
       renderer.renderDraft();
     }
@@ -670,6 +691,9 @@ window.addEventListener('DOMContentLoaded', () => {
         break;
       case 'buy':
         g.buyItem(action.itemId);
+        break;
+      case 'sell':
+        g.sellItem(action.itemId);
         break;
       case 'wolf_move': {
         const wolf = (g.noyalaWolves || []).find(w => w.id === action.wolfId);

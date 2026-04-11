@@ -195,6 +195,7 @@ class Renderer {
       section.appendChild(grid);
       pool.appendChild(section);
     });
+    if (window.bot) setTimeout(() => window.bot.maybeAct(), 50);
   }
 
   // ============================================================
@@ -917,10 +918,7 @@ class Renderer {
         sellBtn.className = 'inv-sell-btn';
         sellBtn.textContent = `Vendre ${refund}g`;
         sellBtn.addEventListener('click', () => {
-          if (this.game.sellItem(id)) {
-            this._refreshShopHero();
-            this._refreshShopGrid(this._shopCurrentCategory);
-          }
+          window.input._shopSell(id);
         });
         div.appendChild(sellBtn);
         invEl.appendChild(div);
