@@ -325,6 +325,23 @@ class Renderer {
         ctx.textBaseline = 'alphabetic';
       }
 
+      // Zones d'amour fou (Cupidon - L'amour fou)
+      const _af = this.game.amourFouZones?.find(z => Math.abs(x - z.cx) + Math.abs(y - z.cy) <= z.size);
+      if (_af) {
+        ctx.fillStyle = 'rgba(255,105,180,0.30)';
+        ctx.fillRect(px, py, cs, cs);
+        ctx.strokeStyle = '#ff69b4';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 1, py + 1, cs - 2, cs - 2);
+        if (x === _af.cx && y === _af.cy) {
+          ctx.fillStyle = '#ff69b4';
+          ctx.font = `bold ${Math.floor(cs * 0.35)}px sans-serif`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(_af.turnsLeft, px + cs / 2, py + cs / 2);
+          ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        }
+      }
+
       // Traps
       const _trap = this.game.traps.find(t => t.x === x && t.y === y);
       if (_trap) {
@@ -495,6 +512,27 @@ class Renderer {
     ctx.fillStyle = '#111'; ctx.fillRect(bx, by, bw, bh);
     ctx.fillStyle = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c';
     ctx.fillRect(bx, by, Math.floor(bw * hpPct), bh);
+
+    // Charges de Quackshot — afficher sur les ennemis
+    const allHeroes = this.game?.players?.flatMap(p => p.heroes) || [];
+    const quackshotCaster = allHeroes.find(h => h.passive === 'quackshot_passive');
+    if (quackshotCaster && hero.playerIdx !== quackshotCaster.playerIdx) {
+      const charges = quackshotCaster.quackshotCharges[hero.instanceId] || 0;
+      if (charges > 0) {
+        // Badge de charges en haut à droite du héros
+        const badgeX = hero.position.x * cs + cs - 8;
+        const badgeY = hero.position.y * cs + 6;
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.arc(badgeX, badgeY, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 8px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(charges, badgeX, badgeY);
+      }
+    }
   }
 
   _drawGlow(hero) {
@@ -1415,11 +1453,14 @@ class Renderer {
         if (spell.baseDamage) parts.push(spell.baseDamage);
         if (spell.adRatio)    parts.push(`${spell.adRatio} AD`);
         if (spell.apRatio)    parts.push(`${spell.apRatio} AP`);
-        dmgHtml = `<div class="st-dmg st-dmg--${spell.damageType || 'raw'}">${parts.join(' + ')} dégâts ${dmgType}</div>`;
+        const calculatedDmg = Math.floor((spell.baseDamage || 0) + (hero.ad || 0) * (spell.adRatio || 0) + (hero.ap || 0) * (spell.apRatio || 0));
+        dmgHtml = `<div class="st-dmg st-dmg--${spell.damageType || 'raw'}">${parts.join(' + ')} dégâts ${dmgType}<br><small>Avant résistance : ${calculatedDmg} dégâts</small></div>`;
       } else if (spell.healBase) {
-        dmgHtml = `<div class="st-dmg st-dmg--raw">Soigne ${spell.healBase}${spell.healApRatio ? ` + ${spell.healApRatio} AP` : ''}</div>`;
+        const calculatedHeal = Math.floor((spell.healBase || 0) + (hero.ap || 0) * (spell.healApRatio || 0));
+        dmgHtml = `<div class="st-dmg st-dmg--raw">Soigne ${spell.healBase}${spell.healApRatio ? ` + ${spell.healApRatio} AP` : ''}<br><small>Total : ${calculatedHeal} PV</small></div>`;
       } else if (spell.shieldAmount) {
-        dmgHtml = `<div class="st-dmg st-dmg--raw">Bouclier ${spell.shieldAmount}${spell.adShieldRatio ? ` + ${spell.adShieldRatio} AD` : ''}</div>`;
+        const calculatedShield = Math.floor((spell.shieldAmount || 0) + (hero.ad || 0) * (spell.adShieldRatio || 0));
+        dmgHtml = `<div class="st-dmg st-dmg--raw">Bouclier ${spell.shieldAmount}${spell.adShieldRatio ? ` + ${spell.adShieldRatio} AD` : ''}<br><small>Total : ${calculatedShield} bouclier</small></div>`;
       }
 
       tip.innerHTML = `

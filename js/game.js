@@ -190,6 +190,9 @@ class GameState {
     // Zones de lame d'eau (Ondine)
     this.lameEauZones = [];
 
+    // Zones d'amour fou (Cupidon - L'amour fou)
+    this.amourFouZones = [];
+
     // Gold total gagné par équipe depuis le début
     this.teamGoldEarned = [0, 0];
 
@@ -453,6 +456,38 @@ class GameState {
       if (!hero.isAlive) { this._advance(); return; }
     }
 
+    // Zone d'amour fou (Cupidon - L'amour fou) : déplacement aléatoire des ennemis
+    if (hero.position) {
+      this.amourFouZones.forEach(zone => {
+        if (!hero.isAlive || hero.playerIdx === zone.caster.playerIdx) return;
+        if (Math.abs(hero.position.x - zone.cx) + Math.abs(hero.position.y - zone.cy) <= zone.size) {
+          // Déplacement aléatoire dans une direction orthogonale
+          const directions = [
+            { dx: 1, dy: 0 },   // Est
+            { dx: -1, dy: 0 },  // Ouest
+            { dx: 0, dy: 1 },   // Sud
+            { dx: 0, dy: -1 }   // Nord
+          ];
+          let moved = false;
+          for (let attempt = 0; attempt < 4; attempt++) {
+            const dir = directions[Math.floor(Math.random() * directions.length)];
+            const nx = hero.position.x + dir.dx;
+            const ny = hero.position.y + dir.dy;
+            if (!isWall(nx, ny) && !this.getHeroAt(nx, ny)) {
+              hero.position = { x: nx, y: ny };
+              this.addLog(`${hero.name} — L'amour fou : déplacé aléatoirement à (${nx}, ${ny})`);
+              moved = true;
+              break;
+            }
+          }
+          if (!moved) {
+            this.addLog(`${hero.name} — L'amour fou : aucune direction disponible`);
+          }
+        }
+      });
+      if (!hero.isAlive) { this._advance(); return; }
+    }
+
     // Vaillance (Ondine) : réinitialisation du bouclier de débuff chaque tour de héros
     if (hero.passive === 'vaillance') hero.debuffDodgedThisTurn = false;
 
@@ -531,6 +566,12 @@ class GameState {
     // Passif Layia : reset bonus PO temporaire
     if (hero.passive === 'layia_passive') {
       hero.layiaBonusPOTurn = 0;
+    }
+
+    // Passif Cupidon : les attaques de ce tour deviennent protection pour le prochain
+    if (hero.passive === 'cupidon_passive') {
+      hero.cupidonAttackedLastTurn = new Set([...hero.cupidonAttackedThisTurn]);
+      hero.cupidonAttackedThisTurn = new Set();
     }
 
     // Passif Épées Croisées — Jambes de Feu : +1 PM si CD = 0
@@ -823,6 +864,13 @@ class GameState {
     // Lame d'eau — réinitialisation des dégâts du tour
     this.lameEauZones.forEach(z => z.damagedThisTurn = new Set());
     this.lameEauZones = this.lameEauZones.filter(z => z.turnsLeft > 0);
+
+    // Zones d'amour fou — décompte
+    this.amourFouZones.forEach(z => z.turnsLeft--);
+    this.amourFouZones = this.amourFouZones.filter(z => {
+      if (z.turnsLeft <= 0) { this.addLog('💕 Zone d\'amour fou expirée'); return false; }
+      return true;
+    });
 
     // Enchanteur Rouge : mise à jour de l'aura
     this._recalcEnchanteurAura();
@@ -1254,6 +1302,27 @@ class GameState {
         this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
         this.addLog(`${attacker.name} — Passif : +1 PM`);
       }
+      // Passif Cupidon : tracker les ennemis attaqués pour le passif Amour fou
+      if (attacker.passive === 'cupidon_passive') {
+        targets.forEach(e => attacker.cupidonAttackedThisTurn.add(e.instanceId));
+      }
+
+      // Passif Quackshot : Marque du Chasseur (Layia frappe plusieurs ennemis)
+      if (attacker.passive === 'quackshot_passive' && targets.length > 0) {
+        const mainTarget = targets[0];
+        // Si change de cible, retirer les charges de l'ancienne cible
+        if (attacker.quackshotCurrentTarget && attacker.quackshotCurrentTarget !== mainTarget.instanceId) {
+          delete attacker.quackshotCharges[attacker.quackshotCurrentTarget];
+          this.addLog(`${attacker.name} — Marque retirée de l'ancienne cible`);
+        }
+        // Ajouter une charge à chaque cible touchée
+        targets.forEach(e => {
+          attacker.quackshotCharges[e.instanceId] = (attacker.quackshotCharges[e.instanceId] || 0) + 1;
+          this.addLog(`${attacker.name} → ${e.name} — Marque: +1 charge (total: ${attacker.quackshotCharges[e.instanceId]})`);
+        });
+        attacker.quackshotCurrentTarget = mainTarget.instanceId;
+      }
+
       this.autoAttacksUsed++;
       this.actionsUsed++;
       this.canBuy = false;
@@ -1401,6 +1470,24 @@ class GameState {
       this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
       this.addLog(`${attacker.name} — Passif : +1 PM`);
     }
+    // Passif Cupidon : tracker les ennemis attaqués pour le passif Amour fou
+    if (attacker.passive === 'cupidon_passive' && targetHero) {
+      attacker.cupidonAttackedThisTurn.add(targetHero.instanceId);
+    }
+
+    // Passif Quackshot : Marque du Chasseur
+    if (attacker.passive === 'quackshot_passive' && targetHero) {
+      // Si change de cible, retirer les charges de l'ancienne cible
+      if (attacker.quackshotCurrentTarget && attacker.quackshotCurrentTarget !== targetHero.instanceId) {
+        delete attacker.quackshotCharges[attacker.quackshotCurrentTarget];
+        this.addLog(`${attacker.name} — Marque retirée de l'ancienne cible`);
+      }
+      // Ajouter une charge à la cible
+      attacker.quackshotCharges[targetHero.instanceId] = (attacker.quackshotCharges[targetHero.instanceId] || 0) + 1;
+      attacker.quackshotCurrentTarget = targetHero.instanceId;
+      this.addLog(`${attacker.name} → ${targetHero.name} — Marque: +1 charge (total: ${attacker.quackshotCharges[targetHero.instanceId]})`);
+    }
+
     this.autoAttacksUsed++;
     this.actionsUsed++;
     this.canBuy = false;
@@ -1526,6 +1613,57 @@ class GameState {
         }
         this._applySpellEffects(spell, [enemy]);
         if (caster.passive === 'electro_passive') { caster.ap += 5; this.addLog(`${caster.name} — Passif : +5 AP`); }
+
+        // Quackshot Q — Chasse à l'épuisement : effets basés sur les charges
+        if (spell.id === 'quackshot_q' && enemy.isAlive) {
+          const charges = caster.quackshotCharges[enemy.instanceId] || 0;
+          if (charges >= 6) {
+            enemy.rootTurns = Math.max(enemy.rootTurns, 1);
+            this.addLog(`${enemy.name} — Root appliqué (6+ charges)`);
+          } else if (charges >= 3) {
+            if (!enemy.statusEffects) enemy.statusEffects = [];
+            const existingSlow = enemy.statusEffects.find(e => e.type === 'slow' && e.pmReduction === 2);
+            if (!existingSlow) {
+              enemy.statusEffects.push({ type: 'slow', pmReduction: 2, turns: 1 });
+            }
+            this.addLog(`${enemy.name} — Ralenti de 2 PM pendant 1 tour (3+ charges)`);
+          }
+        }
+
+        // Quackshot W — Changement de proie : transférer 50% des charges de la cible actuelle
+        if (spell.id === 'quackshot_w') {
+          if (caster.quackshotCurrentTarget && caster.quackshotCurrentTarget !== enemy.instanceId) {
+            const currentTarget = this._getAllHeroes().find(h => h.instanceId === caster.quackshotCurrentTarget);
+            if (currentTarget && currentTarget.isAlive) {
+              const charges = caster.quackshotCharges[currentTarget.instanceId] || 0;
+              const transferred = Math.floor(charges * 0.5);
+              if (transferred > 0) {
+                caster.quackshotCharges[currentTarget.instanceId] = charges - transferred;
+                caster.quackshotCharges[enemy.instanceId] = (caster.quackshotCharges[enemy.instanceId] || 0) + transferred;
+                caster.quackshotCurrentTarget = enemy.instanceId;
+                this.addLog(`${caster.name} — Changement de proie: ${transferred} charges transférées de ${currentTarget.name} à ${enemy.name}`);
+              } else {
+                this.addLog(`${caster.name} → ${spell.name} : pas assez de charges à transférer`);
+              }
+            }
+          } else {
+            this.addLog(`${caster.name} → ${spell.name} : sélectionnez une cible différente`);
+          }
+        }
+
+        // Quackshot R — Coup de grâce : consomme toutes les charges
+        if (spell.id === 'quackshot_r') {
+          const charges = caster.quackshotCharges[enemy.instanceId] || 0;
+          if (charges > 0) {
+            const bonusDmg = charges * Math.floor(caster.ad * 0.25);
+            this._applyDamage(enemy, bonusDmg, caster, 'physical');
+            delete caster.quackshotCharges[enemy.instanceId];
+            this.addLog(`${enemy.name} — Coup de grâce: +${bonusDmg} dégâts (${charges} charges consommées)`);
+          } else {
+            this.addLog(`${caster.name} → ${spell.name} : la cible n'a pas de charges`);
+          }
+        }
+
         // Pibot — Pinces robotiques : attirer la cible de pullCells cases
         if (spell.pullCells && enemy.isAlive) {
           const pdx = Math.sign(caster.position.x - enemy.position.x);
@@ -2210,6 +2348,15 @@ class GameState {
           this.addLog(`${caster.name} → ${spell.name} (${hit.map(e => e.name).join(', ')})`);
         }
         this._applySpellEffects(spell, hit);
+        // Cupidon R — L'amour fou : crée une zone de déplacement aléatoire
+        if (spell.id === 'cupidon_r') {
+          const amourZone = {
+            cx: x, cy: y, size: sz, turnsLeft: 4, caster,
+            cellsEntered: new Set()  // track which heroes entered this turn
+          };
+          this.amourFouZones.push(amourZone);
+          this.addLog(`${caster.name} → ${spell.name} : zone créée (les ennemis seront déplacés aléatoirement)`);
+        }
         break;
       }
       case 'place_glyph': {
@@ -2778,6 +2925,11 @@ class GameState {
     if ((target.invincibleTurnsLeft || 0) > 0) {
       this.addLog(`${target.name} est invincible — dégâts annulés !`);
       return;
+    }
+    // Passif Cupidon : Amour fou — réduit les dégâts de 50% si on a attaqué le caster au tour dernier
+    if (target.passive === 'cupidon_passive' && attacker && target.cupidonAttackedLastTurn.has(attacker.instanceId)) {
+      damage = Math.floor(damage * 0.5);
+      this.addLog(`${target.name} — Amour fou : dégâts réduits à 50%`);
     }
     // Passif Decigeno : multiplicateur de dégâts
     if (attacker?.decigenoDmgPct) {
@@ -3494,6 +3646,7 @@ class GameState {
       bombZones:          this.bombZones.map(serObj),
       hateWalls:          this.hateWalls.map(serObj),
       lameEauZones:       this.lameEauZones.map(serObj),
+      amourFouZones:      this.amourFouZones.map(serObj),
       teamGoldEarned:     this.teamGoldEarned,
       globalTurn:         this.globalTurn,
       heroTurnIndex:      this.heroTurnIndex,
@@ -3551,5 +3704,6 @@ class GameState {
     this.bombZones    = relink(s.bombZones);
     this.hateWalls    = relink(s.hateWalls);
     this.lameEauZones     = relink(s.lameEauZones);
+    this.amourFouZones    = relink(s.amourFouZones || []);
   }
 }

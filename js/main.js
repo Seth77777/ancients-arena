@@ -9,9 +9,9 @@ const PASSIVE_LABELS = {
   masello_passive:  'Cohésion — Au début de son tour, Masello gagne +1 PM par allié à moins de 7 cases (distance Manhattan).',
   decigeno_passive: 'Predator Mode — Lorsque Decigeno utilise une action (attaque ou sort), il consomme tous ses PM restants et gagne +5% dégâts par PM consommé jusqu\'à la fin du tour.',
   voodoo_passive:   'Hémorragie — Chaque sort de Voodoo qui touche un ennemi lui inflige Hémorragie : réduit les soins reçus de 50% (vol de vie inclus) pendant 1 tour.',
-  vadro_passive:    'Soif de Sang — Vadro possède en permanence 50% de vol de vie.',
+  vadro_passive:    'Soif de Sang — Vadro possède 50% de vol de vie (cumule avec les items).',
   shallah_passive:  'Architecte des Glyphes — Lorsque Shallah marche dans une glyphe qu\'il a posée, il gagne +1 PM pour ce tour.',
-  layia_passive:    'Chasseresse — Les attaques de base touchent tous les ennemis à portée (commence à 1 PO ; héros à distance dès 2 PO).',
+  layia_passive:    'Chasseresse — Les attaques de base touchent tous les ennemis à portée (commence à 1 PO ; héros à distance dès 2 PO). Gagne +1 PO toutes les 2 zones marron collectées.',
   chronos_passive:  'Maître du Temps — Chaque sort lancé rapporte 50 PO à Chronos.',
   shana_passive:    'Félin pour l\'autre — Quand Shana soigne un allié, elle se soigne aussi du même montant.',
   anastasia_passive: 'Soins Intéressés — Chaque fois qu\'Anastasia soigne un héros (allié ou elle-même), elle gagne 10 PO. Elle peut soigner des cibles à pleine vie.',
@@ -25,7 +25,9 @@ const PASSIVE_LABELS = {
   gabriel_passive:    'Pas Léger — Au début du tour de chaque allié à moins de 7 cases de Gabriel, cet allié gagne +1 PM.',
   grolith_passive:    'Pierre qui roule — Grolith gagne 70 points de bouclier au début de chaque tour. Ce bouclier n\'expire jamais.',
   noyala_passive:     'Chasse — Noyala gagne +1 PM au début de son tour si elle est adjacente à un mur. Ses loups récupèrent leurs PM à chaque début de son tour.',
-  salena_passive:     'Lame Magique — Chaque attaque de base de Salena inflige 0,3×AP dégâts magiques supplémentaires à la cible.'
+  salena_passive:     'Lame Magique — Chaque attaque de base de Salena inflige 0,3×AP dégâts magiques supplémentaires à la cible.',
+  cupidon_passive:    'Amour fou — Si un adversaire contre qui vous avez envoyé une attaque de base au dernier tour vous attaque (sorts + AA), vous ne recevez que 50% des dégâts à la place (applique débuffs).',
+  quackshot_passive:  'Marque du Chasseur — Chaque attaque de base ajoute une charge à l\'ennemi (cumulable). Changer de cible retire les charges de l\'ennemi précédent.'
 };
 
 const TARGET_LABELS = {

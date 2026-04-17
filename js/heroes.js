@@ -339,27 +339,27 @@ HERO_TYPES['roam_2'] = {
   colorFill: '#5b2c6f', colorStroke: '#9b59b6',
   portrait: 'assets/heroes/masello.png',
   passive: 'masello_passive',
-  maxHP: 2150, maxMana: 240, hpRegen: 20, manaRegen: 25,
+  maxHP: 2150, maxMana: 360, hpRegen: 20, manaRegen: 35,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 1,
   spells: [
     {
       id: 'masello_q', name: 'Masellojutsu',
       description: 'Dash à côté d\'un ennemi et lui inflige 80 + 0.6 AD dégâts physiques.',
-      manaCost: 110, range: 6, cooldown: 2, cdMin: 1,
+      manaCost: 60, range: 6, cooldown: 2, cdMin: 1,
       damageType: 'physical', baseDamage: 80, adRatio: 0.6, apRatio: 0,
       targetType: 'dash_to_enemy', zone: null, effects: []
     },
     {
       id: 'masello_w', name: 'Help is coming',
       description: 'Se téléporte sur une case adjacente à un allié.',
-      manaCost: 70, range: 6, cooldown: 2, cdMin: 1,
+      manaCost: 40, range: 6, cooldown: 2, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'dash_to_ally', zone: null, effects: []
     },
     {
       id: 'masello_r', name: 'Energy Kick',
       description: 'Frappe toutes les cibles adjacentes (8 cases). Inflige 110 + 0.7 AD dégâts physiques.',
-      manaCost: 140, range: 1, cooldown: 4, cdMin: 1,
+      manaCost: 90, range: 1, cooldown: 4, cdMin: 1,
       damageType: 'physical', baseDamage: 110, adRatio: 0.7, apRatio: 0,
       targetType: 'no_target', adjacentHit: true, zone: null, effects: []
     }
@@ -754,6 +754,71 @@ HERO_TYPES['dpt_3'] = {
   ]
 };
 
+HERO_TYPES['dpt_4'] = {
+  id: 'dpt_4', name: 'Cupidon', role: 'DPT', roleId: 'dpt', roleOrder: 4,
+  colorFill: '#1d6a39', colorStroke: '#27ae60',
+  portrait: 'assets/heroes/cupidon.png',
+  passive: 'cupidon_passive',
+  maxHP: 2000, maxMana: 250, hpRegen: 30, manaRegen: 30,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 5,
+  spells: [
+    {
+      id: 'cupidon_q', name: 'Flèche d\'amour',
+      description: 'Zone 1-3-1 : inflige 70 + 0,8 AD dégâts physiques et retire 1 PM aux ennemis touchés.',
+      manaCost: 70, range: 5, cooldown: 3, cdMin: 1,
+      damageType: 'physical', baseDamage: 70, adRatio: 0.8, apRatio: 0,
+      targetType: 'diamond_zone', zone: { size: 1 },
+      effects: [{ type: 'slow', pmReduction: 1, turns: 1 }]
+    },
+    {
+      id: 'cupidon_w', name: 'Dans les nuages',
+      description: 'Dash de 2 cases en avant à travers un mur (et à travers un mur seulement).',
+      manaCost: 80, range: 2, cooldown: 2, cdMin: 1,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'stealth_dash', throughWallOnly: true, zone: null, effects: []
+    },
+    {
+      id: 'cupidon_r', name: 'L\'amour fou',
+      description: 'Zone 1-3-5-3-1 : les héros ennemis se déplacent dans des directions aléatoires lorsqu\'ils traversent cette zone.',
+      manaCost: 100, range: 5, cooldown: 7, cdMin: 2,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'diamond_zone', zone: { size: 2 }, effects: []
+    }
+  ]
+};
+
+HERO_TYPES['dpt_5'] = {
+  id: 'dpt_5', name: 'Quackshot', role: 'DPT', roleId: 'dpt', roleOrder: 4,
+  colorFill: '#1d6a39', colorStroke: '#27ae60',
+  portrait: 'assets/heroes/quackshot.jpg',
+  passive: 'quackshot_passive',
+  maxHP: 2000, maxMana: 250, hpRegen: 30, manaRegen: 30,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 5,
+  spells: [
+    {
+      id: 'quackshot_q', name: 'Chasse à l\'épuisement',
+      description: 'Inflige 60 + 0,8 AD dégâts physiques. À 3+ charges : perd 2 PM (1 tour). À 6+ charges : root (1 tour).',
+      manaCost: 100, range: 5, cooldown: 3, cdMin: 1,
+      damageType: 'physical', baseDamage: 60, adRatio: 0.8, apRatio: 0,
+      targetType: 'enemy_hero', zone: null, effects: []
+    },
+    {
+      id: 'quackshot_w', name: 'Changement de proie',
+      description: '50% des charges de la cible actuelle sont transférées sur une autre cible.',
+      manaCost: 0, range: 5, cooldown: 0, cdMin: 0,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'enemy_hero', zone: null, effects: []
+    },
+    {
+      id: 'quackshot_r', name: 'Coup de grâce',
+      description: 'Consomme toutes les charges et inflige 25 + 0,25 AD dégâts physiques par charge.',
+      manaCost: 100, range: 100, cooldown: 8, cdMin: 2,
+      damageType: 'physical', baseDamage: 25, adRatio: 0.25, apRatio: 0,
+      targetType: 'enemy_hero', ignoresLoS: true, zone: null, effects: []
+    }
+  ]
+};
+
 HERO_TYPES['mage_5'] = {
   id: 'mage_5', name: 'Pibot', role: 'MAGE', roleId: 'mage', roleOrder: 3,
   colorFill: '#154360', colorStroke: '#2980b9',
@@ -985,6 +1050,14 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     layiaBonusNextAttack: 0,  // bonus damage on next auto (set by Petit Bond)
     layiaBonusPOTurn:     0,  // extra PO this turn only (set by Vision)
     layiaTurnCount:       0,  // counts hero turns for +1 PO every 5 turns
+
+    // Cupidon passive state
+    cupidonAttackedLastTurn: new Set(),  // tracks enemies attacked by Cupidon last turn (applies protection this turn)
+    cupidonAttackedThisTurn: new Set(),  // tracks enemies attacked by Cupidon this turn (protection next turn)
+
+    // Quackshot passive state
+    quackshotCharges: {},  // enemyInstanceId → charge count
+    quackshotCurrentTarget: null,  // current auto-attack target instanceId
 
     // Attack count system (supports future items that grant extra attacks)
     extraAutoAttacks: 0,
