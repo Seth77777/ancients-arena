@@ -574,6 +574,11 @@ class GameState {
       hero.cupidonAttackedThisTurn = new Set();
     }
 
+    // Blason Glorieux : réinitialiser le flag d'utilisation par tour
+    if (hero.items.includes('blason_glorieux')) {
+      hero.blasonGlorieuxUsedThisTurn = false;
+    }
+
     // Passif Épées Croisées — Jambes de Feu : +1 PM si CD = 0
     if (hero.items.includes('epees_croisees') && !(hero.epeesCroiseesCooldown > 0)) {
       this.movementLeft++;
@@ -3535,12 +3540,13 @@ class GameState {
           this.addLog(`${t.name} perd 20% de RM pendant ${eff.turns} tours`);
           if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
         }
-        // Passif Blason Glorieux : débuff → 10% HP max dégâts magiques
-        if (this.currentHero?.items.includes('blason_glorieux') && t.isAlive) {
+        // Passif Blason Glorieux : débuff → 10% HP max dégâts magiques (1x par tour max)
+        if (this.currentHero?.items.includes('blason_glorieux') && t.isAlive && !this.currentHero.blasonGlorieuxUsedThisTurn) {
           const blasonDmg = this._reduceDmg(Math.floor(t.maxHP * 0.10), 'magical', t);
           if (blasonDmg > 0) {
             this._applyDamage(t, blasonDmg, this.currentHero, 'magical');
             this.addLog(`${t.name} — Blason Glorieux : −${blasonDmg} dégâts magiques`);
+            this.currentHero.blasonGlorieuxUsedThisTurn = true;
           }
         }
       });

@@ -653,9 +653,12 @@ window.addEventListener('DOMContentLoaded', () => {
     if (game.phase === 'playing') {
       renderer.render();
       renderer.updateUI();
-      // If it's now the guest's turn, open the shop
-      if (window.OnlineMode?.active && !window.OnlineMode.isHost && game.currentHeroIdx !== prevHeroIdx && game.currentHero?.playerIdx === 1) {
-        renderer.openShop();
+      // If it's now a player's turn, open the shop (hôte = J1/playerIdx 0, guest = J2/playerIdx 1)
+      if (window.OnlineMode?.active && game.currentHeroIdx !== prevHeroIdx) {
+        const isMyTurn = (window.OnlineMode.isHost && game.currentHero?.playerIdx === 0) || (!window.OnlineMode.isHost && game.currentHero?.playerIdx === 1);
+        if (isMyTurn) {
+          renderer.openShop();
+        }
       }
     } else if (game.phase === 'draft') {
       renderer.renderDraft();

@@ -1059,6 +1059,9 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     quackshotCharges: {},  // enemyInstanceId → charge count
     quackshotCurrentTarget: null,  // current auto-attack target instanceId
 
+    // Blason Glorieux passive state
+    blasonGlorieuxUsedThisTurn: false,  // limit to 1 activation per turn
+
     // Attack count system (supports future items that grant extra attacks)
     extraAutoAttacks: 0,
 
