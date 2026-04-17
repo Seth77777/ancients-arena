@@ -790,18 +790,9 @@ class GameState {
             this.addLog(`${hero.name} — Armure de la Vie : +${regen} HP (pas de dégâts)`);
           }
         }
-        // Passif Voile Antimagie : compteur de tours sans dégâts
-        if (hero.items.includes('voile_antimagie')) {
-          if (hero.tookDmgThisGlobalTurn) {
-            hero.voileTurnsNoDmg = 0;
-            hero.voileActive = false;
-          } else {
-            hero.voileTurnsNoDmg = (hero.voileTurnsNoDmg || 0) + 1;
-            if (hero.voileTurnsNoDmg >= 4 && !hero.voileActive) {
-              hero.voileActive = true;
-              this.addLog(`${hero.name} — Le Voile est prêt !`);
-            }
-          }
+        // Passif Voile Antimagie : diminuer le cooldown
+        if (hero.items.includes('voile_antimagie') && hero.voileCooldown > 0) {
+          hero.voileCooldown--;
         }
         hero.tookDmgThisGlobalTurn = false;
         // Tick DOTs (Nuisance noire, etc.)
@@ -1037,6 +1028,42 @@ class GameState {
     if (this.movementLeft <= 0)         { this.addLog('Plus de PM !');                   return false; }
     if (this.actionsUsed >= MAX_ACTIONS) { this.addLog('Limite d\'actions atteinte !'); return false; }
 
+    // Cupidon R — Zone d'amour fou : forcer le déplacement aléatoire
+    const amourZone = this.amourFouZones.find(z =>
+      hero.playerIdx !== z.caster.playerIdx &&
+      Math.abs(hero.position.x - z.cx) + Math.abs(hero.position.y - z.cy) <= z.size
+    );
+    if (amourZone) {
+      const directions = [
+        { dx: 1, dy: 0 },   // Est
+        { dx: -1, dy: 0 },  // Ouest
+        { dx: 0, dy: 1 },   // Sud
+        { dx: 0, dy: -1 }   // Nord
+      ];
+      let moved = false;
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const dir = directions[Math.floor(Math.random() * directions.length)];
+        const nx = hero.position.x + dir.dx;
+        const ny = hero.position.y + dir.dy;
+        if (!isWall(nx, ny) && !this.getHeroAt(nx, ny)) {
+          hero.position = { x: nx, y: ny };
+          this.movementLeft = Math.max(0, this.movementLeft - 1);
+          this.actionsUsed++;
+          this.addLog(`${hero.name} — Zone d'amour fou : déplacé aléatoirement en (${nx},${ny})`);
+          moved = true;
+          break;
+        }
+      }
+      if (!moved) {
+        this.addLog(`${hero.name} — Zone d'amour fou : pas de case libre !`);
+      }
+      if (hero.roleId === 'roam') this._checkBrownCollection(hero);
+      this._checkPibotBattery(hero);
+      this._checkTrap(hero);
+      this._checkBombZone(hero);
+      return true;
+    }
+
     if (isWall(tx, ty))               { this.addLog('Destination invalide !'); return false; }
     const _heroTrapBlocked = new Set(
       this.traps.filter(t => t.playerIdx !== hero.playerIdx && !(t.x === tx && t.y === ty))
@@ -1185,7 +1212,7 @@ class GameState {
       const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0);
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
-        const _critMult = (attacker.items.includes('lame_d_infini') ? 2.5 : 2.0) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
+        const _critMult = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
         const rawBase = Math.floor((attacker.ad + bonusFlat) * (isCrit ? _critMult : 1));
         // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
         if (attacker.passive === 'abyss_passive') {
@@ -1343,7 +1370,7 @@ class GameState {
     const armorPen2 = (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
     const armorPenPct2 = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0);
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
-    const _critMult2 = (attacker.items.includes('lame_d_infini') ? 2.5 : 2.0) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
+    const _critMult2 = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
     const rawBase2 = Math.floor((attacker.ad + bonusFlat2) * (isCrit2 ? _critMult2 : 1));
     // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
     if (attacker.passive === 'abyss_passive') {
@@ -1914,6 +1941,22 @@ class GameState {
           this.addLog('Destination invalide (en ligne droite uniquement) !'); success = false; break;
         }
         if (this.getHeroAt(x, y)) { this.addLog('Case occupée !'); success = false; break; }
+        // Cupidon W — Vérifier qu'il y a un mur sur le chemin
+        if (spell.throughWallOnly) {
+          let hasWallOnPath = false;
+          const stepCount = Math.abs(dx) + Math.abs(dy);
+          const stepDx = dx === 0 ? 0 : dx / Math.abs(dx);
+          const stepDy = dy === 0 ? 0 : dy / Math.abs(dy);
+          for (let step = 1; step < stepCount; step++) {
+            const checkX = caster.position.x + stepDx * step;
+            const checkY = caster.position.y + stepDy * step;
+            if (isWall(checkX, checkY)) {
+              hasWallOnPath = true;
+              break;
+            }
+          }
+          if (!hasWallOnPath) { this.addLog('Pas de mur sur le chemin !'); success = false; break; }
+        }
         caster.position = { x, y };
         // Bonus next attack (Layia Petit Bond)
         if (spell.bonusNextAttackAP) {
@@ -2072,12 +2115,13 @@ class GameState {
       case 'pm_sacrifice': {
         const sacrificed = this.movementLeft;
         if (sacrificed === 0) { this.addLog('Aucun PM à sacrifier !'); success = false; break; }
-        const bonus = 50 * sacrificed;
-        caster.ad        += bonus;
-        caster.ap        += bonus;
-        caster.tueurBonus = (caster.tueurBonus || 0) + bonus;
+        const bonusAD = Math.floor(sacrificed * caster.ad * 0.20);
+        const bonusAP = Math.floor(sacrificed * caster.ap * 0.20);
+        caster.ad        += bonusAD;
+        caster.ap        += bonusAP;
+        caster.tueurBonus = (caster.tueurBonus || 0) + bonusAD + bonusAP;
         this.movementLeft = 0;
-        this.addLog(`${caster.name} → ${spell.name}: sacrifie ${sacrificed} PM → +${bonus} AD & AP (jusqu'au prochain tour)`);
+        this.addLog(`${caster.name} → ${spell.name}: sacrifie ${sacrificed} PM → +${bonusAD} AD & +${bonusAP} AP (jusqu'au prochain tour)`);
         break;
       }
       case 'cell': {
@@ -2324,7 +2368,7 @@ class GameState {
           this.addLog('Ligne de vue bloquée !'); success = false; break;
         }
         const sz = spell.zone?.size ?? 2;
-        // Anastasia — Barrière Protectrice : bouclier sur les alliés dans la zone
+        // Anastasia — Barrière Protectrice / Gabriel — Bénédiction : bouclier sur les alliés dans la zone
         if (spell.allyShield) {
           const alliesInZone = this._getAllies(caster.playerIdx).filter(a =>
             a.position && Math.abs(a.position.x - x) + Math.abs(a.position.y - y) <= sz
@@ -2336,23 +2380,34 @@ class GameState {
             a.shieldTurnsLeft = spell.shieldTurns || 3;
             this.addLog(`${caster.name} → ${spell.name} → ${a.name}: bouclier +${shieldVal} (${spell.shieldTurns || 3} tours)`);
           });
-          break;
         }
         const hit = this._getEnemies(caster.playerIdx).filter(e =>
           Math.abs(e.position.x - x) + Math.abs(e.position.y - y) <= sz
         );
-        if (!hit.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
-        if (spell.damageType) {
+        if (hit.length && spell.damageType) {
           hit.forEach(e => {
             const dmg = this._calcSpellDmg(caster, spell, e);
             this._applySpellDamage(caster, spell, e, dmg);
             this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
           });
           if (caster.passive === 'electro_passive') { caster.ap += 5 * hit.length; this.addLog(`${caster.name} — Passif : +${5 * hit.length} AP`); }
-        } else {
+        } else if (hit.length) {
           this.addLog(`${caster.name} → ${spell.name} (${hit.map(e => e.name).join(', ')})`);
         }
-        this._applySpellEffects(spell, hit);
+        if (hit.length || spell.allyShield) this._applySpellEffects(spell, hit);
+        // Gabriel — Parole Divine : centre fait root, autres cases font -2PM
+        if (spell.id === 'gabriel_w') {
+          hit.forEach(e => {
+            const dist = Math.abs(e.position.x - x) + Math.abs(e.position.y - y);
+            if (dist === 0) {
+              // Centre : root appliqué via _applySpellEffects
+            } else {
+              // Autres cases : retirer 2 PM
+              e.movementLeft = Math.max(0, (e.movementLeft || 0) - 2);
+              this.addLog(`${e.name} — Parole Divine : −2 PM`);
+            }
+          });
+        }
         // Cupidon R — L'amour fou : crée une zone de déplacement aléatoire
         if (spell.id === 'cupidon_r') {
           const amourZone = {
@@ -2566,7 +2621,23 @@ class GameState {
           for (let step = 1; step <= spell.range; step++) {
             const x = hero.position.x + dx * step, y = hero.position.y + dy * step;
             if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) break;
-            if (!this.getHeroAt(x, y)) cells.push({ x, y });
+            if (!this.getHeroAt(x, y)) {
+              // Cupidon W — Vérifier qu'il y a un mur sur le chemin pour throughWallOnly
+              if (spell.throughWallOnly) {
+                let hasWallOnPath = false;
+                for (let s = 1; s < step; s++) {
+                  const checkX = hero.position.x + dx * s;
+                  const checkY = hero.position.y + dy * s;
+                  if (isWall(checkX, checkY)) {
+                    hasWallOnPath = true;
+                    break;
+                  }
+                }
+                if (hasWallOnPath) cells.push({ x, y });
+              } else {
+                cells.push({ x, y });
+              }
+            }
           }
         });
         return { heroes: [], heroesOutOfRange: [], cells };
@@ -2849,11 +2920,10 @@ class GameState {
 
   // Applique dégâts d'un sort + passifs liés (hémorragie si physique ou magique)
   _applySpellDamage(caster, spell, target, dmg) {
-    // Passif Voile Antimagie : annule le prochain sort reçu
-    if (target.voileActive && target.items?.includes('voile_antimagie')) {
-      target.voileActive = false;
-      target.voileTurnsNoDmg = 0;
-      this.addLog(`${target.name} — Le Voile : sort annulé !`);
+    // Passif Voile Antimagie : bloque les dégâts d'un sort magique 1 fois tous les 3 tours
+    if (target.items?.includes('voile_antimagie') && spell.damageType === 'magical' && target.voileCooldown <= 0) {
+      target.voileCooldown = 3;
+      this.addLog(`${target.name} — Le Voile : dégâts magiques bloqués !`);
       return;
     }
     this._applyDamage(target, dmg, caster, spell.damageType || 'physical');

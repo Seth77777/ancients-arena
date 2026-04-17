@@ -86,12 +86,12 @@ const EQUIPMENT = {
 
   arc_perforant_anges:  { tier: 3, categories: ['dpt'], name: 'Arc Perforant des Anges', icon: 'img/items/arc_perforant_anges.png', combineCost: 700,
                           recipe: ['arc_percant', 'small_crit_cape'],
-                          stats: { ad: 55, critChance: 20 },
+                          stats: { ad: 55, critChance: 25 },
                           passive: 'Ignore 35% de l\'armure de la cible lorsque vous lui infligez des dégâts physiques. Inflige de 0 à 30% de dégâts bonus en fonction des HP max de la cible (0% à 1000 HP, 30% à 4000 HP).' },
 
   arc_des_morts:        { tier: 3, categories: ['dpt'], name: 'Arc des Morts',             icon: 'img/items/arc_des_morts.png',       combineCost: 0,
                           recipe: ['arc_percant', 'small_crit_cape', 'lame_ensanglanté'],
-                          stats: { ad: 65, critChance: 18 },
+                          stats: { ad: 65, critChance: 25 },
                           passive: 'Vos dégâts physiques appliquent Hémorragie pendant 1 tour aux cibles touchées (soins −50%). Ignore 35% de l\'armure de la cible lorsque vous lui infligez des dégâts physiques.' },
 
   coeur_de_courage:     { tier: 2, categories: [], name: 'Cœur de Courage',        icon: 'img/items/coeur_de_courage.png',     combineCost: 500, recipe: ['life_crystal'],
@@ -163,17 +163,17 @@ const EQUIPMENT = {
 
   revolver_d_or:   { tier: 3, categories: ['dpt', 'assassin'], name: 'Révolver d\'Or',       icon: 'img/items/revolver_d_or.png',   combineCost: 400,
                      recipe: ['grande_pioche', 'dague_destructrice', 'small_crit_cape'],
-                     stats: { ad: 55, critChance: 15 },
+                     stats: { ad: 55, critChance: 25 },
                      passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Collecte — Vous gagnez des golds équivalents à 35% des dégâts infligés. Exécution — Si une attaque ou un sort laisse un ennemi à 5% de ses HP max ou moins, il meurt.' },
 
   lame_d_infini:   { tier: 3, categories: ['dpt'], name: "Lame d'Infini",        icon: 'img/items/lame_d_infini.png',   combineCost: 400,
                      recipe: ['grande_pioche', 'grosse_lame', 'small_crit_cape'],
-                     stats: { ad: 90, critChance: 20 },
-                     passive: 'Vos auto-attaques et sorts physiques critiques infligent 250% de dégâts au lieu de 200%.' },
+                     stats: { ad: 90, critChance: 25 },
+                     passive: 'Vos auto-attaques et sorts physiques critiques infligent 450% de dégâts au lieu de 350%.' },
 
   lame_electrique: { tier: 3, categories: ['dpt'], name: 'Lame Électrique',       icon: 'img/items/lame_electrique.png', combineCost: 600,
                      recipe: ['grosse_lame', 'small_crit_cape'],
-                     stats: { ad: 60, critChance: 15 },
+                     stats: { ad: 60, critChance: 25 },
                      passive: 'Vos attaques de base infligent 25 dégâts magiques supplémentaires à la cible et à tous les ennemis en chaîne (chaque ennemi à moins de 4 cases d\'un ennemi déjà touché est également touché).' },
 
   lame_du_ninja:         { tier: 3, categories: ['dpt', 'assassin'], name: 'Lame du Ninja',              icon: 'img/items/lame_du_ninja.png',        combineCost: 550,
@@ -188,7 +188,7 @@ const EQUIPMENT = {
 
   canon_de_feu:    { tier: 3, categories: ['dpt'], name: 'Canon de Feu',          icon: 'img/items/canon_de_feu.png',    combineCost: 500,
                      recipe: ['epees_croisees', 'distant_vision', 'short_sword'],
-                     stats: { ad: 30, critChance: 20, bonusSpellRange: 1, po: 1 },
+                     stats: { ad: 30, critChance: 25, bonusSpellRange: 1, po: 1 },
                      passive: 'Votre attaque de base gagne 1 PO.' },
 
   epee_double_feu: { tier: 3, categories: ['dpt'], name: 'Épée Double de Feu',   icon: 'img/items/epee_double_feu.png', combineCost: 550,
@@ -244,11 +244,11 @@ const EQUIPMENT = {
                      passive: 'Augmente la portée de tous vos sorts de 1.' },
 
   small_crit_cape:      { tier: 1, categories: [], name: 'Petite Cape Critique',   icon: 'img/items/small_crit_cape.png',   combineCost: 400, recipe: [],
-                          stats: { critChance: 10 },
+                          stats: { critChance: 25 },
                           passive: 'Les attaques de base ont 10% de chance d\'infliger un coup critique (+50% de dégâts).' },
 
   epees_croisees:       { tier: 2, categories: [], name: 'Épées Croisées',          icon: 'img/items/epees_croisees.png',    combineCost: 700, recipe: ['small_crit_cape'],
-                          stats: { critChance: 15 },
+                          stats: { critChance: 25 },
                           passive: 'Jambes de Feu — Au début de votre tour, gagnez 1 PM ce tour (3 tours de CD).' },
 
   small_antimagic_cape: { tier: 1, categories: [], name: 'Petite Cape Antimagie',  icon: 'img/items/small_antimagic_cape.png', combineCost: 400, recipe: [],
@@ -265,7 +265,7 @@ const EQUIPMENT = {
                           stats: { armor: 12 } },
 
   le_voyageur:          { tier: 2, categories: ['bruiser', 'support'], name: 'Le Voyageur', icon: 'img/items/le_voyageur.png', combineCost: 300, recipe: ['life_crystal', 'moyenne_armure'],
-                          stats: { maxHP: 250, armorPct: 14, pm: 1, goldPerTurn: 50 },
+                          stats: { maxHP: 250, armor: 14, pm: 1, goldPerTurn: 50 },
                           passive: 'Vous gagnez 50 golds supplémentaires par tour. Lorsque vous êtes hors d\'une zone à golds, vos alliés présents à 6 cases ou moins gagnent 50 golds supplémentaires par tour.' },
 
   flamme_intense:       { tier: 2, categories: ['bruiser'], name: 'Flamme Intense',  icon: 'img/items/flamme_intense.png',    combineCost: 350, recipe: ['life_crystal'],
@@ -287,7 +287,7 @@ const EQUIPMENT = {
   voile_antimagie:     { tier: 3, categories: ['mage', 'support'], name: 'Voile Antimagie',   icon: 'img/items/voile_antimagie.png',   combineCost: 200,
                          recipe: ['barriere_de_jade', 'gros_baton_magique'],
                          stats: { ap: 100, mr: 12 },
-                         passive: 'Le Voile — Si vous ne recevez pas de dégâts pendant 4 tours, le prochain sort que vous subirez sera annulé (les auto-attaques ne comptent pas).' },
+                         passive: 'Le Voile — 1 fois tous les 3 tours, vous bloquez les dégâts d\'un sort à dégâts magiques que vous subissez.' },
 
   compagnon_fidele:    { tier: 3, categories: ['mage', 'support'], name: 'Compagnon Fidèle', icon: 'img/items/compagnon_fidele.png', combineCost: 350,
                          recipe: ['barriere_de_jade', 'coeur_de_courage'],
@@ -418,28 +418,28 @@ const EQUIPMENT = {
 
   couronne_de_la_reine: { tier: 3, categories: ['support', 'mage'], name: 'Couronne de la Reine', icon: 'img/items/couronne_de_la_reine.png', combineCost: 200,
                           recipe: ['coeur_de_courage', 'mana_tear', 'life_crystal'],
-                          stats: { maxHP: 250, maxMana: 300, manaRegenPct: 25, healEfficiency: 15, manaOnSpell: 15, manaOnSpellMax: 700 },
-                          passive: 'Chaque sort lancé augmente votre Mana max de 15 (max +700 au total). Lorsque le cap est atteint, la Couronne se transforme en Diadème de la Reine. Vous gagnez 80 golds supplémentaires par tour hors zone à golds.' },
+                          stats: { maxHP: 250, maxMana: 300, manaRegenPct: 75, healEfficiency: 15, manaOnSpell: 40, manaOnSpellMax: 700 },
+                          passive: 'Chaque sort lancé augmente votre Mana max de 40 (max +700 au total). Lorsque le cap est atteint, la Couronne se transforme en Diadème de la Reine. Vous gagnez 80 golds supplémentaires par tour hors zone à golds.' },
 
   diademe_de_la_reine: { tier: 4, categories: ['support', 'mage'], name: 'Diadème de la Reine', icon: 'img/items/diademe_de_la_reine.png', combineCost: 0,
                          recipe: [], notBuyable: true,
-                         stats: { maxHP: 250, maxMana: 300, manaRegenPct: 25, healEfficiency: 15, manaOnSpell: 15, manaOnSpellMax: 700 },
+                         stats: { maxHP: 250, maxMana: 300, manaRegenPct: 75, healEfficiency: 15, manaOnSpell: 40, manaOnSpellMax: 700 },
                          passive: 'Vous gagnez 80 golds supplémentaires par tour hors zone à golds. Vos soins sont augmentés de 3% de votre Mana max.' },
 
   sceptre_de_mana: { tier: 3, categories: ['mage'], name: 'Sceptre de Mana',         icon: 'img/items/sceptre_de_mana.png',     combineCost: 450,
                      recipe: ['grimoire_magique', 'mana_tear', 'petit_grimoire'],
-                     stats: { ap: 60, cdReduction: 1, maxMana: 300, manaOnSpell: 15, manaOnSpellMax: 700 },
-                     passive: 'Chaque sort lancé augmente votre Mana max de 15 (max +700 au total). Lorsque le cap est atteint, le Sceptre se transforme en Sceptre de l\'Ange.' },
+                     stats: { ap: 60, cdReduction: 1, maxMana: 300, manaRegenPct: 75, manaOnSpell: 40, manaOnSpellMax: 700 },
+                     passive: 'Chaque sort lancé augmente votre Mana max de 40 (max +700 au total). Lorsque le cap est atteint, le Sceptre se transforme en Sceptre de l\'Ange.' },
 
   sceptre_ange:    { tier: 4, categories: ['mage'], name: 'Sceptre de l\'Ange',      icon: 'img/items/sceptre_ange.png',        combineCost: 0,
                      recipe: [], notBuyable: true,
-                     stats: { ap: 60, cdReduction: 1, maxMana: 300, manaOnSpell: 15, manaOnSpellMax: 700 },
+                     stats: { ap: 60, cdReduction: 1, maxMana: 300, manaRegenPct: 75, manaOnSpell: 40, manaOnSpellMax: 700 },
                      passive: 'Solde de mana — Vos sorts coûtent 15% de mana en moins. Dernier Recours — Lorsque vos HP tombent sous 30%, vous gagnez un bouclier égal à 35% de votre mana actuel pendant 3 tours (CD 8 tours).' },
 
   epee_de_mana:    { tier: 3, categories: ['dpt'], name: 'Épée de Mana',             icon: 'img/items/epee_de_mana.png',        combineCost: 500,
                      recipe: ['mana_tear', 'marteau_sinad'],
-                     stats: { ad: 35, cdReduction: 1, maxMana: 200, manaOnSpell: 15, manaOnSpellMax: 700 },
-                     passive: 'Chaque sort lancé augmente votre Mana max de 15 (max +700 au total). Lorsque le cap est atteint, l\'Épée se transforme en Épée de l\'Ange.' },
+                     stats: { ad: 35, cdReduction: 1, maxMana: 200, manaRegenPct: 75, manaOnSpell: 40, manaOnSpellMax: 700 },
+                     passive: 'Chaque sort lancé augmente votre Mana max de 40 (max +700 au total). Lorsque le cap est atteint, l\'Épée se transforme en Épée de l\'Ange.' },
 
   epee_ange:       { tier: 4, categories: ['dpt'], name: 'Épée de l\'Ange',          icon: 'img/items/epee_ange.png',           combineCost: 0,
                      recipe: [], notBuyable: true,

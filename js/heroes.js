@@ -293,7 +293,7 @@ HERO_TYPES['roam_1'] = {
     },
     {
       id: 'skjer_r', name: 'Tueur',
-      description: 'Sacrifie tous les PM restants. Gagne 50 AD et 50 AP par PM sacrifié.',
+      description: 'Sacrifie tous les PM restants. Gagne +20% AD et +20% AP par PM sacrifié.',
       manaCost: 100, range: 0, cooldown: 5, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'pm_sacrifice', zone: null, effects: []
@@ -475,7 +475,7 @@ HERO_TYPES['mage_2'] = {
     {
       id: 'vadro_q', name: 'Morsure',
       description: 'Inflige 30 + 0.8 AP dégâts magiques et applique Hémorragie.',
-      manaCost: 70, range: 6, cooldown: 3,
+      manaCost: 70, range: 6, cooldown: 2,
       damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.8,
       targetType: 'enemy_hero', zone: null, effects: [{ type: 'hemorrhage', turns: 1 }]
     },
@@ -488,8 +488,8 @@ HERO_TYPES['mage_2'] = {
     },
     {
       id: 'vadro_r', name: 'Alucard',
-      description: 'Inflige 100 + 1 AP dégâts magiques à tous les héros ennemis à 8 cases ou moins.',
-      manaCost: 140, range: 8, cooldown: 7,
+      description: 'Inflige 100 + 1 AP dégâts magiques à tous les héros ennemis à 6 cases ou moins.',
+      manaCost: 140, range: 6, cooldown: 7,
       damageType: 'magical', baseDamage: 100, adRatio: 0, apRatio: 1,
       targetType: 'no_target', zone: null, effects: []
     }
@@ -578,15 +578,15 @@ HERO_TYPES['support_2'] = {
     },
     {
       id: 'shana_w', name: 'Soin au Poil',
-      description: 'Soigne un allié de 40 + 0,6×AP HP. (Passif : Shana se soigne du même montant.)',
+      description: 'Soigne un allié de 80 + 0,8×AP HP. (Passif : Shana se soigne du même montant.)',
       manaCost: 60, range: 5, cooldown: 2,
-      damageType: null, healBase: 40, healApRatio: 0.6, baseDamage: 0, adRatio: 0, apRatio: 0,
+      damageType: null, healBase: 80, healApRatio: 0.8, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'ally_hero', zone: null, effects: []
     },
     {
       id: 'shana_r', name: 'À la Rescousse !',
       description: 'Soigne tous les héros alliés sur la carte de 80 + 0,3×AP HP. (Passif : Shana se soigne pour chaque allié soigné.)',
-      manaCost: 200, range: 0, cooldown: 12,
+      manaCost: 120, range: 0, cooldown: 8,
       damageType: null, healBase: 80, healApRatio: 0.3, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'no_target', healAllAllies: true, zone: null, effects: []
     }
@@ -860,16 +860,16 @@ HERO_TYPES['support_5'] = {
   spells: [
     {
       id: 'gabriel_q', name: 'Bénédiction',
-      description: 'Zone 1-3-1 : les alliés présents gagnent un bouclier de 60 + 0,6×AP pendant 3 tours.',
+      description: 'Zone 1-3-1 : les alliés présents gagnent un bouclier de 60 + 0,6×AP pendant 3 tours. Les ennemis subissent 60 + 0,6×AP dégâts magiques.',
       manaCost: 120, range: 5, cooldown: 4,
-      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      damageType: 'magical', baseDamage: 60, adRatio: 0, apRatio: 0.6,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 },
       allyShield: true, shieldBase: 60, shieldAPRatio: 0.6, shieldTurns: 3,
       effects: []
     },
     {
       id: 'gabriel_w', name: 'Parole Divine',
-      description: 'Zone 1-3-1 : inflige 70 + 0,7×AP dégâts magiques et immobilise (PM et dash bloqués) les ennemis pendant 1 tour.',
+      description: 'Zone 1-3-1 : centre immobilise (root), autres cases retirent 2 PM. Inflige 70 + 0,7×AP dégâts magiques aux ennemis.',
       manaCost: 80, range: 6, cooldown: 3,
       damageType: 'magical', baseDamage: 70, adRatio: 0, apRatio: 0.7,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 },
@@ -1076,6 +1076,7 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     manaOnSpell:       0,
     manaOnSpellMax:    0,
     manaOnSpellGained: 0,
+    manaRegenPct:      0,
     cdReduction:       0,
 
     // Passive & status effects
@@ -1086,6 +1087,7 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     maledictionTurns:  0,      // reduces spell range by 3 (min 1)
     rootTurns:         0,      // blocks movement and dash spells
     invincibleTurnsLeft: 0,    // blocks all damage and debuffs
+    voileCooldown:    0,       // Voile Antimagie: cooldown before next spell block
 
     // Spells (deep copy so cooldowns are independent)
     spells:    t.spells.map(s => ({ ...s })),

@@ -851,7 +851,7 @@ class Renderer {
   _initInvTooltip() {
     const STAT_LABELS = { ad:'AD', ap:'AP', armor:'Armure', mr:'Résist. Mag',
       maxHP:'HP max', maxMana:'Mana max', pm:'PM', po:'PO',
-      lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana',
+      lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana', manaRegenPct:'Regen Mana %',
       critChance:'Chance Critique %',
       goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
       goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort', armorPct:'Armure %' };
@@ -1097,9 +1097,9 @@ class Renderer {
     const canAfford  = hero.gold >= cost;
 
     // Net stat changes (accounting for consumed components when crafting)
-    const STAT_LABELS = { ad:'AD', ap:'AP', armor:'Armure', mr:'Résist. Mag',
+    const STAT_LABELS = { ad:'AD', ap:'AP', armor:'Armure %', mr:'Résist. Mag',
                           maxHP:'HP max', maxMana:'Mana max', pm:'PM', po:'PO',
-                          lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana',
+                          lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana', manaRegenPct:'Regen Mana %',
                           critChance:'Chance Critique %',
                           goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
                           goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort' };
