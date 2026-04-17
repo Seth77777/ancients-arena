@@ -647,16 +647,23 @@ window.addEventListener('DOMContentLoaded', () => {
       showScreen('game-screen');
       renderer.render();
       renderer.updateUI();
+      // Ouvrir la boutique pour le joueur actuel
+      if (window.OnlineMode?.active) {
+        const myPlayerIdx = window.OnlineMode.isHost ? 0 : 1;
+        if (game.currentHero?.playerIdx === myPlayerIdx) {
+          renderer.openShop();
+        }
+      }
       return;
     }
 
     if (game.phase === 'playing') {
       renderer.render();
       renderer.updateUI();
-      // If it's now a player's turn, open the shop (hôte = J1/playerIdx 0, guest = J2/playerIdx 1)
+      // If it's now a player's turn, open the shop (hôte = playerIdx 0, guest = playerIdx 1)
       if (window.OnlineMode?.active && game.currentHeroIdx !== prevHeroIdx) {
-        const isMyTurn = (window.OnlineMode.isHost && game.currentHero?.playerIdx === 0) || (!window.OnlineMode.isHost && game.currentHero?.playerIdx === 1);
-        if (isMyTurn) {
+        const myPlayerIdx = window.OnlineMode.isHost ? 0 : 1;
+        if (game.currentHero?.playerIdx === myPlayerIdx) {
           renderer.openShop();
         }
       }
