@@ -404,7 +404,7 @@ body {
   border: 1px solid var(--border);
 }
 
-.hli-info   { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+.hli-info   { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
 .hli-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1px; }
 .hli-name   { font-weight: bold; font-size: 0.8rem; }
 .hli-gold   { font-size: 0.68rem; color: #f0c040; }

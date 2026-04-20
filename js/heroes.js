@@ -722,6 +722,37 @@ HERO_TYPES['roam_5'] = {
   ]
 };
 
+HERO_TYPES['roam_6'] = {
+  id: 'roam_6', name: 'Hornet', role: 'ROAM', roleId: 'roam', roleOrder: 2,
+  portrait: 'assets/heroes/hornet.png',
+  passive: 'hornet_passive',
+  maxHP: 2150, maxMana: 360, hpRegen: 20, manaRegen: 35,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 1,
+  spells: [
+    {
+      id: 'hornet_q', name: 'Lance Soyeuse',
+      description: 'Marque une cible avec une harponne jusqu\'à la fin du prochain tour, infligeant 50 + 0,6×AD dégâts physiques. Si une cible est marquée, Q ne peut que réactiver sur elle (portée infinie, pas de ligne de vue) : dégâts +25 + 0,4×AD + téléportation adjacente (non diagonale).',
+      manaCost: 80, range: 5, cooldown: 3, maxUsesPerTurn: 2,
+      damageType: 'physical', baseDamage: 50, adRatio: 0.6, apRatio: 0,
+      targetType: 'enemy_hero', zone: null, effects: [], harpooned: true, reusable: true
+    },
+    {
+      id: 'hornet_w', name: 'Pourfandage aiguisé',
+      description: 'Attaque une cible adjacente, infligeant 30 + 1×AD dégâts physiques. Si la cible est marquée par Lance Soyeuse, inflige 15 + 0,5×AD dégâts supplémentaires et vole 1 PM.',
+      manaCost: 80, range: 1, cooldown: 2,
+      damageType: 'physical', baseDamage: 30, adRatio: 1, apRatio: 0,
+      targetType: 'enemy_hero', zone: null, effects: [], usesHarpoon: true
+    },
+    {
+      id: 'hornet_r', name: 'Tisse-tempête',
+      description: 'Inflige 50 + 1×AD dégâts physiques autour d\'elle (zone 3PO) et retire 3 PM à toutes les cibles touchées.',
+      manaCost: 130, range: 0, cooldown: 8,
+      damageType: 'physical', baseDamage: 50, adRatio: 1, apRatio: 0,
+      targetType: 'no_target', zone: null, effects: [], pmSteal: 3
+    }
+  ]
+};
+
 HERO_TYPES['dpt_3'] = {
   id: 'dpt_3', name: 'Faëna', role: 'DPT', roleId: 'dpt', roleOrder: 4,
   portrait: 'assets/heroes/faena.png',
@@ -1061,6 +1092,11 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
 
     // Blason Glorieux passive state
     blasonGlorieuxUsedThisTurn: false,  // limit to 1 activation per turn
+
+    // Hornet passive state
+    hornetHarpoonedTargets: {},  // { targetInstanceId: expiryTurn }
+    hornetDidNotUsePMThisTurn: true,  // tracks if Hornet used any PM this turn
+    hornetPMBonusNextTurn: 0,  // extra PM from passive
 
     // Attack count system (supports future items that grant extra attacks)
     extraAutoAttacks: 0,

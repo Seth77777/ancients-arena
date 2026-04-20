@@ -600,11 +600,11 @@ class Renderer {
       const isCurrent = hero === this.game.currentHero;
       const div = document.createElement('div');
       div.className = 'hero-list-item' + (isCurrent ? ' active' : '') + (!hero.isAlive ? ' dead' : '');
-      const _rawHpPct     = Math.max(0, hero.currentHP / hero.maxHP * 100);
-      const shieldPct     = hero.shield      > 0 ? Math.min(hero.shield      / hero.maxHP * 100, 100) : 0;
-      const magicShieldPct= (hero.magicShield||0) > 0 ? Math.min(hero.magicShield / hero.maxHP * 100, 100 - shieldPct) : 0;
-      const hpPct         = Math.min(_rawHpPct, 100 - shieldPct - magicShieldPct).toFixed(1);
-      const manaPct       = Math.max(0, hero.currentMana / hero.maxMana * 100).toFixed(0);
+      const _rawHpPct     = hero.maxHP > 0 ? Math.max(0, hero.currentHP / hero.maxHP * 100) : 0;
+      const shieldPct     = hero.shield      > 0 && hero.maxHP > 0 ? Math.min(hero.shield      / hero.maxHP * 100, 100) : 0;
+      const magicShieldPct= (hero.magicShield||0) > 0 && hero.maxHP > 0 ? Math.min(hero.magicShield / hero.maxHP * 100, 100 - shieldPct) : 0;
+      const hpPct         = isNaN(_rawHpPct) ? 0 : Math.min(_rawHpPct, 100 - shieldPct - magicShieldPct).toFixed(1);
+      const manaPct       = hero.maxMana > 0 ? Math.max(0, hero.currentMana / hero.maxMana * 100).toFixed(0) : 0;
       const shieldTitle   = hero.shield > 0 ? ` title="Bouclier : ${hero.shield} HP"` : '';
       // Grille d'équipement (6 slots, 3 par ligne)
       const SLOTS = 6;
@@ -651,6 +651,17 @@ class Renderer {
     const badges = [];
     const b = (cls, icon, label) => `<span class="hli-badge hli-badge--${cls}" title="${label}">${icon}</span>`;
 
+    // Vérifier si ce héros est harponné par Hornet
+    if (window.game) {
+      for (const player of window.game.players) {
+        for (const h of player.heroes) {
+          if (h && h.hornetHarpoonedTargets && h.hornetHarpoonedTargets[hero.instanceId] && h.hornetHarpoonedTargets[hero.instanceId] > window.game.globalTurn) {
+            badges.push(b('debuff', '🪝', `Harponné par ${h.name}`));
+          }
+        }
+      }
+    }
+
     // Debuffs
     for (const e of (hero.statusEffects || [])) {
       if (e.type === 'stun')       badges.push(b('debuff', '⚡', `Étourdi (${e.turns}t)`));
@@ -677,6 +688,9 @@ class Renderer {
     }
     if ((hero.magicShield || 0) > 0) badges.push(b('magic-shield', '💜', `Bouclier magique ${hero.magicShield} HP`));
     if ((hero.daggerShield|| 0) > 0) badges.push(b('shield', '🗡', `Bouclier Dague ${hero.daggerShield} HP`));
+
+    // Buffs défensifs
+    if ((hero.invincibleTurnsLeft || 0) > 0)     badges.push(b('buff', '✨', `Invincible (${hero.invincibleTurnsLeft}t)`));
 
     // Buffs offensifs
     if (hero.empoweredAttack)                    badges.push(b('buff', '⚡', 'Attaque renforcée'));

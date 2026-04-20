@@ -350,11 +350,15 @@ class GameState {
     }
 
     // Retirer le bonus temporaire de Tueur
-    if (hero.tueurBonus) {
-      hero.ad -= hero.tueurBonus;
-      hero.ap -= hero.tueurBonus;
-      this.addLog(`${hero.name} — bonus Tueur expiré (−${hero.tueurBonus} AD & AP)`);
+    if (hero.tueurBonus || hero.tueurBonusAD || hero.tueurBonusAP) {
+      const expAD = (hero.tueurBonusAD || 0) + (hero.tueurBonus || 0);
+      const expAP = (hero.tueurBonusAP || 0) + (hero.tueurBonus || 0);
+      hero.ad -= expAD;
+      hero.ap -= expAP;
+      this.addLog(`${hero.name} — bonus Tueur expiré (−${expAD} AD, −${expAP} AP)`);
       hero.tueurBonus = 0;
+      hero.tueurBonusAD = 0;
+      hero.tueurBonusAP = 0;
     }
 
     // Retirer le bonus temporaire du passif Decigeno
@@ -378,12 +382,31 @@ class GameState {
       hero.alternateurCooldown--;
     }
 
+    // Hornet passif: réinitialiser le tracking (bonus PM appliqué après movementLeft)
+    if (hero.passive === 'hornet_passive') {
+      hero.hornetDidNotUsePMThisTurn = true;
+      // Nettoyer les marques expirées
+      Object.keys(hero.hornetHarpoonedTargets).forEach(targetId => {
+        if ((hero.hornetHarpoonedTargets[targetId] || 0) <= this.globalTurn) {
+          delete hero.hornetHarpoonedTargets[targetId];
+        }
+      });
+    }
+
     this.currentHero        = hero;
     this.actionsUsed        = 0;
     this.movementLeft       = hero.pm;
+
+    // Hornet passif Suture : ajouter les PM bonus à movementLeft seulement (pas permanent)
+    if (hero.passive === 'hornet_passive' && hero.hornetPMBonusNextTurn > 0) {
+      this.movementLeft += hero.hornetPMBonusNextTurn;
+      this.addLog(`${hero.name} — Passif Suture : +${hero.hornetPMBonusNextTurn} PM ce tour`);
+      hero.hornetPMBonusNextTurn = 0;
+    }
     this.autoAttacksUsed    = 0;
     this.autoAttacksAllowed = 1 + (hero.extraAutoAttacks || 0);
     this.spellsUsed         = {};
+    hero.hornetIsReactivation = {};
     this.canBuy             = true;
     this.actionMode         = null;
     this.selectedSpell      = null;
@@ -736,6 +759,24 @@ class GameState {
       }
     }
 
+    // Hornet — Passif Suture : si aucun PM utilisé ce tour
+    if (hero && hero.passive === 'hornet_passive' && hero.hornetDidNotUsePMThisTurn && hero.isAlive) {
+      let healed = false;
+      // Retirer l'hémorragie
+      if (hero.hemorrhageTurns > 0) {
+        hero.hemorrhageTurns = 0;
+        this.addLog(`${hero.name} — Passif Suture : hémorragie retirée`);
+        healed = true;
+      }
+      // Se soigner
+      const healAmount = Math.floor(80 + hero.ad * 1);
+      hero.currentHP = Math.min(hero.maxHP, hero.currentHP + healAmount);
+      this.addLog(`${hero.name} — Passif Suture : +${healAmount} HP (${hero.currentHP}/${hero.maxHP})`);
+      // Bonus PM au prochain tour
+      hero.hornetPMBonusNextTurn = 3;
+      this.addLog(`${hero.name} — Passif Suture : +3 PM au prochain tour`);
+    }
+
     this.currentHero  = null;
     this._advance();
   }
@@ -1077,6 +1118,8 @@ class GameState {
     this.movementLeft -= result.cost;
     this.actionsUsed++;
     this.canBuy = false;
+    // Hornet — marquer qu'elle a utilisé des PM
+    if (hero.passive === 'hornet_passive') hero.hornetDidNotUsePMThisTurn = false;
     this.addLog(`${hero.name} → (${tx},${ty}) [−${result.cost} PM, reste ${this.movementLeft}]`);
     if (hero.roleId === 'roam') this._checkBrownCollection(hero);
     this._checkPibotBattery(hero);
@@ -1558,7 +1601,17 @@ class GameState {
 
     const _usedCount = typeof this.spellsUsed[spell.id] === 'number' ? this.spellsUsed[spell.id] : (this.spellsUsed[spell.id] ? 999 : 0);
     if (_usedCount >= (spell.maxUsesPerTurn || 1)) { this.addLog(`${spell.name} déjà utilisé !`); return false; }
-    if (caster.cooldowns[spell.id] > 0)     { this.addLog(`${spell.name} en recharge (${caster.cooldowns[spell.id]})`); return false; }
+    // Hornet Q — Lance Soyeuse : peut être relancée immédiatement si une cible est marquée
+    if (spell.id === 'hornet_q') {
+      const targetHero = target?.hero;
+      if (targetHero && (caster.hornetHarpoonedTargets[targetHero.instanceId] || 0) > this.globalTurn) {
+        // Réactivation sur cible marquée - ignorer le CD
+      } else if (caster.cooldowns[spell.id] > 0) {
+        this.addLog(`${spell.name} en recharge (${caster.cooldowns[spell.id]})`); return false;
+      }
+    } else if (caster.cooldowns[spell.id] > 0) {
+      this.addLog(`${spell.name} en recharge (${caster.cooldowns[spell.id]})`); return false;
+    }
     const _hasManaDisco = caster.items.includes('sceptre_ange') || caster.items.includes('epee_ange');
     const _effectiveManaCost = _hasManaDisco ? Math.floor(spell.manaCost * 0.85) : spell.manaCost;
     if (caster.currentMana < _effectiveManaCost){ this.addLog('Pas assez de mana !');                       return false; }
@@ -1605,13 +1658,34 @@ class GameState {
       case 'enemy_hero': {
         const enemy = target?.hero;
         if (!enemy || enemy.playerIdx === caster.playerIdx) { success = false; break; }
-        if (spell.targetAll) {
+
+        // Hornet Q — Lance Soyeuse : logique spéciale
+        if (spell.id === 'hornet_q') {
+          const hasActiveMarks = Object.values(caster.hornetHarpoonedTargets || {}).some(expiry => expiry > this.globalTurn);
+          const targetIsMarked = (caster.hornetHarpoonedTargets[enemy.instanceId] || 0) > this.globalTurn;
+
+          if (hasActiveMarks && !targetIsMarked) {
+            // Une marque existe sur quelqu'un d'autre — pas possible de marquer une nouvelle cible
+            this.addLog('Une cible est déjà marquée — ne peut réactiver que sur elle!'); success = false; break;
+          }
+          // Si c'est une réactivation, ignorer portée et ligne de vue
+          if (!targetIsMarked) {
+            // Première utilisation — checks normaux de portée
+            if (this._manhattan(caster.position, enemy.position) > spell.range) {
+              this.addLog('Hors de portée !'); success = false; break;
+            }
+            if (!this._hasLineOfSight(caster.position, enemy.position)) {
+              this.addLog('Ligne de vue bloquée !'); success = false; break;
+            }
+          }
+          // Réactivation : pas de check de portée ni ligne de vue
+        } else if (spell.targetAll) {
           // From Downtown — bypass range, target any enemy
         } else if (this._manhattan(caster.position, enemy.position) > spell.range) {
           this.addLog('Hors de portée !'); success = false; break;
         }
         // Ligne de vue (sauf sorts globaux et ignoresLoS)
-        if (!spell.targetAll && !spell.ignoresLoS) {
+        if (spell.id !== 'hornet_q' && !spell.targetAll && !spell.ignoresLoS) {
           if (!this._hasLineOfSight(caster.position, enemy.position)) {
             this.addLog('Ligne de vue bloquée !'); success = false; break;
           }
@@ -1662,25 +1736,27 @@ class GameState {
           }
         }
 
-        // Quackshot W — Changement de proie : transférer 50% des charges de la cible actuelle
+        // Quackshot W — Changement de proie : transférer 50% (min 1) des charges de la cible actuelle
         if (spell.id === 'quackshot_w') {
-          if (caster.quackshotCurrentTarget && caster.quackshotCurrentTarget !== enemy.instanceId) {
-            const currentTarget = this._getAllHeroes().find(h => h.instanceId === caster.quackshotCurrentTarget);
-            if (currentTarget && currentTarget.isAlive) {
-              const charges = caster.quackshotCharges[currentTarget.instanceId] || 0;
-              const transferred = Math.floor(charges * 0.5);
-              if (transferred > 0) {
-                caster.quackshotCharges[currentTarget.instanceId] = charges - transferred;
-                caster.quackshotCharges[enemy.instanceId] = (caster.quackshotCharges[enemy.instanceId] || 0) + transferred;
-                caster.quackshotCurrentTarget = enemy.instanceId;
-                this.addLog(`${caster.name} — Changement de proie: ${transferred} charges transférées de ${currentTarget.name} à ${enemy.name}`);
-              } else {
-                this.addLog(`${caster.name} → ${spell.name} : pas assez de charges à transférer`);
-              }
-            }
-          } else {
-            this.addLog(`${caster.name} → ${spell.name} : sélectionnez une cible différente`);
+          if (!caster.quackshotCurrentTarget) {
+            this.addLog(`${caster.name} → ${spell.name} : aucune cible marquée`); success = false; break;
           }
+          if (caster.quackshotCurrentTarget === enemy.instanceId) {
+            this.addLog(`${caster.name} → ${spell.name} : sélectionnez une cible différente`); success = false; break;
+          }
+          const currentTarget = [...this._getEnemies(caster.playerIdx), ...this._getAllies(caster.playerIdx)].find(h => h.instanceId === caster.quackshotCurrentTarget);
+          if (!currentTarget || !currentTarget.isAlive) {
+            this.addLog(`${caster.name} → ${spell.name} : cible actuelle introuvable`); success = false; break;
+          }
+          const charges = caster.quackshotCharges[currentTarget.instanceId] || 0;
+          if (charges === 0) {
+            this.addLog(`${caster.name} → ${spell.name} : aucune charge à transférer`); success = false; break;
+          }
+          const transferred = Math.max(1, Math.floor(charges * 0.5));
+          delete caster.quackshotCharges[currentTarget.instanceId];
+          caster.quackshotCharges[enemy.instanceId] = (caster.quackshotCharges[enemy.instanceId] || 0) + transferred;
+          caster.quackshotCurrentTarget = enemy.instanceId;
+          this.addLog(`${caster.name} — Changement de proie: ${transferred} charge(s) transférée(s) de ${currentTarget.name} à ${enemy.name}`);
         }
 
         // Quackshot R — Coup de grâce : consomme toutes les charges
@@ -1694,6 +1770,66 @@ class GameState {
           } else {
             this.addLog(`${caster.name} → ${spell.name} : la cible n'a pas de charges`);
           }
+        }
+
+        // Hornet Q — Lance Soyeuse : marquer la cible
+        if (spell.id === 'hornet_q' && enemy.isAlive) {
+          const hadMarkBefore = (caster.hornetHarpoonedTargets[enemy.instanceId] || 0) > this.globalTurn;
+          caster.hornetHarpoonedTargets[enemy.instanceId] = this.globalTurn + 2;
+          this.addLog(`${enemy.name} — Harponné par Lance Soyeuse (marque jusqu'au tour ${this.globalTurn + 2})`);
+          // Tracker: si la cible avait déjà une marque, c'est une réactivation
+          if (!caster.hornetIsReactivation) caster.hornetIsReactivation = {};
+          caster.hornetIsReactivation[enemy.instanceId] = hadMarkBefore;
+          caster.hornetDidNotUsePMThisTurn = false;
+
+          // Réactivation : dégâts supplémentaires + téléportation
+          if (hadMarkBefore) {
+            const bonusDmg = Math.floor(25 + caster.ad * 0.4);
+            this._applyDamage(enemy, bonusDmg, caster, 'physical');
+            this.addLog(`${caster.name} — Lance Soyeuse (réactivation) : +${bonusDmg} dégâts bonus`);
+
+            // Téléporter Hornet sur une case adjacente (non-diagonale) à l'ennemi marqué
+            const adjacentCells = [
+              { x: enemy.position.x, y: enemy.position.y - 1 }, // haut
+              { x: enemy.position.x, y: enemy.position.y + 1 }, // bas
+              { x: enemy.position.x - 1, y: enemy.position.y }, // gauche
+              { x: enemy.position.x + 1, y: enemy.position.y }  // droite
+            ];
+            // Vérifier les cases valides (pas de mur, pas de héros)
+            const allHeroPositions = new Set();
+            for (const player of this.players) {
+              for (const h of player.heroes) {
+                if (h && h.isAlive) allHeroPositions.add(`${h.position.x},${h.position.y}`);
+              }
+            }
+            const validCells = adjacentCells.filter(cell =>
+              cell.x >= 0 && cell.x < MAP_SIZE && cell.y >= 0 && cell.y < MAP_SIZE &&
+              !isWall(cell.x, cell.y) &&
+              !allHeroPositions.has(`${cell.x},${cell.y}`)
+            );
+
+            if (validCells.length > 0) {
+              const randomCell = validCells[Math.floor(Math.random() * validCells.length)];
+              caster.position.x = randomCell.x;
+              caster.position.y = randomCell.y;
+              this.addLog(`${caster.name} — Téléporté sur case adjacente`);
+            } else {
+              this.addLog(`${caster.name} — Aucune case adjacente disponible`);
+            }
+          }
+        }
+
+        // Hornet W — Pourfandage aiguisé : dégâts supplémentaires et vol de PM si marqué
+        if (spell.id === 'hornet_w' && enemy.isAlive) {
+          const isHarpooned = (caster.hornetHarpoonedTargets[enemy.instanceId] || 0) > this.globalTurn;
+          if (isHarpooned) {
+            const bonusDmg = Math.floor(15 + caster.ad * 0.5);
+            this._applyDamage(enemy, bonusDmg, caster, 'physical');
+            this.movementLeft += 1;
+            enemy.movementLeft = Math.max(0, (enemy.movementLeft || 0) - 1);
+            this.addLog(`${caster.name} — Pourfandage: +${bonusDmg} dégâts, vol 1 PM`);
+          }
+          caster.hornetDidNotUsePMThisTurn = false;
         }
 
         // Pibot — Pinces robotiques : attirer la cible de pullCells cases
@@ -2117,9 +2253,10 @@ class GameState {
         if (sacrificed === 0) { this.addLog('Aucun PM à sacrifier !'); success = false; break; }
         const bonusAD = Math.floor(sacrificed * caster.ad * 0.20);
         const bonusAP = Math.floor(sacrificed * caster.ap * 0.20);
-        caster.ad        += bonusAD;
-        caster.ap        += bonusAP;
-        caster.tueurBonus = (caster.tueurBonus || 0) + bonusAD + bonusAP;
+        caster.ad         += bonusAD;
+        caster.ap         += bonusAP;
+        caster.tueurBonusAD = (caster.tueurBonusAD || 0) + bonusAD;
+        caster.tueurBonusAP = (caster.tueurBonusAP || 0) + bonusAP;
         this.movementLeft = 0;
         this.addLog(`${caster.name} → ${spell.name}: sacrifie ${sacrificed} PM → +${bonusAD} AD & +${bonusAP} AP (jusqu'au prochain tour)`);
         break;
@@ -2273,6 +2410,27 @@ class GameState {
           }
           break;
         }
+        // Hornet R — Tisse-tempête : zone autour et vol de PM
+        if (spell.id === 'hornet_r') {
+          const hit = this._getEnemies(caster.playerIdx).filter(e =>
+            this._manhattan(caster.position, e.position) <= 1
+          );
+          if (!hit.length) { this.addLog('Aucun ennemi adjacent !'); success = false; break; }
+          hit.forEach(e => {
+            const dmg = this._calcSpellDmg(caster, spell, e);
+            this._applySpellDamage(caster, spell, e, dmg);
+            if (e.isAlive) {
+              e.movementLeft = Math.max(0, (e.movementLeft || 0) - 3);
+              this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP, −3 PM`);
+            } else {
+              this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+            }
+          });
+          caster.hornetDidNotUsePMThisTurn = false;
+          this._checkGameOver();
+          break;
+        }
+
         const hit = spell.targetAll
           ? this._getEnemies(caster.playerIdx)
           : spell.adjacentHit
@@ -2373,13 +2531,18 @@ class GameState {
           const alliesInZone = this._getAllies(caster.playerIdx).filter(a =>
             a.position && Math.abs(a.position.x - x) + Math.abs(a.position.y - y) <= sz
           );
-          if (!alliesInZone.length) { this.addLog('Aucun allié dans la zone !'); success = false; break; }
-          const shieldVal = Math.floor((spell.shieldBase || 0) + this._effectiveAP(caster) * (spell.shieldAPRatio || 0));
-          alliesInZone.forEach(a => {
-            a.shield = Math.max(a.shield, shieldVal);
-            a.shieldTurnsLeft = spell.shieldTurns || 3;
-            this.addLog(`${caster.name} → ${spell.name} → ${a.name}: bouclier +${shieldVal} (${spell.shieldTurns || 3} tours)`);
-          });
+          const enemiesInZone = this._getEnemies(caster.playerIdx).filter(e =>
+            e.position && Math.abs(e.position.x - x) + Math.abs(e.position.y - y) <= sz
+          );
+          if (!alliesInZone.length && !enemiesInZone.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
+          if (alliesInZone.length) {
+            const shieldVal = Math.floor((spell.shieldBase || 0) + this._effectiveAP(caster) * (spell.shieldAPRatio || 0));
+            alliesInZone.forEach(a => {
+              a.shield = Math.max(a.shield, shieldVal);
+              a.shieldTurnsLeft = spell.shieldTurns || 3;
+              this.addLog(`${caster.name} → ${spell.name} → ${a.name}: bouclier +${shieldVal} (${spell.shieldTurns || 3} tours)`);
+            });
+          }
         }
         const hit = this._getEnemies(caster.playerIdx).filter(e =>
           Math.abs(e.position.x - x) + Math.abs(e.position.y - y) <= sz
@@ -2521,7 +2684,21 @@ class GameState {
           const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
           if (_spellIdx === 2 && _cd > _minCd) _cd--;
         }
-        caster.cooldowns[spell.id] = _cd;
+        // Hornet Q — Lance Soyeuse : CD seulement si réactivation (mark consommée)
+        if (spell.id === 'hornet_q') {
+          const targetHero = target?.hero;
+          const isReactivation = targetHero && (caster.hornetIsReactivation?.[targetHero.instanceId] || false);
+          if (isReactivation) {
+            // Consommer la marque et appliquer le CD
+            delete caster.hornetHarpoonedTargets[targetHero.instanceId];
+            caster.cooldowns[spell.id] = _cd;
+          } else {
+            // Premier lancement : pas de CD, juste la marque
+            caster.cooldowns[spell.id] = 0;
+          }
+        } else {
+          caster.cooldowns[spell.id] = _cd;
+        }
       } else {
         caster.cooldowns[spell.id] = 0;
       }
@@ -2888,7 +3065,7 @@ class GameState {
       if (effectiveArmor >= 0) {
         dmg = Math.floor(raw * (1 - effectiveArmor / 100));
       } else {
-        dmg = Math.floor(raw * (1 + Math.pow(-effectiveArmor, 1.3) / 100));
+        dmg = Math.floor(raw * (1 + 3 * Math.pow(-effectiveArmor, 1.3) / 100));
       }
       if (target.passive === 'rock_solid') dmg = Math.floor(dmg * 0.75);
       return Math.max(0, dmg);
@@ -2901,7 +3078,7 @@ class GameState {
       if (effectiveMR >= 0) {
         return Math.max(0, Math.floor(raw * (1 - effectiveMR / 100)));
       } else {
-        return Math.floor(raw * (1 + Math.pow(-effectiveMR, 1.3) / 100));
+        return Math.floor(raw * (1 + 3 * Math.pow(-effectiveMR, 1.3) / 100));
       }
     }
     return Math.max(0, Math.floor(raw));

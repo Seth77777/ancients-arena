@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Patch Notes — Ancients Arena</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Beaufort+for+LOL:wght@400;700&family=Spiegel:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #010a13;
+      color: #c8aa6e;
+      font-family: 'Georgia', serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .patch-header {
+      position: relative;
+      background: linear-gradient(180deg, #1a0a2e 0%, #0a0a1a 100%);
+      border-bottom: 2px solid #c8aa6e44;
+      padding: 48px 0 32px;
+      text-align: center;
+      overflow: hidden;
+    }
+    .patch-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, #6b3fa044 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .patch-version {
+      font-size: 3.5rem;
+      font-weight: bold;
+      letter-spacing: 6px;
+      color: #c8aa6e;
+      text-shadow: 0 0 30px #c8aa6e88;
+    }
+    .patch-subtitle {
+      font-size: 0.85rem;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      color: #785a28;
+      margin-top: 6px;
+    }
+    .patch-date {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: #5b5b5b;
+      letter-spacing: 2px;
+    }
+
+    /* ── Layout ── */
+    .patch-body {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 40px;
+    }
+    .patch-main { display: flex; flex-direction: column; gap: 36px; }
+    .patch-side  { display: flex; flex-direction: column; gap: 36px; }
+
+    /* ── Section ── */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.72rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #c8aa6e;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #c8aa6e33;
+      padding-bottom: 8px;
+    }
+    .section-icon { font-size: 1.1rem; }
+    .section-icon.nerf  { color: #e74c3c; }
+    .section-icon.buff  { color: #2ecc71; }
+    .section-icon.adj   { color: #f39c12; }
+    .section-icon.new   { color: #9b59b6; }
+    .section-icon.sys   { color: #3498db; }
+
+    /* ── Hero cards grid ── */
+    .heroes-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-card {
+      width: 76px;
+      cursor: default;
+      position: relative;
+    }
+    .hero-card img {
+      width: 76px;
+      height: 76px;
+      object-fit: cover;
+      object-position: top;
+      border: 2px solid #1e2328;
+      display: block;
+    }
+    .hero-card.nerf img  { border-color: #c0392b; box-shadow: 0 0 8px #c0392b66; }
+    .hero-card.buff img  { border-color: #27ae60; box-shadow: 0 0 8px #27ae6066; }
+    .hero-card.adj  img  { border-color: #d35400; box-shadow: 0 0 8px #d3540066; }
+    .hero-card.new  img  { border-color: #8e44ad; box-shadow: 0 0 8px #8e44ad88; }
+
+    .hero-card-name {
+      font-size: 0.62rem;
+      text-align: center;
+      color: #a09060;
+      margin-top: 4px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* Tooltip with changes */
+    .hero-card .tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #010a13ee;
+      border: 1px solid #c8aa6e55;
+      padding: 10px 12px;
+      width: 230px;
+      font-size: 0.72rem;
+      line-height: 1.6;
+      color: #a09060;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .hero-card:hover .tooltip { display: block; }
+    .tooltip-name {
+      font-weight: bold;
+      color: #c8aa6e;
+      font-size: 0.78rem;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #c8aa6e33;
+      padding-bottom: 4px;
+    }
+    .tooltip ul { padding-left: 14px; }
+    .tooltip li { margin-bottom: 3px; }
+    .up   { color: #2ecc71; }
+    .down { color: #e74c3c; }
+    .neu  { color: #f39c12; }
+
+    /* ── Systems / New cards ── */
+    .sys-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sys-card {
+      background: #0a1220;
+      border: 1px solid #c8aa6e33;
+      padding: 12px 14px;
+      font-size: 0.74rem;
+      line-height: 1.7;
+      color: #a09060;
+    }
+    .sys-card-title {
+      font-weight: bold;
+      color: #c8aa6e;
+      font-size: 0.80rem;
+      margin-bottom: 6px;
+    }
+    .sys-card ul { padding-left: 16px; }
+    .sys-card li { margin-bottom: 3px; }
+
+    /* ── New hero banner ── */
+    .new-hero-banner {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #8e44ad55;
+      background: #0d0818;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+    }
+    .new-hero-banner img {
+      width: 90px;
+      height: 90px;
+      object-fit: cover;
+      object-position: top;
+      border: 2px solid #8e44ad;
+      flex-shrink: 0;
+    }
+    .new-hero-banner-info {}
+    .new-hero-banner-title {
+      font-size: 1.2rem;
+      color: #c8aa6e;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    .new-hero-banner-role {
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #8e44ad;
+      margin-bottom: 6px;
+    }
+    .new-hero-banner-desc {
+      font-size: 0.73rem;
+      color: #a09060;
+      line-height: 1.6;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1px solid #c8aa6e22;
+      margin: 4px 0;
+    }
+
+    /* ── Footer ── */
+    .patch-footer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #3a3a3a;
+      padding: 24px;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="patch-header">
+  <div class="patch-version">PATCH NOTES</div>
+  <div class="patch-subtitle">Ancients Arena</div>
+  <div class="patch-date">19 Avril 2026</div>
+</div>
+
+<!-- ══ BODY ══ -->
+<div class="patch-body">
+
+  <!-- ══ COLONNE PRINCIPALE ══ -->
+  <div class="patch-main">
+
+    <!-- NERFS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">▼</span> NERFS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/skjer.png" alt="Skjer">
+          <div class="hero-card-name">Skjer</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Skjer</div>
+            <ul>
+              <li><span class="down">R — Dégâts : 50 fixe → +20% AD/AP par PM sacrifié</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BUFFS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">▲</span> BUFFS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/shana.png" alt="Shana">
+          <div class="hero-card-name">Shana</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Shana</div>
+            <ul>
+              <li><span class="up">Q — Soin : 40+0.6AP → 80+0.8AP</span></li>
+              <li><span class="up">R — Mana : 200 → 120</span></li>
+              <li><span class="up">R — Cooldown : 12 → 8</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/gabriel.png" alt="Gabriel">
+          <div class="hero-card-name">Gabriel</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Gabriel</div>
+            <ul>
+              <li><span class="up">W — Centre immobilise, bordures retirent 2 PM</span></li>
+            </ul>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+
+    <!-- ADJUSTED -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◆</span> AJUSTÉS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/vadro.png" alt="Vadro">
+          <div class="hero-card-name">Vadro</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Vadro</div>
+            <ul>
+              <li><span class="down">R — Portée : 8 → 6</span></li>
+              <li><span class="up">Q — Cooldown : 3 → 2</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BUGFIXES -->
+    <div>
+      <div class="section-title"><span class="section-icon" style="color:#e67e22">🐛</span> BUGFIXES</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card" style="--fix:#e67e22">
+          <img src="assets/heroes/skjer.png" alt="Skjer" style="border-color:#e67e22; box-shadow:0 0 8px #e67e2266;">
+          <div class="hero-card-name">Skjer</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Skjer</div>
+            <ul>
+              <li><span class="neu">R — AD et AP bonus désormais traqués séparément : plus de valeurs négatives après le tour</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card" style="--fix:#e67e22">
+          <img src="assets/heroes/quackshot.jpg" alt="Quackshot" style="border-color:#e67e22; box-shadow:0 0 8px #e67e2266;">
+          <div class="hero-card-name">Quackshot</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Quackshot</div>
+            <ul>
+              <li><span class="neu">W — Transfert de charges fonctionnel (méthode interne introuvable corrigée)</span></li>
+              <li><span class="neu">W — Minimum 1 charge transférée respecté</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card" style="--fix:#e67e22">
+          <img src="assets/heroes/gabriel.png" alt="Gabriel" style="border-color:#e67e22; box-shadow:0 0 8px #e67e2266;">
+          <div class="hero-card-name">Gabriel</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Gabriel</div>
+            <ul>
+              <li><span class="neu">Q — Utilisable même sans allié dans la zone (dégâts aux ennemis suffisent)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card" style="--fix:#e67e22">
+          <img src="assets/heroes/cupidon.png" alt="Cupidon" style="border-color:#e67e22; box-shadow:0 0 8px #e67e2266;">
+          <div class="hero-card-name">Cupidon</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Cupidon</div>
+            <ul>
+              <li><span class="neu">W — Nécessite un mur sur le chemin</span></li>
+              <li><span class="neu">R — Les ennemis dans la zone bougent aléatoirement</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ COLONNE LATÉRALE ══ -->
+  <div class="patch-side">
+
+    <!-- SYSTEMS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">◎</span> SYSTÈMES</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">⚔️ Coups Critiques</div>
+          <ul>
+            <li class="up">Multiplicateur de base : 200% → <strong>350%</strong></li>
+            <li class="up">Lame d'Infini : 250% → <strong>450%</strong></li>
+            <li class="neu">Chance de critique items : standardisée à <strong>25%</strong></li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">🛡 Pénétration d'Armure Négative</div>
+          <ul>
+            <li class="up">Dégâts sur armure/RM négatif : ×1 → <strong>×3</strong></li>
+            <li class="neu">Rend la pénétration fixe bien plus impactante</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">💧 Items Mana</div>
+          <ul>
+            <li class="up">Régén mana : 25% → <strong>75%</strong> (Couronne, Sceptre, Épée)</li>
+            <li class="up">Mana par sort : 15 → <strong>40</strong></li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">🔮 Voile Antimagie</div>
+          <ul>
+            <li class="neu">Nouveau passif : bloque les dégâts d'un sort magique <strong>1 fois tous les 3 tours</strong></li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">✨ Interface</div>
+          <ul>
+            <li class="up">Badge <strong>Invincible</strong> affiché dans la colonne des effets</li>
+            <li class="up">Badge <strong>Harponné</strong> visible sur les cibles marquées par Hornet</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NEW -->
+    <div>
+      <div class="section-title"><span class="section-icon new">✦</span> NOUVEAU</div>
+      <div class="new-hero-banner">
+        <img src="assets/heroes/gabriel.png" alt="Hornet" style="filter: hue-rotate(60deg) saturate(1.5);">
+        <div class="new-hero-banner-info">
+          <div class="new-hero-banner-role">ROAM</div>
+          <div class="new-hero-banner-title">HORNET</div>
+          <div class="new-hero-banner-desc">
+            Chasseuse de primes harponnant ses proies. Lance Soyeuse marque une cible — réactivez depuis n'importe où pour téléporter Hornet à ses côtés.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="patch-footer">ANCIENTS ARENA &nbsp;·&nbsp; PATCH NOTES &nbsp;·&nbsp; 2026</div>
+
+</body>
+</html>

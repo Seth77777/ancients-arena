@@ -427,6 +427,25 @@ class InputHandler {
       this._cancelMode(); return;
     }
 
+    // Hornet Q — Lance Soyeuse : si une marque est active, appliquer directement sur la cible marquée
+    if (spell.id === 'hornet_q') {
+      const caster = g.currentHero;
+      const harpooned = caster.hornetHarpoonedTargets || {};
+      const enemies = g._getEnemies(caster.playerIdx);
+      const markedEnemy = enemies.find(h => (harpooned[h.instanceId] || 0) > g.globalTurn);
+      if (markedEnemy) {
+        if (window.OnlineMode?.active && !window.OnlineMode.isHost) {
+          window.OnlineMode.sendGuestAction({ type: 'spell', spellId: spell.id, target: { heroId: markedEnemy.instanceId } });
+        } else {
+          g.castSpell(spell, { hero: markedEnemy });
+          this._onlineSync();
+        }
+        r.clearHighlights(); g.actionMode = null;
+        r.render(); r.updateUI();
+        return;
+      }
+    }
+
     g.actionMode = 'spell'; g.selectedSpell = spell;
     r.clearHighlights(); r.setSpellHighlight(spell);
     r.render(); r.updateUI();
