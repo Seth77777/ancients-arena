@@ -497,6 +497,7 @@ class InputHandler {
 
     if (isGuest) {
       window.OnlineMode.sendGuestAction({ type: 'buy', itemId });
+      this.renderer.closeShop();
       return;
     }
     if (!this.game.buyItem(itemId)) return;

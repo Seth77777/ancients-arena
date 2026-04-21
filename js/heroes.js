@@ -1009,6 +1009,14 @@ HERO_TYPES['solo_4'] = {
       targetType: 'no_target',
       grolihtEboulement: true,
       effects: [{ type: 'stun', turns: 1 }]
+    },
+    {
+      id: 'solo_recall', name: 'Rappel',
+      description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'solo_recall', zone: null, effects: [],
+      icon: 'img/spells/solo_recall.png'
     }
   ]
 };
@@ -1039,6 +1047,14 @@ HERO_TYPES['solo_5'] = {
       manaCost: 110, range: 5, minRange: 1, maxRange: 5, cooldown: 9,
       damageType: 'magical', baseDamage: 150, adRatio: 0, apRatio: 0.9,
       targetType: 'line_zone', zone: null, effects: []
+    },
+    {
+      id: 'solo_recall', name: 'Rappel',
+      description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'solo_recall', zone: null, effects: [],
+      icon: 'img/spells/solo_recall.png'
     }
   ]
 };

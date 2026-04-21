@@ -317,7 +317,8 @@
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
   <div class="patch-tabs">
-    <button class="patch-tab active" onclick="showPatch('patch-21avr', this)">21 Avril 2026</button>
+    <button class="patch-tab active" onclick="showPatch('patch-22avr', this)">22 Avril 2026</button>
+    <button class="patch-tab" onclick="showPatch('patch-21avr', this)">21 Avril 2026</button>
     <button class="patch-tab" onclick="showPatch('patch-19avr', this)">19 Avril 2026</button>
   </div>
 </div>
@@ -325,7 +326,75 @@
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- PATCH 21 AVRIL 2026                                    -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="patch-21avr" class="patch-section active">
+<div id="patch-22avr" class="patch-section active">
+<div class="patch-body">
+
+  <!-- ══ COLONNE PRINCIPALE ══ -->
+  <div class="patch-main">
+
+    <!-- CORRECTIONS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">⚙</span> CORRECTIONS DE BUGS</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">Skjer — Passif : Conquérant</div>
+          <ul>
+            <li>Lorsque Skjer obtient un kill avec un sort ou une attaque de base, le sort / l'attaque de base utilisé est désormais correctement remis à disposition grâce au passif.</li>
+            <li>Auparavant, la remise à zéro des cooldowns était écrasée juste après l'application des dégâts, rendant le dernier sort ou l'attaque de base inutilisable.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Faena — Description du passif corrigée</div>
+          <ul>
+            <li>La description indiquait une base de <span class="down">200%</span> de dégâts critiques, alors que la valeur réelle est <span class="up">350%</span>.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-main -->
+
+  <!-- ══ COLONNE SECONDAIRE ══ -->
+  <div class="patch-side">
+
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> HÉROS CONCERNÉS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/skjer.png" alt="Skjer">
+          <div class="hero-card-name">Skjer</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Skjer</div>
+            <ul>
+              <li><span class="neu">Correction : le passif Conquérant remet correctement à zéro le sort et l'attaque de base utilisés pour le kill.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/faena.png" alt="Faena">
+          <div class="hero-card-name">Faena</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Faena</div>
+            <ul>
+              <li><span class="neu">Correction de description : base des critiques <span class="down">200%</span> → <span class="up">350%</span>.</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-side -->
+
+</div>
+</div><!-- /patch-22avr -->
+
+<div id="patch-21avr" class="patch-section">
 <div class="patch-body">
 
   <!-- ══ COLONNE PRINCIPALE ══ -->

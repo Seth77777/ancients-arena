@@ -1406,15 +1406,16 @@ class GameState {
           delete attacker.quackshotCharges[attacker.quackshotCurrentTarget];
           this.addLog(`${attacker.name} — Marque retirée de l'ancienne cible`);
         }
-        // Ajouter une charge à chaque cible touchée
+        // Ajouter une charge à chaque cible touchée (2 si Épée de Double Feu)
+        const _quackCharges = attacker.items.includes('epee_double_feu') ? 2 : 1;
         targets.forEach(e => {
-          attacker.quackshotCharges[e.instanceId] = (attacker.quackshotCharges[e.instanceId] || 0) + 1;
-          this.addLog(`${attacker.name} → ${e.name} — Marque: +1 charge (total: ${attacker.quackshotCharges[e.instanceId]})`);
+          attacker.quackshotCharges[e.instanceId] = (attacker.quackshotCharges[e.instanceId] || 0) + _quackCharges;
+          this.addLog(`${attacker.name} → ${e.name} — Marque: +${_quackCharges} charge(s) (total: ${attacker.quackshotCharges[e.instanceId]})`);
         });
         attacker.quackshotCurrentTarget = mainTarget.instanceId;
       }
 
-      this.autoAttacksUsed++;
+      if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
       this.actionsUsed++;
       this.canBuy = false;
       this._checkGameOver();
@@ -1441,7 +1442,7 @@ class GameState {
       if (targetHero.isAlive) this._applyDamage(targetHero, magDmg2, attacker, 'magical');
       if (targetHero.isAlive) this._applyDamage(targetHero, rawDmg2, attacker, 'raw');
       this._applyHemorrhage(attacker, targetHero);
-      this.autoAttacksUsed++;
+      if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
       this.actionsUsed++;
       this.canBuy = false;
       this._checkGameOver();
@@ -1579,13 +1580,14 @@ class GameState {
         delete attacker.quackshotCharges[attacker.quackshotCurrentTarget];
         this.addLog(`${attacker.name} — Marque retirée de l'ancienne cible`);
       }
-      // Ajouter une charge à la cible
-      attacker.quackshotCharges[targetHero.instanceId] = (attacker.quackshotCharges[targetHero.instanceId] || 0) + 1;
+      // Ajouter une charge à la cible (2 si Épée de Double Feu)
+      const _quackCharges2 = doubleOnHit ? 2 : 1;
+      attacker.quackshotCharges[targetHero.instanceId] = (attacker.quackshotCharges[targetHero.instanceId] || 0) + _quackCharges2;
       attacker.quackshotCurrentTarget = targetHero.instanceId;
-      this.addLog(`${attacker.name} → ${targetHero.name} — Marque: +1 charge (total: ${attacker.quackshotCharges[targetHero.instanceId]})`);
+      this.addLog(`${attacker.name} → ${targetHero.name} — Marque: +${_quackCharges2} charge(s) (total: ${attacker.quackshotCharges[targetHero.instanceId]})`);
     }
 
-    this.autoAttacksUsed++;
+    if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
     this.actionsUsed++;
     this.canBuy = false;
     this._checkGameOver();
@@ -2730,8 +2732,11 @@ class GameState {
     }
 
     if (success) {
+      // Passif Skjer : si kill pendant ce sort, CD et spellsUsed déjà remis à zéro — ne pas écraser
+      const _skjerReset = !!caster._skjerPassiveFired;
+      if (_skjerReset) delete caster._skjerPassiveFired;
       // CD 0 = pas de rechargement ; sinon réduction normale
-      if (spell.cooldown > 0) {
+      if (!_skjerReset && spell.cooldown > 0) {
         const _hasStun = spell.effects?.some(e => e.type === 'stun');
         const _minCd   = _hasStun ? 2 : 1;
         const _timeGlassCount = caster.items.filter(id => id === 'time_glass').length;
@@ -2769,11 +2774,13 @@ class GameState {
       } else {
         caster.cooldowns[spell.id] = 0;
       }
-      // Suivi des utilisations (maxUsesPerTurn ou boolean classique)
-      if (spell.maxUsesPerTurn) {
-        this.spellsUsed[spell.id] = (typeof this.spellsUsed[spell.id] === 'number' ? this.spellsUsed[spell.id] : 0) + 1;
-      } else {
-        this.spellsUsed[spell.id] = true;
+      // Suivi des utilisations (maxUsesPerTurn ou boolean classique) — ignoré si passif Skjer a reset
+      if (!_skjerReset) {
+        if (spell.maxUsesPerTurn) {
+          this.spellsUsed[spell.id] = (typeof this.spellsUsed[spell.id] === 'number' ? this.spellsUsed[spell.id] : 0) + 1;
+        } else {
+          this.spellsUsed[spell.id] = true;
+        }
       }
       this.actionsUsed++;
       this.canBuy = false;
@@ -3433,6 +3440,7 @@ class GameState {
           Object.keys(attacker.cooldowns).forEach(id => { attacker.cooldowns[id] = 0; });
           Object.keys(this.spellsUsed).forEach(id => { this.spellsUsed[id] = false; });
           this.autoAttacksUsed = 0;
+          attacker._skjerPassiveFired = true;
           this.addLog(`${attacker.name} — Passif : Mana, PM et cooldowns remis à zéro !`);
         }
       }

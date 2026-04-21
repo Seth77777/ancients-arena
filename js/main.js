@@ -20,7 +20,7 @@ const PASSIVE_LABELS = {
   sharagoth_passive:  'Plus forts ensemble — Au début de son tour, Sharagoth gagne un bouclier de 10% de ses HP max par allié présent à moins de 10 cases (Manhattan), pendant 2 tours.',
   vaillance:          'Vaillance — Le premier débuff appliqué à Ondine chaque tour est automatiquement annulé.',
   abyss_passive:      'Équilibre des abysses — Les attaques de base d\'Abyss infligent 40% de dégâts physiques, 40% de dégâts magiques et 20% de dégâts bruts.',
-  faena_passive:      'Coups critiques mortels — Chaque tranche de 10 AD donne +1% de dégâts critiques (base 200%). S\'applique aux attaques de base et aux Flèches de douleur.',
+  faena_passive:      'Coups critiques mortels — Chaque tranche de 10 AD donne +1% de dégâts critiques (base 350%). S\'applique aux attaques de base et aux Flèches de douleur.',
   pibot_passive:      'Batterie — Au début de chaque tour de Pibot, une case ⚡ apparaît à 5 cases ou moins. Passer dessus récupère 50% de la mana manquante.',
   gabriel_passive:    'Pas Léger — Au début du tour de chaque allié à moins de 7 cases de Gabriel, cet allié gagne +1 PM.',
   grolith_passive:    'Pierre qui roule — Grolith gagne 70 points de bouclier au début de chaque tour. Ce bouclier n\'expire jamais.',
@@ -622,7 +622,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Les deux : réception de l'état mis à jour par l'hôte
   document.addEventListener('online:state', e => {
     const prevPhase = game.phase;
-    const prevHeroIdx = game.currentHeroIdx;
+    const prevHeroId = game.currentHero?.instanceId;
     game.applySerializedState(e.detail);
 
     if (game.phase === 'gameover') {
@@ -662,7 +662,7 @@ window.addEventListener('DOMContentLoaded', () => {
       renderer.render();
       renderer.updateUI();
       // If it's now a player's turn, open the shop (hôte = playerIdx 0, guest = playerIdx 1)
-      if (window.OnlineMode?.active && game.currentHeroIdx !== prevHeroIdx) {
+      if (window.OnlineMode?.active && game.currentHero?.instanceId !== prevHeroId) {
         const myPlayerIdx = window.OnlineMode.isHost ? 0 : 1;
         if (game.currentHero?.playerIdx === myPlayerIdx) {
           renderer.openShop();
