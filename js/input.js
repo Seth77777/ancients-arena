@@ -250,7 +250,7 @@ class InputHandler {
       if (!spell) { this._cancelMode(); return; }
 
       const heroTargetTypes = ['enemy_hero','swap_enemy','ally_hero','swap_ally',
-        'dash_to_enemy','dash_to_ally','dash_behind_enemy','abyss_r'];
+        'dash_to_enemy','dash_to_ally','dash_behind_enemy','abyss_r','solo_recall'];
       const cellTargetTypes = ['cell','zone','diamond_zone','stealth_dash','trap',
         'line_zone','place_glyph','wind_glyph','cone_zone','bomb_zone',
         'hate_wall','lame_eau','abyss_w','faena_w','faena_r','pibot_r',
@@ -411,7 +411,8 @@ class InputHandler {
     r.closeShop();
 
     // Sorts instantanés (pas de clic sur la carte)
-    if (spell.targetType === 'self' || spell.targetType === 'no_target' || spell.targetType === 'pm_sacrifice' || spell.targetType === 'pibot_w') {
+    if (spell.targetType === 'self' || spell.targetType === 'no_target' || spell.targetType === 'pm_sacrifice' || spell.targetType === 'pibot_w'
+        || (spell.targetType === 'solo_recall' && g.currentHero?.soloRecallActive)) {
       if (isGuest) {
         window.OnlineMode.sendGuestAction({ type: 'spell', spellId: spell.id, target: null });
       } else {

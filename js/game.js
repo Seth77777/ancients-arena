@@ -313,9 +313,9 @@ class GameState {
     this.players[0].heroes = s1.map((t, i) => createHeroInstance(t, 0, i));
     this.players[1].heroes = s2.map((t, i) => createHeroInstance(t, 1, i));
 
-    // Place heroes at corner spawn positions
-    this.players[0].heroes.forEach((h, i) => { h.position = { ...SPAWN_POSITIONS[0][i] }; });
-    this.players[1].heroes.forEach((h, i) => { h.position = { ...SPAWN_POSITIONS[1][i] }; });
+    // Place heroes at corner spawn positions and save spawn for solo_recall
+    this.players[0].heroes.forEach((h, i) => { h.position = { ...SPAWN_POSITIONS[0][i] }; h.spawnPosition = { ...SPAWN_POSITIONS[0][i] }; });
+    this.players[1].heroes.forEach((h, i) => { h.position = { ...SPAWN_POSITIONS[1][i] }; h.spawnPosition = { ...SPAWN_POSITIONS[1][i] }; });
 
     this._generateBrownSpots(8);
     this.phase = 'playing';
@@ -1631,12 +1631,16 @@ class GameState {
       } else if (caster.cooldowns[spell.id] > 0) {
         this.addLog(`${spell.name} en recharge (${caster.cooldowns[spell.id]})`); return false;
       }
+    // Solo Rappel : réactivation autorisée même avec CD (retour au spawn)
+    } else if (spell.id === 'solo_recall' && caster.soloRecallActive) {
+      // Réactivation — pas de vérification de CD
     } else if (caster.cooldowns[spell.id] > 0) {
       this.addLog(`${spell.name} en recharge (${caster.cooldowns[spell.id]})`); return false;
     }
     const _hasManaDisco = caster.items.includes('sceptre_ange') || caster.items.includes('epee_ange');
     const _effectiveManaCost = _hasManaDisco ? Math.floor(spell.manaCost * 0.85) : spell.manaCost;
-    if (caster.currentMana < _effectiveManaCost){ this.addLog('Pas assez de mana !');                       return false; }
+    const _isRecallReactivation = spell.id === 'solo_recall' && caster.soloRecallActive;
+    if (!_isRecallReactivation && caster.currentMana < _effectiveManaCost){ this.addLog('Pas assez de mana !'); return false; }
     if (this.actionsUsed >= MAX_ACTIONS)    { this.addLog('Limite d\'actions atteinte !');               return false; }
     if (caster.mutedThisTurn || (caster.statusEffects || []).some(e => e.type === 'mute')) {
       this.addLog(`${caster.name} est muet — sorts bloqués !`); return false;
@@ -1660,7 +1664,7 @@ class GameState {
       }
     }
 
-    caster.currentMana -= _effectiveManaCost;
+    if (!_isRecallReactivation) caster.currentMana -= _effectiveManaCost;
 
     // Passif Toucher Magique (casque_necrometien) — prêt à se déclencher pour ce sort
     this._toucherMagiqueReady = caster.items.includes('casque_necrometien');
@@ -2693,6 +2697,35 @@ class GameState {
         this._checkBrownCollection(caster);
         break;
       }
+      case 'solo_recall': {
+        if (caster.soloRecallActive) {
+          // Réactivation : retour au point de spawn
+          const sp = caster.spawnPosition;
+          if (!sp) { this.addLog('Position de départ inconnue !'); success = false; break; }
+          let finalDest = sp;
+          if (this.getHeroAt(sp.x, sp.y) && this.getHeroAt(sp.x, sp.y) !== caster) {
+            const adj = this._getAdjacentFreeCells(sp, caster);
+            if (!adj.length) { this.addLog('Case de départ occupée !'); success = false; break; }
+            finalDest = adj[0];
+          }
+          caster.position = { ...finalDest };
+          caster.soloRecallActive = false;
+          this.addLog(`${caster.name} → ${spell.name} : retour au point de départ`);
+        } else {
+          // 1er lancer : téléportation adjacente à un allié
+          const ally = target?.hero;
+          if (!ally || ally.playerIdx !== caster.playerIdx || ally === caster) { success = false; break; }
+          const freeAdj = this._getAdjacentFreeCells(ally.position, caster);
+          if (!freeAdj.length) { this.addLog('Aucune case libre autour de l\'allié !'); success = false; break; }
+          const dest = freeAdj.reduce((best, c) =>
+            this._chebyshev(caster.position, c) < this._chebyshev(caster.position, best) ? c : best
+          );
+          caster.position = { ...dest };
+          caster.soloRecallActive = true;
+          this.addLog(`${caster.name} → ${spell.name} → téléportation aux côtés de ${ally.name}`);
+        }
+        break;
+      }
       default: success = false;
     }
 
@@ -2711,8 +2744,15 @@ class GameState {
           const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
           if (_spellIdx === 2 && _cd > _minCd) _cd--;
         }
+        // Solo Rappel : CD seulement sur le 1er lancer (pas la réactivation)
+        if (spell.id === 'solo_recall') {
+          if (_isRecallReactivation) {
+            // Réactivation : CD continue de tourner, on ne le modifie pas
+          } else {
+            caster.cooldowns[spell.id] = _cd;
+          }
         // Hornet Q — Lance Soyeuse : CD seulement si réactivation (mark consommée)
-        if (spell.id === 'hornet_q') {
+        } else if (spell.id === 'hornet_q') {
           const targetHero = target?.hero;
           const isReactivation = targetHero && (caster.hornetIsReactivation?.[targetHero.instanceId] || false);
           if (isReactivation) {
@@ -3023,6 +3063,15 @@ class GameState {
       }
       case 'pibot_w':
         return { heroes: [], heroesOutOfRange: [], cells: [] };
+      case 'solo_recall': {
+        if (hero.soloRecallActive) {
+          // Réactivation : pas de cible à sélectionner
+          return { heroes: [], heroesOutOfRange: [], cells: [] };
+        }
+        // 1er lancer : tous les alliés vivants
+        const allies = this._getAllies(hero.playerIdx).filter(a => a !== hero && a.isAlive && a.position);
+        return { heroes: allies, heroesOutOfRange: [], cells: [] };
+      }
       case 'pibot_r': {
         // Cellules orthogonales dans la portée (ligne droite)
         const prCells = [];

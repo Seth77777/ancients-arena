@@ -824,6 +824,8 @@ body {
   line-height: 1;
 }
 .spell-cd-overlay.spell-used { color: #7ee787; }
+.spell-cd-overlay.recall-active { color: #74b9ff; font-size: 0.85rem; }
+.spell-btn.recall-ready { box-shadow: 0 0 6px #74b9ff88; border-color: #74b9ff !important; }
 
 /* Tooltip sorts */
 .spell-tooltip {

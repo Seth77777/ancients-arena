@@ -24,6 +24,13 @@ const ROLE_BASES = {
         manaCost: 50, range: 0, cooldown: 3,
         damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
         targetType: 'self', shieldAmount: 100, adShieldRatio: 0.5, zone: null
+      },
+      {
+        id: 'solo_recall', name: 'Rappel',
+        description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
+        manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+        damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+        targetType: 'solo_recall', zone: null, effects: []
       }
     ]
   },
@@ -198,6 +205,14 @@ HERO_TYPES['solo_1'] = {
       damageType: 'magical', baseDamage: 110, adRatio: 0, apRatio: 0.8,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 2 },
       effects: [{ type: 'stun', turns: 1 }]
+    },
+    {
+      id: 'solo_recall', name: 'Rappel',
+      description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'solo_recall', zone: null, effects: [],
+      icon: 'img/spells/solo_recall.png'
     }
   ]
 };
@@ -232,6 +247,14 @@ HERO_TYPES['solo_2'] = {
       damageType: 'physical', baseDamage: 130, adRatio: 1.1, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: [],
       conditionHigherHP: true, splitRawPct: 0.3
+    },
+    {
+      id: 'solo_recall', name: 'Rappel',
+      description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'solo_recall', zone: null, effects: [],
+      icon: 'img/spells/solo_recall.png'
     }
   ]
 };
@@ -265,6 +288,14 @@ HERO_TYPES['solo_3'] = {
       manaCost: 100, range: 2, cooldown: 10, cdMin: 2,
       damageType: 'physical', baseDamage: 160, adRatio: 0.6, apRatio: 0,
       targetType: 'lame_eau', zone: null, effects: []
+    },
+    {
+      id: 'solo_recall', name: 'Rappel',
+      description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'solo_recall', zone: null, effects: [],
+      icon: 'img/spells/solo_recall.png'
     }
   ]
 };
@@ -1097,6 +1128,10 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     hornetHarpoonedTargets: {},  // { targetInstanceId: expiryTurn }
     hornetDidNotUsePMThisTurn: true,  // tracks if Hornet used any PM this turn
     hornetPMBonusNextTurn: 0,  // extra PM from passive
+
+    // Solo recall state
+    soloRecallActive: false,   // true after first cast, allows reactivation (return to spawn)
+    spawnPosition: null,       // saved at game start
 
     // Attack count system (supports future items that grant extra attacks)
     extraAutoAttacks: 0,

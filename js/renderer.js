@@ -794,15 +794,22 @@ class Renderer {
       if (spell.targetType === 'pibot_w') {
         noBattery = !g.pibotBatteries.some(b => b.heroInstanceId === hero.instanceId);
       }
-      btn.disabled  = used || cd > 0 || noMana || g.actionsUsed >= MAX_ACTIONS || noBattery;
+      const _recallReactivation = spell.targetType === 'solo_recall' && hero.soloRecallActive;
+      btn.disabled  = used || (cd > 0 && !_recallReactivation) || (noMana && !_recallReactivation) || g.actionsUsed >= MAX_ACTIONS || noBattery;
       btn.classList.toggle('active-mode', isActive);
+      if (_recallReactivation) btn.classList.add('recall-ready');
       btn.dataset.spellId = spell.id;
 
       const keyMatch = spell.id.match(/_([qwer])$/i);
       const key = keyMatch ? keyMatch[1].toUpperCase() : spell.name[0].toUpperCase();
       const maxUses = spell.maxUsesPerTurn || 1;
-      const overlay = used ? '✓' : cd > 0 ? cd : maxUses > 1 && usedCount > 0 ? `${usedCount}/${maxUses}` : '';
-      btn.innerHTML = `<span class="spell-key">${key}</span>${overlay !== '' ? `<span class="spell-cd-overlay ${used ? 'spell-used' : ''}">${overlay}</span>` : ''}`;
+      const overlay = used ? '✓' : _recallReactivation ? '↩' : cd > 0 ? cd : maxUses > 1 && usedCount > 0 ? `${usedCount}/${maxUses}` : '';
+      if (spell.icon) {
+        btn.style.backgroundImage = `url('${spell.icon}')`;
+        btn.style.backgroundSize = 'cover';
+        btn.style.backgroundPosition = 'center';
+      }
+      btn.innerHTML = `<span class="spell-key">${key}</span>${overlay !== '' ? `<span class="spell-cd-overlay ${used ? 'spell-used' : _recallReactivation ? 'recall-active' : ''}">${overlay}</span>` : ''}`;
 
       spellsEl.appendChild(btn);
     });
