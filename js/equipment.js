@@ -26,6 +26,9 @@ const EQUIPMENT = {
                      stats: { maxHP: 100, armor: 5, mr: 5 },
                      passive: 'Au début de votre tour, si vos HP sont inférieurs à 50% de votre max, récupérez 8% de vos HP manquants.' },
 
+  petit_arc:       { tier: 1, categories: [], name: 'Petit Arc',             icon: 'img/items/petit_arc.png',       combineCost: 800, recipe: [],
+                     stats: { extraAutoAttacks: 1 } },
+
   mana_tear:       { tier: 1, categories: [], name: 'Larme de Mana',         icon: 'img/items/mana_tear.png',       combineCost: 400, recipe: [],
                      stats: { maxMana: 200, manaOnSpell: 15, manaOnSpellMax: 300, manaRegenPct: 25 },
                      passive: 'Chaque sort lancé augmente votre Mana max de 15 (max +300 via ce passif).' },
@@ -60,6 +63,11 @@ const EQUIPMENT = {
                      passive: 'Si vous n\'avez pas infligé de dégâts à un héros lors de votre dernier tour, recevez +1 PM ce tour. Augmente votre régénération de HP de 25% et de mana de 25%.' },
 
   bottes_attaquant: { tier: 2, categories: [], name: 'Bottes de l\'Attaquant',  icon: 'img/items/bottes_attaquant.png', combineCost: 800, recipe: ['simple_boots'],
+                      isBoots: true,
+                      stats: { pm: 2, ad: 35, extraAutoAttacks: 1 },
+                      passive: '+1 auto-attaque par tour.' },
+
+  bottes_assassin:  { tier: 2, categories: ['assassin'], name: 'Bottes Assassines', icon: 'img/items/bottes_assassin.png', combineCost: 800, recipe: ['simple_boots'],
                       isBoots: true,
                       stats: { pm: 2, ad: 35 },
                       passive: 'Ignore 5% de l\'armure adverse (peut devenir négative).' },
@@ -153,10 +161,10 @@ const EQUIPMENT = {
   sceptre_de_vie:  { tier: 2, categories: [], name: 'Sceptre de Vie',          icon: 'img/items/sceptre_de_vie.png',   combineCost: 500, recipe: ['short_sword'],
                      stats: { ad: 20, lifeSteal: 10 } },
 
-  lame_du_diable:  { tier: 3, categories: ['dpt'], name: 'Lame du Diable',     icon: 'img/items/lame_du_diable.png',  combineCost: 250,
-                     recipe: ['sceptre_de_vie', 'white_walker_hammer'],
-                     stats: { ad: 50, lifeSteal: 12 },
-                     passive: 'Chaque attaque de base infligée à un ennemi vous octroie 1 PM ce tour. Inflige également des dégâts bruts bonus égaux à 8% des HP max de la cible.' },
+  lame_du_diable:  { tier: 3, categories: ['dpt'], name: 'Lame du Diable',     icon: 'img/items/lame_du_diable.png',  combineCost: 450,
+                     recipe: ['petit_arc', 'sceptre_de_vie'],
+                     stats: { ad: 40, extraAutoAttacks: 1, lifeSteal: 12 },
+                     passive: 'Vos auto-attaques infligent des dégâts magiques bonus égaux à 7% des HP actuels de la cible.' },
 
   grosse_lame:     { tier: 2, categories: [], name: 'Grosse Lame',           icon: 'img/items/grosse_lame.png',     combineCost: 900, recipe: ['short_sword'],
                      stats: { ad: 45 } },
@@ -172,9 +180,9 @@ const EQUIPMENT = {
                      passive: 'Vos auto-attaques et sorts physiques critiques infligent 450% de dégâts au lieu de 350%.' },
 
   lame_electrique: { tier: 3, categories: ['dpt'], name: 'Lame Électrique',       icon: 'img/items/lame_electrique.png', combineCost: 600,
-                     recipe: ['grosse_lame', 'small_crit_cape'],
-                     stats: { ad: 60, critChance: 25 },
-                     passive: 'Vos attaques de base infligent 25 dégâts magiques supplémentaires à la cible et à tous les ennemis en chaîne (chaque ennemi à moins de 4 cases d\'un ennemi déjà touché est également touché).' },
+                     recipe: ['epees_croisees', 'petit_arc'],
+                     stats: { critChance: 25, extraAutoAttacks: 1 },
+                     passive: 'Vos auto-attaques infligent 250 dégâts magiques à tous les ennemis à moins de 6 cases Manhattan de la cible (CD 3 tours).' },
 
   lame_du_ninja:         { tier: 3, categories: ['dpt', 'assassin'], name: 'Lame du Ninja',              icon: 'img/items/lame_du_ninja.png',        combineCost: 550,
                            recipe: ['dague_destructrice', 'grande_pioche'],
@@ -187,14 +195,14 @@ const EQUIPMENT = {
                            passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Lorsque vous attaquez une cible qui a un bouclier, les dégâts infligés sont doublés contre le bouclier (normaux contre les HP).' },
 
   canon_de_feu:    { tier: 3, categories: ['dpt'], name: 'Canon de Feu',          icon: 'img/items/canon_de_feu.png',    combineCost: 500,
-                     recipe: ['epees_croisees', 'distant_vision', 'short_sword'],
-                     stats: { ad: 30, critChance: 25, bonusSpellRange: 1, po: 1 },
+                     recipe: ['epees_croisees', 'petit_arc'],
+                     stats: { critChance: 25, extraAutoAttacks: 1 },
                      passive: 'Votre attaque de base gagne 1 PO.' },
 
   epee_double_feu: { tier: 3, categories: ['dpt'], name: 'Épée Double de Feu',   icon: 'img/items/epee_double_feu.png', combineCost: 550,
                      recipe: ['life_crystal', 'grande_pioche', 'petit_grimoire'],
-                     stats: { ad: 35, ap: 20, maxHP: 250, extraAutoAttacks: 1 },
-                     passive: 'Vous pouvez effectuer 2 attaques de base par tour.' },
+                     stats: { ad: 35, ap: 20, maxHP: 250 },
+                     passive: 'Les auto-attaques appliquent 2 fois les effets à l\'impact (Lame du Diable, Poignard de Dieu, etc.).' },
 
   // ─── TIER 2 — Générique (suite) ─────────────────────────────
 
@@ -215,7 +223,7 @@ const EQUIPMENT = {
 
   tueur_de_dieux:  { tier: 3, categories: ['dpt', 'bruiser'], name: 'Tueur de Dieux',    icon: 'img/items/tueur_de_dieux.png',  combineCost: 400,
                      recipe: ['marteau_sinad', 'grande_pioche'],
-                     stats: { ad: 85, cdReduction: 1 },
+                     stats: { ad: 70, extraAutoAttacks: 1 },
                      passive: '30% des dégâts de vos attaques de base sont des dégâts bruts (ignorent armure et RM).' },
 
   marteau_sinad:   { tier: 2, categories: [], name: 'Marteau de Sinad',       icon: 'img/items/marteau_sinad.png',   combineCost: 350,
@@ -239,16 +247,18 @@ const EQUIPMENT = {
                      stats: { cdReduction: 1 },
                      passive: 'Passif Unique — Réduit de 1 le CD de tous vos sorts lors de leur utilisation (minimum 1 ; minimum 2 pour les sorts infligeant un stun). Ne se cumule pas avec plusieurs Sabliers Temporels.' },
 
-  distant_vision:  { tier: 1, categories: [], name: 'Vision Lointaine',      icon: 'img/items/distant_vision.png',  combineCost: 500, recipe: [],
-                     stats: { bonusSpellRange: 1 },
-                     passive: 'Augmente la portée de tous vos sorts de 1.' },
 
   small_crit_cape:      { tier: 1, categories: [], name: 'Petite Cape Critique',   icon: 'img/items/small_crit_cape.png',   combineCost: 400, recipe: [],
-                          stats: { critChance: 25 },
-                          passive: 'Les attaques de base ont 10% de chance d\'infliger un coup critique (+50% de dégâts).' },
+                          stats: { critChance: 8 },
+                          passive: 'Les attaques de base ont une chance de coup critique.' },
+
+  danse_des_morts:      { tier: 3, categories: ['dpt'], name: 'Danse des Morts',    icon: 'img/items/danse_des_morts.png',   combineCost: 500,
+                          recipe: ['epees_croisees', 'petit_arc'],
+                          stats: { critChance: 25, extraAutoAttacks: 1, pm: 1 },
+                          passive: 'Vous pouvez traverser les murs et les adversaires (impossible de finir sur une case occupée).' },
 
   epees_croisees:       { tier: 2, categories: [], name: 'Épées Croisées',          icon: 'img/items/epees_croisees.png',    combineCost: 700, recipe: ['small_crit_cape'],
-                          stats: { critChance: 25 },
+                          stats: { critChance: 15 },
                           passive: 'Jambes de Feu — Au début de votre tour, gagnez 1 PM ce tour (3 tours de CD).' },
 
   small_antimagic_cape: { tier: 1, categories: [], name: 'Petite Cape Antimagie',  icon: 'img/items/small_antimagic_cape.png', combineCost: 400, recipe: [],
@@ -356,8 +366,8 @@ const EQUIPMENT = {
                         passive: 'Infliger un débuff à un ennemi lui inflige également 10% de ses HP max en dégâts magiques.' },
 
   poignard_de_dieu:   { tier: 3, categories: ['mage', 'bruiser'], name: 'Poignard de Dieu',    icon: 'img/items/poignard_de_dieu.png',   combineCost: 350,
-                        recipe: ['livre_incantations', 'baton_magique', 'life_crystal'],
-                        stats: { maxHP: 180, ap: 80, cdReduction: 1 },
+                        recipe: ['livre_incantations', 'baton_magique', 'petit_arc'],
+                        stats: { maxHP: 180, ap: 80, cdReduction: 1, extraAutoAttacks: 1 },
                         passive: 'Vos attaques de base infligent 0,35×AP dégâts magiques supplémentaires (n\'active pas les passifs d\'items liés aux attaques de base).' },
 
   masque_hante:       { tier: 2, categories: ['mage', 'bruiser'], name: 'Masque Hanté',        icon: 'img/items/masque_hante.png',       combineCost: 300,

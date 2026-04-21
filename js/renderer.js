@@ -777,6 +777,7 @@ class Renderer {
 
     btnAttack.classList.toggle('active-mode', g.actionMode === 'attack');
     btnAttack.disabled = g.autoAttacksUsed >= g.autoAttacksAllowed || g.actionsUsed >= MAX_ACTIONS;
+    btnAttack.innerHTML = `Attaque <span style="font-size:0.78em;opacity:0.8">(${g.autoAttacksUsed}/${g.autoAttacksAllowed})</span>`;
 
     // Spells
     spellsEl.innerHTML = '';
@@ -866,7 +867,7 @@ class Renderer {
     const STAT_LABELS = { ad:'AD', ap:'AP', armor:'Armure', mr:'Résist. Mag',
       maxHP:'HP max', maxMana:'Mana max', pm:'PM', po:'PO',
       lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana', manaRegenPct:'Regen Mana %',
-      critChance:'Chance Critique %',
+      critChance:'Chance Critique %', extraAutoAttacks:'Attaques/tour',
       goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
       goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort', armorPct:'Armure %' };
 
@@ -1114,7 +1115,7 @@ class Renderer {
     const STAT_LABELS = { ad:'AD', ap:'AP', armor:'Armure %', mr:'Résist. Mag',
                           maxHP:'HP max', maxMana:'Mana max', pm:'PM', po:'PO',
                           lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana', manaRegenPct:'Regen Mana %',
-                          critChance:'Chance Critique %',
+                          critChance:'Chance Critique %', extraAutoAttacks:'Attaques/tour',
                           goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
                           goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort' };
     const netStats = { ...item.stats };

@@ -344,23 +344,23 @@ HERO_TYPES['roam_2'] = {
   spells: [
     {
       id: 'masello_q', name: 'Masellojutsu',
-      description: 'Dash à côté d\'un ennemi et lui inflige 80 + 0.6 AD dégâts physiques.',
+      description: 'Dash à côté d\'un ennemi (à travers les murs) et lui inflige 100 + 0.8 AD dégâts physiques.',
       manaCost: 60, range: 6, cooldown: 2, cdMin: 1,
-      damageType: 'physical', baseDamage: 80, adRatio: 0.6, apRatio: 0,
+      damageType: 'physical', baseDamage: 100, adRatio: 0.8, apRatio: 0,
       targetType: 'dash_to_enemy', zone: null, effects: []
     },
     {
       id: 'masello_w', name: 'Help is coming',
-      description: 'Se téléporte sur une case adjacente à un allié.',
+      description: 'Se téléporte sur une case adjacente à un allié (à travers les murs).',
       manaCost: 40, range: 6, cooldown: 2, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'dash_to_ally', zone: null, effects: []
     },
     {
       id: 'masello_r', name: 'Energy Kick',
-      description: 'Frappe toutes les cibles adjacentes (8 cases). Inflige 110 + 0.7 AD dégâts physiques.',
+      description: 'Frappe toutes les cibles adjacentes (8 cases). Inflige 110 + 1 AD dégâts physiques.',
       manaCost: 90, range: 1, cooldown: 4, cdMin: 1,
-      damageType: 'physical', baseDamage: 110, adRatio: 0.7, apRatio: 0,
+      damageType: 'physical', baseDamage: 110, adRatio: 1, apRatio: 0,
       targetType: 'no_target', adjacentHit: true, zone: null, effects: []
     }
   ]
@@ -437,7 +437,7 @@ HERO_TYPES['dpt_2'] = {
   colorFill: '#1d6a39', colorStroke: '#27ae60',
   portrait: 'assets/heroes/stank.png',
   passive: 'gros_calibre',
-  maxHP: 2000, maxMana: 250, hpRegen: 15, manaRegen: 30,
+  maxHP: 2000, maxMana: 250, hpRegen: 25, manaRegen: 30,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 5,
   spells: [
     {
@@ -457,9 +457,9 @@ HERO_TYPES['dpt_2'] = {
     },
     {
       id: 'stank_r', name: 'Appel',
-      description: 'Bombarde une zone en losange (1-3-5-3-1) : 80 +0.6 AD dégâts physiques par tour pendant 3 tours',
+      description: 'Bombarde une zone en losange (1-3-5-3-1) : 140 +0.8 AD dégâts physiques par tour pendant 3 tours',
       manaCost: 150, range: 0, cooldown: 10, cdMin: 2,
-      damageType: 'physical', baseDamage: 80, adRatio: 0.6, apRatio: 0,
+      damageType: 'physical', baseDamage: 140, adRatio: 0.8, apRatio: 0,
       targetType: 'bomb_zone', zone: null, effects: []
     }
   ]
@@ -554,9 +554,9 @@ HERO_TYPES['mage_4'] = {
     },
     {
       id: 'chronos_r', name: 'Rollback',
-      description: 'Retourne à sa position de début de tour. Si celle-ci est occupée, se téléporte sur une case adjacente disponible.',
+      description: 'Retourne à sa position de début de tour (case adjacente si occupée). Inflige 120 + 1,1×AP dégâts magiques aux ennemis à 3 cases ou moins du point de réapparition.',
       manaCost: 170, range: 0, cooldown: 8,
-      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 1.1,
       targetType: 'no_target', rollback: true, zone: null, effects: []
     }
   ]
@@ -566,7 +566,7 @@ HERO_TYPES['support_2'] = {
   id: 'support_2', name: 'Shana', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
   colorFill: '#9a6b0e', colorStroke: '#f39c12',
   portrait: 'assets/heroes/shana.png', passive: 'shana_passive',
-  maxHP: 2100, maxMana: 220, hpRegen: 15, manaRegen: 25,
+  maxHP: 2100, maxMana: 220, hpRegen: 30, manaRegen: 25,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -597,31 +597,31 @@ HERO_TYPES['support_3'] = {
   id: 'support_3', name: 'Anastasia', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
   colorFill: '#9a6b0e', colorStroke: '#f39c12',
   portrait: 'assets/heroes/anastasia.png', passive: 'anastasia_passive',
-  maxHP: 2100, maxMana: 220, hpRegen: 15, manaRegen: 25,
+  maxHP: 2100, maxMana: 220, hpRegen: 30, manaRegen: 25,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
       id: 'anastasia_q', name: 'Soin Prudent',
-      description: 'Soigne un allié ou soi-même de 20 + 0,2×AP HP. Utilisable 2 fois par tour (CD réel : 0).',
+      description: 'Soigne un allié ou soi-même de 30 + 0,7×AP HP. Utilisable 2 fois par tour (CD réel : 0).',
       manaCost: 70, range: 5, cooldown: 0,
-      damageType: null, healBase: 20, healApRatio: 0.2, baseDamage: 0, adRatio: 0, apRatio: 0,
+      damageType: null, healBase: 30, healApRatio: 0.7, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'ally_hero', maxUsesPerTurn: 2, zone: null, effects: []
     },
     {
       id: 'anastasia_w', name: 'Brûlure de Désir',
-      description: 'Zone 1-3-1 : inflige 110 + 0,4×AP dégâts magiques et applique Hémorragie aux ennemis touchés.',
+      description: 'Zone 1-3-1 : inflige 140 + 0,6×AP dégâts magiques et applique Hémorragie aux ennemis touchés.',
       manaCost: 110, range: 4, cooldown: 4,
-      damageType: 'magical', baseDamage: 110, adRatio: 0, apRatio: 0.4,
+      damageType: 'magical', baseDamage: 140, adRatio: 0, apRatio: 0.6,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 },
       effects: [{ type: 'hemorrhage', turns: 1 }]
     },
     {
       id: 'anastasia_r', name: 'Barrière Protectrice',
-      description: 'Zone 1-3-5-3-1 en ligne droite : tous les alliés présents reçoivent un bouclier de 200 + 1×AP pendant 3 tours.',
+      description: 'Zone 1-3-5-3-1 en ligne droite : tous les alliés présents reçoivent un bouclier de 200 + 1,2×AP pendant 4 tours.',
       manaCost: 140, range: 5, cooldown: 12,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 2 },
-      allyShield: true, shieldBase: 200, shieldAPRatio: 1, shieldTurns: 3,
+      allyShield: true, shieldBase: 200, shieldAPRatio: 1.2, shieldTurns: 4,
       lineOnly: true, effects: []
     }
   ]
@@ -669,9 +669,9 @@ HERO_TYPES['support_4'] = {
   spells: [
     {
       id: 'sharagoth_q', name: 'Terrain conquis',
-      description: 'Clique sur une case : pousse l\'ennemi à portée (jusqu\'à 3 cases) vers cette destination.',
+      description: 'Clique sur une case : pousse l\'ennemi à portée (jusqu\'à 3 cases) vers cette destination et lui inflige 200 dégâts magiques.',
       manaCost: 110, range: 5, cooldown: 2, cdMin: 1,
-      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      damageType: 'magical', baseDamage: 200, adRatio: 0, apRatio: 0,
       targetType: 'push_enemy', zone: null, effects: []
     },
     {
@@ -700,9 +700,9 @@ HERO_TYPES['roam_5'] = {
   spells: [
     {
       id: 'abyss_q', name: 'Blackout',
-      description: 'Inflige 60 + 0,5 AP + 0,3 AD dégâts magiques et mute la cible (sorts bloqués pendant 1 tour).',
+      description: 'Inflige 80 + 0,5 AD + 0,5 AP dégâts magiques et mute la cible (sorts bloqués pendant 1 tour).',
       manaCost: 80, range: 3, cooldown: 3, cdMin: 1,
-      damageType: 'magical', baseDamage: 60, adRatio: 0.3, apRatio: 0.5,
+      damageType: 'magical', baseDamage: 80, adRatio: 0.5, apRatio: 0.5,
       targetType: 'enemy_hero', zone: null, effects: [{ type: 'mute', turns: 1 }]
     },
     {
@@ -714,9 +714,9 @@ HERO_TYPES['roam_5'] = {
     },
     {
       id: 'abyss_r', name: 'Nuit infinie',
-      description: 'Se rue sur un ennemi lointain (8 à 10 cases, sans ligne de vue) et lui inflige 80 + 0,4 AD + 0,2 AP dégâts physiques.',
+      description: 'Se rue sur un ennemi lointain (8 à 10 cases, sans ligne de vue) et lui inflige 130 + 0,7 AD + 0,5 AP dégâts physiques.',
       manaCost: 110, range: 10, cooldown: 9, cdMin: 1,
-      damageType: 'physical', baseDamage: 80, adRatio: 0.4, apRatio: 0.2,
+      damageType: 'physical', baseDamage: 130, adRatio: 0.7, apRatio: 0.5,
       targetType: 'abyss_r', minRange: 8, zone: null, effects: []
     }
   ]
@@ -731,7 +731,7 @@ HERO_TYPES['roam_6'] = {
   spells: [
     {
       id: 'hornet_q', name: 'Lance Soyeuse',
-      description: 'Marque une cible avec une harponne jusqu\'à la fin du prochain tour, infligeant 50 + 0,6×AD dégâts physiques. Si une cible est marquée, Q ne peut que réactiver sur elle (portée infinie, pas de ligne de vue) : dégâts +25 + 0,4×AD + téléportation adjacente (non diagonale).',
+      description: 'Lance en ligne droite (portée 5) : marque la cible jusqu\'à la fin du prochain tour, infligeant 50 + 0,6×AD dégâts physiques. Réactivation (portée infinie, de n\'importe où) sur la cible marquée : dégâts +25 + 0,4×AD + téléportation adjacente (non diagonale).',
       manaCost: 80, range: 5, cooldown: 3, maxUsesPerTurn: 2,
       damageType: 'physical', baseDamage: 50, adRatio: 0.6, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: [], harpooned: true, reusable: true
@@ -828,7 +828,7 @@ HERO_TYPES['dpt_5'] = {
   spells: [
     {
       id: 'quackshot_q', name: 'Chasse à l\'épuisement',
-      description: 'Inflige 60 + 0,8 AD dégâts physiques. À 3+ charges : perd 2 PM (1 tour). À 6+ charges : root (1 tour).',
+      description: 'Inflige 60 + 0,8 AD dégâts physiques. À 8+ charges : perd 2 PM (1 tour). À 16+ charges : root (1 tour).',
       manaCost: 100, range: 5, cooldown: 3, cdMin: 1,
       damageType: 'physical', baseDamage: 60, adRatio: 0.8, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: []
@@ -861,15 +861,15 @@ HERO_TYPES['mage_5'] = {
     {
       id: 'pibot_q', name: 'Pinces robotiques',
       description: 'Attire un ennemi de 2 cases en ligne droite et lui inflige 80 + 0,7 AP dégâts magiques.',
-      manaCost: 70, range: 4, cooldown: 3, cdMin: 1,
+      manaCost: 70, range: 6, cooldown: 2, cdMin: 1,
       damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.7,
       targetType: 'enemy_hero', requiresLine: true, pullCells: 2, zone: null, effects: []
     },
     {
       id: 'pibot_w', name: 'Station de recharge',
-      description: 'Téléporte Pibot sur sa batterie (si active, portée 5). Sa prochaine attaque de base inflige 0,6 AP dégâts magiques supplémentaires.',
-      manaCost: 100, range: 5, cooldown: 3, cdMin: 1,
-      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0.6,
+      description: 'Actif (sur soi-même) : la prochaine attaque de base de Pibot inflige 0,8 AP dégâts magiques supplémentaires.',
+      manaCost: 100, range: 0, cooldown: 2, cdMin: 1,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0.8,
       targetType: 'pibot_w', zone: null, effects: []
     },
     {
@@ -886,7 +886,7 @@ HERO_TYPES['mage_5'] = {
 HERO_TYPES['support_5'] = {
   id: 'support_5', name: 'Gabriel', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
   portrait: 'assets/heroes/gabriel.png', passive: 'gabriel_passive',
-  maxHP: 2250, maxMana: 220, hpRegen: 15, manaRegen: 25,
+  maxHP: 2250, maxMana: 220, hpRegen: 30, manaRegen: 25,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -921,7 +921,7 @@ HERO_TYPES['roam_4'] = {
   id: 'roam_4', name: 'Noyala', role: 'ROAM', roleId: 'roam', roleOrder: 2,
   portrait: 'assets/heroes/noyala.png', passive: 'noyala_passive',
   maxHP: 2150, maxMana: 200, hpRegen: 15, manaRegen: 20,
-  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 5,
+  ad: 40, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 5,
   spells: [
     {
       id: 'noyala_q', name: 'Invocation de Loups',
@@ -997,16 +997,16 @@ HERO_TYPES['solo_5'] = {
     },
     {
       id: 'salena_w', name: 'Découpage',
-      description: 'Ce tour-ci, vos attaques de base infligent 10% (+0,04×AP) des HP max de la cible en dégâts bruts supplémentaires.',
+      description: 'Ce tour-ci, vos attaques de base infligent 3% (+0,02×AP) des HP max de la cible en dégâts bruts supplémentaires.',
       manaCost: 80, range: 0, cooldown: 4,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'no_target', decoupage: true, zone: null, effects: []
     },
     {
       id: 'salena_r', name: 'Ligne de mire',
-      description: 'Les ennemis présents sur une ligne (1 à 5 cases) subissent 50 + 0,9×AP dégâts magiques.',
+      description: 'Les ennemis présents sur une ligne (1 à 5 cases) subissent 150 + 0,9×AP dégâts magiques.',
       manaCost: 110, range: 5, minRange: 1, maxRange: 5, cooldown: 9,
-      damageType: 'magical', baseDamage: 50, adRatio: 0, apRatio: 0.9,
+      damageType: 'magical', baseDamage: 150, adRatio: 0, apRatio: 0.9,
       targetType: 'line_zone', zone: null, effects: []
     }
   ]

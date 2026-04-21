@@ -14,20 +14,21 @@ const PASSIVE_LABELS = {
   layia_passive:    'Chasseresse — Les attaques de base touchent tous les ennemis à portée (commence à 1 PO ; héros à distance dès 2 PO). Gagne +1 PO toutes les 2 zones marron collectées.',
   chronos_passive:  'Maître du Temps — Chaque sort lancé rapporte 50 PO à Chronos.',
   shana_passive:    'Félin pour l\'autre — Quand Shana soigne un allié, elle se soigne aussi du même montant.',
-  anastasia_passive: 'Soins Intéressés — Chaque fois qu\'Anastasia soigne un héros (allié ou elle-même), elle gagne 10 PO. Elle peut soigner des cibles à pleine vie.',
+  anastasia_passive: 'Soins Intéressés — Chaque fois qu\'Anastasia soigne un héros (allié ou elle-même), elle gagne 50 PO. Elle peut soigner des cibles à pleine vie.',
   dans_la_chair:      'Dans la chair — Chaque sort de Frigiel inflige 5% des HP max de la cible en dégâts bruts supplémentaires.',
-  gros_calibre:       'Gros Calibre — Les attaques de base de Stank infligent les mêmes dégâts physiques à tous les ennemis sur les cases adjacentes à la cible.',
+  gros_calibre:       'Gros Calibre — Les attaques de base de Stank infligent les mêmes dégâts physiques à tous les ennemis dans un rayon de 4 cases autour de la cible.',
   sharagoth_passive:  'Plus forts ensemble — Au début de son tour, Sharagoth gagne un bouclier de 10% de ses HP max par allié présent à moins de 10 cases (Manhattan), pendant 2 tours.',
   vaillance:          'Vaillance — Le premier débuff appliqué à Ondine chaque tour est automatiquement annulé.',
   abyss_passive:      'Équilibre des abysses — Les attaques de base d\'Abyss infligent 40% de dégâts physiques, 40% de dégâts magiques et 20% de dégâts bruts.',
   faena_passive:      'Coups critiques mortels — Chaque tranche de 10 AD donne +1% de dégâts critiques (base 200%). S\'applique aux attaques de base et aux Flèches de douleur.',
-  pibot_passive:      'Batterie — Au début de chaque tour de Pibot, une case ⚡ apparaît à 5 cases ou moins. Passer dessus (ou utiliser Station de recharge) récupère 25% de la mana manquante.',
+  pibot_passive:      'Batterie — Au début de chaque tour de Pibot, une case ⚡ apparaît à 5 cases ou moins. Passer dessus récupère 50% de la mana manquante.',
   gabriel_passive:    'Pas Léger — Au début du tour de chaque allié à moins de 7 cases de Gabriel, cet allié gagne +1 PM.',
   grolith_passive:    'Pierre qui roule — Grolith gagne 70 points de bouclier au début de chaque tour. Ce bouclier n\'expire jamais.',
   noyala_passive:     'Chasse — Noyala gagne +1 PM au début de son tour si elle est adjacente à un mur. Ses loups récupèrent leurs PM à chaque début de son tour.',
   salena_passive:     'Lame Magique — Chaque attaque de base de Salena inflige 0,3×AP dégâts magiques supplémentaires à la cible.',
   cupidon_passive:    'Amour fou — Si un adversaire contre qui vous avez envoyé une attaque de base au dernier tour vous attaque (sorts + AA), vous ne recevez que 50% des dégâts à la place (applique débuffs).',
-  quackshot_passive:  'Marque du Chasseur — Chaque attaque de base ajoute une charge à l\'ennemi (cumulable). Changer de cible retire les charges de l\'ennemi précédent.'
+  quackshot_passive:  'Marque du Chasseur — Chaque attaque de base ajoute une charge à l\'ennemi (cumulable). Changer de cible retire les charges de l\'ennemi précédent.',
+  hornet_passive:     'Suture — Si Hornet n\'utilise aucun PM pendant son tour, elle se soigne de 80 + 1×AD HP, retire son hémorragie et gagne +3 PM au prochain tour.'
 };
 
 const TARGET_LABELS = {

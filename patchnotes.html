@@ -20,7 +20,7 @@
       position: relative;
       background: linear-gradient(180deg, #1a0a2e 0%, #0a0a1a 100%);
       border-bottom: 2px solid #c8aa6e44;
-      padding: 48px 0 32px;
+      padding: 48px 0 0;
       text-align: center;
       overflow: hidden;
     }
@@ -44,15 +44,44 @@
       text-transform: uppercase;
       color: #785a28;
       margin-top: 6px;
+      margin-bottom: 28px;
     }
-    .patch-date {
-      margin-top: 14px;
-      font-size: 0.8rem;
+
+    /* ── Patch tabs ── */
+    .patch-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .patch-tab {
+      background: transparent;
+      border: none;
+      border-top: 1px solid #c8aa6e33;
+      border-left: 1px solid #c8aa6e33;
+      border-right: 1px solid #c8aa6e33;
       color: #5b5b5b;
-      letter-spacing: 2px;
+      font-family: 'Georgia', serif;
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 10px 28px;
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+    }
+    .patch-tab:hover { color: #a09060; background: #ffffff08; }
+    .patch-tab.active {
+      color: #c8aa6e;
+      background: #010a13;
+      border-bottom: 2px solid #010a13;
+      margin-bottom: -2px;
     }
 
     /* ── Layout ── */
+    .patch-section { display: none; }
+    .patch-section.active { display: block; }
+
     .patch-body {
       max-width: 1100px;
       margin: 0 auto;
@@ -83,6 +112,7 @@
     .section-icon.adj   { color: #f39c12; }
     .section-icon.new   { color: #9b59b6; }
     .section-icon.sys   { color: #3498db; }
+    .section-icon.del   { color: #7f8c8d; }
 
     /* ── Hero cards grid ── */
     .heroes-grid {
@@ -118,7 +148,6 @@
       text-transform: uppercase;
     }
 
-    /* Tooltip with changes */
     .hero-card .tooltip {
       display: none;
       position: absolute;
@@ -128,7 +157,7 @@
       background: #010a13ee;
       border: 1px solid #c8aa6e55;
       padding: 10px 12px;
-      width: 230px;
+      width: 240px;
       font-size: 0.72rem;
       line-height: 1.6;
       color: #a09060;
@@ -150,7 +179,7 @@
     .down { color: #e74c3c; }
     .neu  { color: #f39c12; }
 
-    /* ── Systems / New cards ── */
+    /* ── Systems / Items cards ── */
     .sys-grid {
       display: flex;
       flex-direction: column;
@@ -164,12 +193,18 @@
       line-height: 1.7;
       color: #a09060;
     }
+    .sys-card.nerf { border-color: #c0392b44; }
+    .sys-card.new  { border-color: #8e44ad44; }
+    .sys-card.del  { border-color: #7f8c8d44; opacity: 0.7; }
     .sys-card-title {
       font-weight: bold;
       color: #c8aa6e;
       font-size: 0.80rem;
       margin-bottom: 6px;
     }
+    .sys-card.nerf .sys-card-title { color: #e74c3c; }
+    .sys-card.new  .sys-card-title { color: #9b59b6; }
+    .sys-card.del  .sys-card-title { color: #7f8c8d; text-decoration: line-through; }
     .sys-card ul { padding-left: 16px; }
     .sys-card li { margin-bottom: 3px; }
 
@@ -192,7 +227,6 @@
       border: 2px solid #8e44ad;
       flex-shrink: 0;
     }
-    .new-hero-banner-info {}
     .new-hero-banner-title {
       font-size: 1.2rem;
       color: #c8aa6e;
@@ -212,14 +246,61 @@
       line-height: 1.6;
     }
 
-    /* ── Divider ── */
+    /* ── Item cards ── */
+    .items-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .item-card {
+      width: 76px;
+      cursor: default;
+      position: relative;
+    }
+    .item-card img {
+      width: 76px;
+      height: 76px;
+      object-fit: cover;
+      border: 2px solid #1e2328;
+      display: block;
+    }
+    .item-card.new  img { border-color: #8e44ad; box-shadow: 0 0 8px #8e44ad88; }
+    .item-card.del  img { border-color: #7f8c8d; box-shadow: 0 0 8px #7f8c8d44; filter: grayscale(0.6); }
+    .item-card.nerf img { border-color: #c0392b; box-shadow: 0 0 8px #c0392b66; }
+    .item-card.adj  img { border-color: #d35400; box-shadow: 0 0 8px #d3540066; }
+    .item-card-name {
+      font-size: 0.60rem;
+      text-align: center;
+      color: #a09060;
+      margin-top: 4px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      line-height: 1.3;
+    }
+    .item-card .tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #010a13ee;
+      border: 1px solid #c8aa6e55;
+      padding: 10px 12px;
+      width: 220px;
+      font-size: 0.72rem;
+      line-height: 1.6;
+      color: #a09060;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .item-card:hover .tooltip { display: block; }
+
     .divider {
       border: none;
       border-top: 1px solid #c8aa6e22;
       margin: 4px 0;
     }
 
-    /* ── Footer ── */
     .patch-footer {
       text-align: center;
       font-size: 0.7rem;
@@ -235,10 +316,344 @@
 <div class="patch-header">
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
-  <div class="patch-date">19 Avril 2026</div>
+  <div class="patch-tabs">
+    <button class="patch-tab active" onclick="showPatch('patch-21avr', this)">21 Avril 2026</button>
+    <button class="patch-tab" onclick="showPatch('patch-19avr', this)">19 Avril 2026</button>
+  </div>
 </div>
 
-<!-- ══ BODY ══ -->
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- PATCH 21 AVRIL 2026                                    -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="patch-21avr" class="patch-section active">
+<div class="patch-body">
+
+  <!-- ══ COLONNE PRINCIPALE ══ -->
+  <div class="patch-main">
+
+    <!-- HÉROS NERFS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">▼</span> NERFS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/quackshot.jpg" alt="Quackshot">
+          <div class="hero-card-name">Quackshot</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Quackshot</div>
+            <ul>
+              <li><span class="down">Q — Slow : 3+ charges → <strong>8+ charges</strong></span></li>
+              <li><span class="down">Q — Root : 6+ charges → <strong>16+ charges</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/noyala.png" alt="Noyala">
+          <div class="hero-card-name">Noyala</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Noyala</div>
+            <ul>
+              <li><span class="down">AD de base : 50 → <strong>40</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- HÉROS BUFFS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">▲</span> BUFFS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/chronos.png" alt="Chronos">
+          <div class="hero-card-name">Chronos</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Chronos</div>
+            <ul>
+              <li><span class="up">R Rollback — Inflige désormais <strong>120+1,1×AP</strong> dégâts magiques aux ennemis à ≤3 cases du point de réapparition</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/sharagoth.png" alt="Sharagoth">
+          <div class="hero-card-name">Sharagoth</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sharagoth</div>
+            <ul>
+              <li><span class="up">Q Terrain Conquis — Inflige aussi <strong>200 dégâts magiques</strong> à la cible poussée</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/stank.png" alt="Stank">
+          <div class="hero-card-name">Stank</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Stank</div>
+            <ul>
+              <li><span class="up">Passif Gros Calibre — Rayon splash : adjacent → <strong>4 cases</strong></span></li>
+              <li><span class="up">R Appel — Dégâts : 80+0,6AD → <strong>140+0,8AD</strong> par tour</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/anastasia.png" alt="Anastasia">
+          <div class="hero-card-name">Anastasia</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Anastasia</div>
+            <ul>
+              <li><span class="up">Passif — Or par soin : 10 → <strong>50 PO</strong></span></li>
+              <li><span class="up">Q Soin Prudent — Base : 20+0,2AP → <strong>30+0,7AP</strong></span></li>
+              <li><span class="up">W Brûlure de Désir — Base : 110+0,4AP → <strong>140+0,6AP</strong></span></li>
+              <li><span class="up">R Barrière Protectrice — Ratio AP : 1 → <strong>1,2</strong> · Durée : 3t → <strong>4t</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- HÉROS AJUSTÉS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◆</span> HÉROS AJUSTÉS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/salena.png" alt="Salena">
+          <div class="hero-card-name">Salena</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Salena</div>
+            <ul>
+              <li><span class="down">Passif — Dégâts : 0,3×AP → 0,2×AP</span></li>
+              <li><span class="down">W Découpage — HP% : 10%+0,04AP → 3%+0,02AP</span></li>
+              <li><span class="up">R Ligne de mire — Base : 50 → 150</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS NERFS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">▼</span> ITEMS NERFS</div>
+      <div class="items-grid">
+
+        <div class="item-card nerf">
+          <img src="img/items/epees_croisees.png" alt="Épées Croisées">
+          <div class="item-card-name">Épées Croisées</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Épées Croisées</div>
+            <ul>
+              <li><span class="down">Chance critique : 25% → <strong>15%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/small_crit_cape.png" alt="Petite Cape Critique">
+          <div class="item-card-name">Petite Cape Critique</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Petite Cape Critique</div>
+            <ul>
+              <li><span class="down">Chance critique : 25% → <strong>8%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS AJUSTÉS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◆</span> ITEMS AJUSTÉS</div>
+      <div class="items-grid">
+
+        <div class="item-card adj">
+          <img src="img/items/bottes_attaquant.png" alt="Bottes de l'Attaquant">
+          <div class="item-card-name">Bottes de l'Attaquant</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bottes de l'Attaquant</div>
+            <ul>
+              <li><span class="neu">Passif : pénétration armure → <strong>+1 attaque/tour</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/epee_double_feu.png" alt="Épée Double de Feu">
+          <div class="item-card-name">Épée Double de Feu</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Épée Double de Feu</div>
+            <ul>
+              <li><span class="neu">Passif : extra attaque → <strong>double les effets à l'impact</strong></span></li>
+              <li><span class="down">Stat : extraAutoAttacks retiré</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/tueur_de_dieux.png" alt="Tueur de Dieux">
+          <div class="item-card-name">Tueur de Dieux</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Tueur de Dieux</div>
+            <ul>
+              <li><span class="down">AD : 85 → <strong>70</strong></span></li>
+              <li><span class="down">Réduction CD : supprimée</span></li>
+              <li><span class="up">+1 attaque/tour</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/lame_du_diable.png" alt="Lame du Diable">
+          <div class="item-card-name">Lame du Diable</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Lame du Diable</div>
+            <ul>
+              <li><span class="neu">Recette : Petit Arc + Sceptre de Vie + 450g</span></li>
+              <li><span class="neu">Stats : 40 AD · +1 attaque/tour · +12% vol de vie</span></li>
+              <li><span class="neu">Passif : 7% HP <strong>actuels</strong> en dégâts magiques (was 8% HP max bruts)</span></li>
+              <li><span class="down">Ne donne plus +1 PM par attaque</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/lame_electrique.png" alt="Lame Électrique">
+          <div class="item-card-name">Lame Électrique</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Lame Électrique</div>
+            <ul>
+              <li><span class="neu">Recette : Épées Croisées + Petit Arc + 600g</span></li>
+              <li><span class="neu">Stats : +25% crit · +1 attaque/tour</span></li>
+              <li><span class="neu">Passif : <strong>250 dégâts magiques</strong> splash (CD 3 tours)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/canon_de_feu.png" alt="Canon de Feu">
+          <div class="item-card-name">Canon de Feu</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Canon de Feu</div>
+            <ul>
+              <li><span class="neu">Recette : Épées Croisées + Petit Arc + 500g</span></li>
+              <li><span class="neu">Stats : +25% crit · +1 attaque/tour</span></li>
+              <li><span class="down">AD, PO et portée sorts retirés</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/poignard_de_dieu.png" alt="Poignard de Dieu">
+          <div class="item-card-name">Poignard de Dieu</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Poignard de Dieu</div>
+            <ul>
+              <li><span class="neu">Recette : Livre d'Incantations + Bâton Magique + Petit Arc + 350g</span></li>
+              <li><span class="up">+1 attaque/tour</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ COLONNE LATÉRALE ══ -->
+  <div class="patch-side">
+
+    <!-- SYSTÈMES -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">◎</span> SYSTÈMES</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">⚔️ Auto-attaques</div>
+          <ul>
+            <li class="neu">Dégâts de base : <strong>0,25×AD</strong> par attaque (au lieu de 1×AD)</li>
+            <li class="up">Compteur attaques utilisées/max affiché sur le bouton</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">💚 Régénération de base</div>
+          <ul>
+            <li class="up">Shana, Gabriel, Anastasia : 15 → <strong>30 HP/tour</strong></li>
+            <li class="up">Stank : 15 → <strong>25 HP/tour</strong></li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NOUVEAUX ITEMS -->
+    <div>
+      <div class="section-title"><span class="section-icon new">✦</span> NOUVEAUX ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card new">
+          <img src="img/items/petit_arc.png" alt="Petit Arc">
+          <div class="item-card-name">Petit Arc</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Petit Arc</div>
+            <ul>
+              <li><span class="up">Coût : 800g</span></li>
+              <li><span class="up">+1 attaque/tour</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/danse_des_morts.png" alt="Danse des Morts">
+          <div class="item-card-name">Danse des Morts</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Danse des Morts</div>
+            <ul>
+              <li><span class="neu">Recette : Épées Croisées + Petit Arc + 500g</span></li>
+              <li><span class="up">+25% crit · +1 attaque/tour · +1 PM</span></li>
+              <li><span class="up">Passif : traversez murs et adversaires (destination libre)</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SUPPRIMÉ -->
+    <div>
+      <div class="section-title"><span class="section-icon del">✕</span> SUPPRIMÉ</div>
+      <div class="items-grid">
+
+        <div class="item-card del">
+          <img src="img/items/distant_vision.png" alt="Vision Lointaine">
+          <div class="item-card-name">Vision Lointaine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Vision Lointaine</div>
+            <ul>
+              <li><span class="neu">Retiré du jeu</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</div><!-- /patch-21avr -->
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- PATCH 19 AVRIL 2026                                    -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="patch-19avr" class="patch-section">
 <div class="patch-body">
 
   <!-- ══ COLONNE PRINCIPALE ══ -->
@@ -292,11 +707,10 @@
           </div>
         </div>
 
-
       </div>
     </div>
 
-    <!-- ADJUSTED -->
+    <!-- AJUSTÉS -->
     <div>
       <div class="section-title"><span class="section-icon adj">◆</span> AJUSTÉS</div>
       <div class="heroes-grid">
@@ -385,7 +799,6 @@
           <ul>
             <li class="up">Multiplicateur de base : 200% → <strong>350%</strong></li>
             <li class="up">Lame d'Infini : 250% → <strong>450%</strong></li>
-            <li class="neu">Chance de critique items : standardisée à <strong>25%</strong></li>
           </ul>
         </div>
 
@@ -393,7 +806,6 @@
           <div class="sys-card-title">🛡 Pénétration d'Armure Négative</div>
           <ul>
             <li class="up">Dégâts sur armure/RM négatif : ×1 → <strong>×3</strong></li>
-            <li class="neu">Rend la pénétration fixe bien plus impactante</li>
           </ul>
         </div>
 
@@ -440,8 +852,18 @@
 
   </div>
 </div>
+</div><!-- /patch-19avr -->
 
 <div class="patch-footer">ANCIENTS ARENA &nbsp;·&nbsp; PATCH NOTES &nbsp;·&nbsp; 2026</div>
+
+<script>
+  function showPatch(id, btn) {
+    document.querySelectorAll('.patch-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.patch-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
 
 </body>
 </html>

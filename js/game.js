@@ -382,6 +382,11 @@ class GameState {
       hero.alternateurCooldown--;
     }
 
+    // Passif Lame Électrique : décrémenter le cooldown
+    if (hero.items.includes('lame_electrique') && (hero.lameElectriqueCooldown || 0) > 0) {
+      hero.lameElectriqueCooldown--;
+    }
+
     // Hornet passif: réinitialiser le tracking (bonus PM appliqué après movementLeft)
     if (hero.passive === 'hornet_passive') {
       hero.hornetDidNotUsePMThisTurn = true;
@@ -1131,15 +1136,17 @@ class GameState {
   // Dijkstra: orthogonal = 1 PM, diagonal = 2 PM. Heroes (allies & enemies) bloquent le passage.
   _dijkstraPath(from, to, extraBlocked = null) {
     if (from.x === to.x && from.y === to.y) return { cost: 0 };
+    const ghost = !!(this.currentHero?.items.includes('danse_des_morts'));
     const blocked = new Set();
     this.players.forEach(p => p.heroes.forEach(h => {
       if (h.isAlive && h !== this.currentHero && h.position)
         blocked.add(`${h.position.x},${h.position.y}`);
     }));
+    // Destination ne peut pas être sur un héros ni un mur (même en ghost)
     if (blocked.has(`${to.x},${to.y}`)) return null;
+    if (isWall(to.x, to.y)) return null;
 
     const cost = new Map([[`${from.x},${from.y}`, 0]]);
-    // Min-heap simulé avec tableau trié
     const pq = [{ c: 0, pos: from }];
     while (pq.length) {
       pq.sort((a, b) => a.c - b.c);
@@ -1150,10 +1157,10 @@ class GameState {
         if (!dx && !dy) continue;
         const nx = pos.x + dx, ny = pos.y + dy;
         if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) continue;
-        if (isWall(nx, ny)) continue;
+        if (!ghost && isWall(nx, ny)) continue;
         const key = `${nx},${ny}`;
-        if (blocked.has(key)) continue; // bodyblock : impossible de traverser un héros
-        if (extraBlocked?.has(key)) continue; // ex : pièges ennemis bloquent le passage
+        if (!ghost && blocked.has(key)) continue; // bodyblock sans ghost
+        if (extraBlocked?.has(key)) continue;
         const moveCost = (dx !== 0 && dy !== 0) ? 2 : 1;
         const newCost  = c + moveCost;
         if (newCost < (cost.get(key) ?? Infinity)) {
@@ -1168,6 +1175,7 @@ class GameState {
   getReachableCells(blockTraps = true) {
     const hero = this.currentHero;
     if (!hero || this.movementLeft === 0) return [];
+    const ghost = !!(hero.items.includes('danse_des_morts'));
     const blocked = new Set();
     this.players.forEach(p => p.heroes.forEach(h => {
       if (h.isAlive && h !== hero && h.position)
@@ -1184,21 +1192,24 @@ class GameState {
       const { c, pos } = pq.shift();
       const posKey = `${pos.x},${pos.y}`;
       if (c > (cost.get(posKey) ?? Infinity)) continue;
-      // Ne pas étendre depuis une case de piège ennemi (bloque le passage, pas la destination)
       const isOnTrap = enemyTraps.has(posKey);
       for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
         if (!dx && !dy) continue;
         const nx = pos.x + dx, ny = pos.y + dy;
         if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) continue;
         const key = `${nx},${ny}`;
-        if (blocked.has(key) || isWall(nx, ny)) continue;
-        // Si on est sur un piège ennemi, on ne peut pas continuer au-delà
+        // En ghost : traverser murs/héros mais ne pas proposer comme destination finale
+        if (!ghost && (blocked.has(key) || isWall(nx, ny))) continue;
+        if (ghost && isWall(nx, ny) && !(nx === hero.position.x && ny === hero.position.y)) {
+          // Mur traversable mais pas destination : on continue l'expansion sans l'ajouter aux cellules
+        }
         if (isOnTrap) continue;
         const moveCost = (dx !== 0 && dy !== 0) ? 2 : 1;
         const newCost  = c + moveCost;
         if (newCost <= this.movementLeft && newCost < (cost.get(key) ?? Infinity)) {
           cost.set(key, newCost);
-          cells.push({ x: nx, y: ny });
+          // N'ajouter comme destination que si la case est libre (pas mur, pas héros)
+          if (!isWall(nx, ny) && !blocked.has(key)) cells.push({ x: nx, y: ny });
           pq.push({ c: newCost, pos: { x: nx, y: ny } });
         }
       }
@@ -1251,12 +1262,12 @@ class GameState {
       const empowered     = attacker.empoweredAttack;
       const hadSpellBonus = wasEmpowered || bonusFlat > 0;
       if (wasEmpowered) attacker.empoweredAttack = null;
-      const armorPen = (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
-      const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0);
+      const armorPen = (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
+      const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0) + (attacker.items.includes('bottes_assassin') ? 5 : 0);
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
         const _critMult = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
-        const rawBase = Math.floor((attacker.ad + bonusFlat) * (isCrit ? _critMult : 1));
+        const rawBase = Math.floor((attacker.ad * 0.25 + bonusFlat) * (isCrit ? _critMult : 1));
         // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
         if (attacker.passive === 'abyss_passive') {
           const physDmg = this._reduceDmg(Math.floor(rawBase * 0.4), 'physical', e, armorPen, 0, armorPenPct);
@@ -1333,25 +1344,30 @@ class GameState {
         }
         const tag = [isCrit ? 'CRITIQUE' : null, wasEmpowered ? 'renforcé' : null, bonusFlat > 0 ? 'Petit Bond' : null, hasBlade ? 'Lame Bleue' : null, hasMagicSword ? 'Épée Magique' : null, armorPen > 0 ? 'Nargoth' : null].filter(Boolean).join(', ');
         this.addLog(`${attacker.name} → ${e.name}: −${dmg} HP${tag ? ` (${tag})` : ''}`);
+        const _doubleOnHitL = attacker.items.includes('epee_double_feu');
+        const _onHitPassesL = _doubleOnHitL ? 2 : 1;
         // Passif Poignard de Dieu : 0.35×AP dégâts magiques bonus
-        if (attacker.items.includes('poignard_de_dieu') && e.isAlive) {
+        for (let _h = 0; _h < _onHitPassesL; _h++) {
+          if (!attacker.items.includes('poignard_de_dieu') || !e.isAlive) break;
           const pdgRaw = Math.floor(0.35 * this._effectiveAP(attacker));
           const pdgDmg = this._reduceDmg(pdgRaw, 'magical', e);
           if (pdgDmg > 0) { this._applyDamage(e, pdgDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Poignard de Dieu : −${pdgDmg} dégâts magiques`); }
         }
         // Passif Salena : 0.3×AP dégâts magiques bonus
-        if (attacker.passive === 'salena_passive' && e.isAlive) {
-          const salRaw = Math.floor(0.3 * this._effectiveAP(attacker));
+        for (let _h = 0; _h < _onHitPassesL; _h++) {
+          if (attacker.passive !== 'salena_passive' || !e.isAlive) break;
+          const salRaw = Math.floor(0.2 * this._effectiveAP(attacker));
           const salDmg = this._reduceDmg(salRaw, 'magical', e);
           if (salDmg > 0) { this._applyDamage(e, salDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Passif : −${salDmg} dégâts magiques`); }
         }
-        // Découpage : 10%+0.04×AP HP max cible en dégâts bruts
+        // Découpage : 3%+0.02×AP HP max cible en dégâts bruts
         if (attacker.decoupageActive && e.isAlive) {
-          const decRaw = Math.floor(0.10 * e.maxHP + 0.04 * this._effectiveAP(attacker));
+          const decRaw = Math.floor(0.03 * e.maxHP + 0.02 * this._effectiveAP(attacker));
           if (decRaw > 0) { this._applyDamage(e, decRaw, attacker, 'raw'); this.addLog(`${attacker.name} — Découpage : −${decRaw} dégâts bruts`); }
         }
         // Passif Tueur de Dieux : 30% bruts
-        if (_tdRawL > 0 && e.isAlive) {
+        for (let _h = 0; _h < _onHitPassesL; _h++) {
+          if (_tdRawL <= 0 || !e.isAlive) break;
           this._applyDamage(e, _tdRawL, attacker, 'raw');
           this.addLog(`${attacker.name} — Tueur de Dieux : −${_tdRawL} dégâts bruts`);
         }
@@ -1364,16 +1380,16 @@ class GameState {
           this.addLog(`${attacker.name} — Passif Dague : bouclier +25`);
         }
       }
-      // Passif Lame du Diable : 8% HP max en dégâts bruts sur chaque cible
+      // Passif Lame du Diable : 7% HP max en dégâts magiques sur chaque cible
       if (attacker.items.includes('lame_du_diable')) {
         targets.forEach(e => {
           if (!e.isAlive) return;
-          const rawDmg = Math.floor(e.maxHP * 0.08);
-          this._applyDamage(e, rawDmg, attacker, 'raw');
-          this.addLog(`${attacker.name} — Lame du Diable : −${rawDmg} dégâts bruts`);
+          const diableDmg = this._reduceDmg(Math.floor(e.currentHP * 0.07), 'magical', e);
+          this._applyDamage(e, diableDmg, attacker, 'magical');
+          this.addLog(`${attacker.name} — Lame du Diable : −${diableDmg} dégâts magiques`);
         });
       }
-      if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable', 'couperet_du_demon'].includes(id))) {
+      if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'couperet_du_demon'].includes(id))) {
         this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
         this.addLog(`${attacker.name} — Passif : +1 PM`);
       }
@@ -1410,11 +1426,11 @@ class GameState {
     attacker.layiaBonusNextAttack = 0;
     const wasEmpowered  = !!attacker.empoweredAttack;
     const hadSpellBonus = wasEmpowered || bonusFlat2 > 0;
-    const armorPen2 = (attacker.items.includes('bottes_attaquant') ? 5 : 0) + (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
-    const armorPenPct2 = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0);
+    const armorPen2 = (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
+    const armorPenPct2 = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0) + (attacker.items.includes('bottes_assassin') ? 5 : 0);
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
     const _critMult2 = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) / 100 : 0);
-    const rawBase2 = Math.floor((attacker.ad + bonusFlat2) * (isCrit2 ? _critMult2 : 1));
+    const rawBase2 = Math.floor((attacker.ad * 0.25 + bonusFlat2) * (isCrit2 ? _critMult2 : 1));
     // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
     if (attacker.passive === 'abyss_passive') {
       const physDmg2 = this._reduceDmg(Math.floor(rawBase2 * 0.4), 'physical', targetHero, armorPen2, 0, armorPenPct2);
@@ -1493,7 +1509,7 @@ class GameState {
     // Passif Gros Calibre (Stank) : splash aux ennemis adjacents à la cible
     if (attacker.passive === 'gros_calibre' && targetHero.position) {
       this._getEnemies(attacker.playerIdx)
-        .filter(e => e !== targetHero && e.isAlive && e.position && this._chebyshev(targetHero.position, e.position) <= 1)
+        .filter(e => e !== targetHero && e.isAlive && e.position && this._chebyshev(targetHero.position, e.position) <= 4)
         .forEach(e => {
           const splashDmg = this._reduceDmg(Math.floor(attacker.ad * (isCrit2 ? _critMult2 : 1)), 'physical', e, armorPen2);
           this._applyDamage(e, splashDmg, attacker);
@@ -1512,36 +1528,42 @@ class GameState {
       attacker.daggerShield = (attacker.daggerShield || 0) + 25;
       this.addLog(`${attacker.name} — Passif Dague : bouclier +25`);
     }
-    // Passif Lame du Diable : 8% HP max de la cible en dégâts bruts
-    if (attacker.items.includes('lame_du_diable')) {
-      const rawDmg = Math.floor(targetHero.maxHP * 0.08);
-      this._applyDamage(targetHero, rawDmg, attacker, 'raw');
-      this.addLog(`${attacker.name} — Lame du Diable : −${rawDmg} dégâts bruts`);
+    const doubleOnHit = attacker.items.includes('epee_double_feu');
+    const _onHitPasses = doubleOnHit ? 2 : 1;
+    // Passif Lame du Diable : 7% HP actuels de la cible en dégâts magiques
+    for (let _h = 0; _h < _onHitPasses; _h++) {
+      if (!attacker.items.includes('lame_du_diable') || !targetHero.isAlive) break;
+      const diableDmg = this._reduceDmg(Math.floor(targetHero.currentHP * 0.07), 'magical', targetHero);
+      this._applyDamage(targetHero, diableDmg, attacker, 'magical');
+      this.addLog(`${attacker.name} — Lame du Diable : −${diableDmg} dégâts magiques`);
     }
     // Passif Poignard de Dieu : 0.35×AP dégâts magiques bonus
-    if (attacker.items.includes('poignard_de_dieu') && targetHero.isAlive) {
+    for (let _h = 0; _h < _onHitPasses; _h++) {
+      if (!attacker.items.includes('poignard_de_dieu') || !targetHero.isAlive) break;
       const pdgRaw = Math.floor(0.35 * this._effectiveAP(attacker));
       const pdgDmg = this._reduceDmg(pdgRaw, 'magical', targetHero);
       if (pdgDmg > 0) { this._applyDamage(targetHero, pdgDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Poignard de Dieu : −${pdgDmg} dégâts magiques`); }
     }
     // Passif Salena : 0.3×AP dégâts magiques bonus
-    if (attacker.passive === 'salena_passive' && targetHero.isAlive) {
-      const salRaw = Math.floor(0.3 * this._effectiveAP(attacker));
+    for (let _h = 0; _h < _onHitPasses; _h++) {
+      if (attacker.passive !== 'salena_passive' || !targetHero.isAlive) break;
+      const salRaw = Math.floor(0.2 * this._effectiveAP(attacker));
       const salDmg = this._reduceDmg(salRaw, 'magical', targetHero);
       if (salDmg > 0) { this._applyDamage(targetHero, salDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Passif : −${salDmg} dégâts magiques`); }
     }
-    // Découpage : 10%+0.04×AP HP max cible en dégâts bruts
+    // Découpage : 3%+0.02×AP HP max cible en dégâts bruts
     if (attacker.decoupageActive && targetHero.isAlive) {
-      const decRaw = Math.floor(0.10 * targetHero.maxHP + 0.04 * this._effectiveAP(attacker));
+      const decRaw = Math.floor(0.03 * targetHero.maxHP + 0.02 * this._effectiveAP(attacker));
       if (decRaw > 0) { this._applyDamage(targetHero, decRaw, attacker, 'raw'); this.addLog(`${attacker.name} — Découpage : −${decRaw} dégâts bruts`); }
     }
     // Passif Tueur de Dieux : 30% bruts
-    if (_tdRaw > 0 && targetHero.isAlive) {
+    for (let _h = 0; _h < _onHitPasses; _h++) {
+      if (_tdRaw <= 0 || !targetHero.isAlive) break;
       this._applyDamage(targetHero, _tdRaw, attacker, 'raw');
       this.addLog(`${attacker.name} — Tueur de Dieux : −${_tdRaw} dégâts bruts`);
     }
     // Passif Marteau du Marcheur Blanc / Trinité Sacrée / Lame de Nargoth / Lame du Diable : +1 PM après attaque de base
-    if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'lame_du_diable', 'couperet_du_demon'].includes(id))) {
+    if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'couperet_du_demon'].includes(id))) {
       this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
       this.addLog(`${attacker.name} — Passif : +1 PM`);
     }
@@ -1670,12 +1692,14 @@ class GameState {
           }
           // Si c'est une réactivation, ignorer portée et ligne de vue
           if (!targetIsMarked) {
-            // Première utilisation — checks normaux de portée
+            // Première utilisation — portée + ligne droite obligatoire (pas de LoS)
             if (this._manhattan(caster.position, enemy.position) > spell.range) {
               this.addLog('Hors de portée !'); success = false; break;
             }
-            if (!this._hasLineOfSight(caster.position, enemy.position)) {
-              this.addLog('Ligne de vue bloquée !'); success = false; break;
+            const _qdx = enemy.position.x - caster.position.x;
+            const _qdy = enemy.position.y - caster.position.y;
+            if (_qdx !== 0 && _qdy !== 0) {
+              this.addLog('Lance Soyeuse doit être lancée en ligne droite !'); success = false; break;
             }
           }
           // Réactivation : pas de check de portée ni ligne de vue
@@ -1723,16 +1747,16 @@ class GameState {
         // Quackshot Q — Chasse à l'épuisement : effets basés sur les charges
         if (spell.id === 'quackshot_q' && enemy.isAlive) {
           const charges = caster.quackshotCharges[enemy.instanceId] || 0;
-          if (charges >= 6) {
+          if (charges >= 16) {
             enemy.rootTurns = Math.max(enemy.rootTurns, 1);
-            this.addLog(`${enemy.name} — Root appliqué (6+ charges)`);
-          } else if (charges >= 3) {
+            this.addLog(`${enemy.name} — Root appliqué (16+ charges)`);
+          } else if (charges >= 8) {
             if (!enemy.statusEffects) enemy.statusEffects = [];
             const existingSlow = enemy.statusEffects.find(e => e.type === 'slow' && e.pmReduction === 2);
             if (!existingSlow) {
               enemy.statusEffects.push({ type: 'slow', pmReduction: 2, turns: 1 });
             }
-            this.addLog(`${enemy.name} — Ralenti de 2 PM pendant 1 tour (3+ charges)`);
+            this.addLog(`${enemy.name} — Ralenti de 2 PM pendant 1 tour (8+ charges)`);
           }
         }
 
@@ -2035,10 +2059,10 @@ class GameState {
         Stats.addHeal(caster.id, heal);
         if (ally !== caster) { if (!ally.buffedBy) ally.buffedBy = {}; ally.buffedBy[caster.id] = this.globalTurn; }
         this.addLog(`${caster.name} soigne ${ally.name} +${heal} HP${ally.hemorrhageTurns > 0 ? ' (hémorragie -50%)' : ''}`);
-        // Passif Anastasia : +10 PO par soin (allié ou soi-même)
+        // Passif Anastasia : +50 PO par soin (allié ou soi-même)
         if (caster.passive === 'anastasia_passive') {
-          this._giveGold(caster, 10);
-          this.addLog(`${caster.name} — Passif : +10 PO`);
+          this._giveGold(caster, 50);
+          this.addLog(`${caster.name} — Passif : +50 PO`);
         }
         // Passif Shana — Félin pour l'autre : se soigne du même montant
         if (caster.passive === 'shana_passive' && ally !== caster) {
@@ -2194,8 +2218,8 @@ class GameState {
         const frCritChance  = caster.critChance || 0;
         const frIsCrit      = frCritChance > 0 && Math.random() * 100 < frCritChance;
         const frCritMult    = (caster.items.includes('lame_d_infini') ? 2.5 : 2.0) + (caster.passive === 'faena_passive' ? Math.floor(caster.ad / 10) / 100 : 0);
-        const armorPenFr    = (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
-        const armorPenPctFr = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0);
+        const armorPenFr    = (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
+        const armorPenPctFr = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0) + (caster.items.includes('bottes_assassin') ? 5 : 0);
         frHit.forEach(e => {
           const baseRaw = spell.baseDamage + spell.adRatio * caster.ad + frCritChance;
           const rawFr   = Math.floor(baseRaw * (frIsCrit ? frCritMult : 1));
@@ -2207,17 +2231,9 @@ class GameState {
         break;
       }
       case 'pibot_w': {
-        // Station de recharge : téléportation sur la batterie + attaque boostée
-        const battery = this.pibotBatteries.find(b => b.heroInstanceId === caster.instanceId);
-        if (!battery) { this.addLog('Aucune batterie active !'); success = false; break; }
-        if (this._manhattan(caster.position, battery) > spell.range) {
-          this.addLog('Batterie hors de portée !'); success = false; break;
-        }
-        caster.position = { x: battery.x, y: battery.y };
+        // Station de recharge : actif sur soi-même, empowered next AA
         caster.empoweredAttack = { adRatio: 0, apRatio: spell.apRatio };
-        this.addLog(`${caster.name} → ${spell.name}: téléportation + prochaine AA renforcée (+${spell.apRatio} AP)`);
-        this._checkPibotBattery(caster);
-        this._checkTrap(caster);
+        this.addLog(`${caster.name} → ${spell.name}: prochaine AA renforcée (+${spell.apRatio} AP)`);
         break;
       }
       case 'pibot_r': {
@@ -2335,10 +2351,10 @@ class GameState {
             const heal = Math.floor(baseHeal * healFactor * (1 + (ally.healEfficiency || 0) / 100));
             ally.currentHP = Math.min(ally.maxHP, ally.currentHP + heal);
             this.addLog(`${caster.name} → ${spell.name} → ${ally.name}: +${heal} HP${ally.hemorrhageTurns > 0 ? ' (hémorragie -50%)' : ''}`);
-            // Passif Anastasia : +10 PO par soin
+            // Passif Anastasia : +50 PO par soin
             if (caster.passive === 'anastasia_passive') {
-              this._giveGold(caster, 10);
-              this.addLog(`${caster.name} — Passif : +10 PO`);
+              this._giveGold(caster, 50);
+              this.addLog(`${caster.name} — Passif : +50 PO`);
             }
             // Passif Shana : se soigne pour chaque allié soigné (hors soi-même)
             if (caster.passive === 'shana_passive' && ally !== caster) {
@@ -2374,6 +2390,17 @@ class GameState {
           }
           this._checkTrap(caster);
           if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+          // Rollback — dégâts AoE autour du point de réapparition
+          if (spell.damageType && spell.baseDamage) {
+            const _rbPos = caster.position;
+            this._getEnemies(caster.playerIdx).filter(e =>
+              e.isAlive && e.position && this._manhattan(_rbPos, e.position) <= 3
+            ).forEach(e => {
+              const rdmg = this._calcSpellDmg(caster, spell, e);
+              this._applySpellDamage(caster, spell, e, rdmg);
+              this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${rdmg} HP`);
+            });
+          }
           break;
         }
         // Layia — Vision : +PO d'attaque ce tour
@@ -2753,6 +2780,22 @@ class GameState {
       case 'enemy_hero': {
         const all = this._getEnemies(hero.playerIdx);
         if (spell.targetAll) return { heroes: all, heroesOutOfRange: [], cells: [] };
+        // Hornet Q — logique spéciale selon si une marque est active
+        if (spell.id === 'hornet_q') {
+          const hasActiveMarks = Object.values(hero.hornetHarpoonedTargets || {}).some(expiry => expiry > this.globalTurn);
+          if (hasActiveMarks) {
+            // Réactivation : afficher uniquement la cible marquée (de n'importe où)
+            const marked = all.filter(e => (hero.hornetHarpoonedTargets[e.instanceId] || 0) > this.globalTurn);
+            return { heroes: marked, heroesOutOfRange: [], cells: [] };
+          }
+          // 1er lancer : ligne droite uniquement, pas de LoS
+          const inLine = all.filter(e => e.position.x === hero.position.x || e.position.y === hero.position.y);
+          return {
+            heroes:           inLine.filter(e => this._manhattan(hero.position, e.position) <= effRange),
+            heroesOutOfRange: inLine.filter(e => this._manhattan(hero.position, e.position) >  effRange),
+            cells: _rangeCells()
+          };
+        }
         let _inRange  = all.filter(e => this._manhattan(hero.position, e.position) <= effRange);
         let _outRange = all.filter(e => this._manhattan(hero.position, e.position) >  effRange);
         if (spell.requiresLine) {
@@ -2979,11 +3022,7 @@ class GameState {
         };
       }
       case 'pibot_w':
-        // Highlight la batterie si active et à portée
-        return { heroes: [], heroesOutOfRange: [], cells: (() => {
-          const bat = this.pibotBatteries.find(b => b.heroInstanceId === hero.instanceId);
-          return bat && this._manhattan(hero.position, bat) <= spell.range ? [{ x: bat.x, y: bat.y }] : [];
-        })() };
+        return { heroes: [], heroesOutOfRange: [], cells: [] };
       case 'pibot_r': {
         // Cellules orthogonales dans la portée (ligne droite)
         const prCells = [];
@@ -3045,9 +3084,9 @@ class GameState {
     let raw = spell.baseDamage + caster.ad * (spell.adRatio || 0) + this._effectiveAP(caster) * (spell.apRatio || 0);
     if (caster.items.includes('pistolet_magique') && (spell.adRatio || 0) > 0 && (spell.apRatio || 0) > 0)
       raw = Math.floor(raw * 1.2);
-    const armorPen    = (caster.items.includes('bottes_attaquant') ? 5 : 0) + (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
+    const armorPen    = (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
     const mrPen       = (caster.items.includes('sorcerer_boots') ? 5 : 0) + (caster.items.includes('furie_magique') ? 5 : 0);
-    const armorPenPct = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('revolver_d_or') ? 7 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0);
+    const armorPenPct = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('revolver_d_or') ? 7 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0) + (caster.items.includes('bottes_assassin') ? 5 : 0);
     const mrPenPct    = caster.items.includes('baton_des_abysses') ? 35 : caster.items.includes('cristal_de_vide') ? 15 : 0;
     let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct, mrPenPct);
     if (armorPen > 0 && target.armor - armorPen < 15) dmg = Math.floor(dmg * 1.1);
@@ -3444,30 +3483,21 @@ class GameState {
   }
 
   _applyLameElectrique(attacker, primaryTarget) {
-    const CHAIN_RANGE = 4;
-    const CHAIN_DMG = 25;
+    if ((attacker.lameElectriqueCooldown || 0) > 0) return;
+    const SPLASH_RANGE = 6;
+    const SPLASH_DMG = 250;
     const allEnemies = this._getEnemies(attacker.playerIdx).filter(e => e.isAlive && e.position);
-    const hit = new Set([primaryTarget.id]);
-    const queue = [primaryTarget];
-    while (queue.length) {
-      const src = queue.shift();
-      allEnemies.forEach(e => {
-        if (hit.has(e.id)) return;
-        if (this._manhattan(src.position, e.position) <= CHAIN_RANGE) {
-          hit.add(e.id);
-          queue.push(e);
-        }
-      });
-    }
-    let anyDmg = false;
-    allEnemies.forEach(e => {
-      if (!hit.has(e.id)) return;
-      const dmg = this._reduceDmg(CHAIN_DMG, 'magical', e, 0);
+    const splashTargets = allEnemies.filter(e =>
+      e !== primaryTarget && this._manhattan(primaryTarget.position, e.position) <= SPLASH_RANGE
+    );
+    if (!splashTargets.length) return;
+    splashTargets.forEach(e => {
+      const dmg = this._reduceDmg(SPLASH_DMG, 'magical', e, 0);
       this._applyDamage(e, dmg, attacker, 'magical');
       this.addLog(`${e.name} — Lame Électrique : −${dmg} dégâts magiques`);
-      anyDmg = true;
     });
-    if (anyDmg) this._checkGameOver();
+    attacker.lameElectriqueCooldown = 3;
+    this._checkGameOver();
   }
 
   _applyLameEauDamage(zone) {
@@ -3532,7 +3562,7 @@ class GameState {
     if (idx === -1) return;
     const battery = this.pibotBatteries[idx];
     const missingMana = hero.maxMana - hero.currentMana;
-    const regen = Math.floor(missingMana * 0.25);
+    const regen = Math.floor(missingMana * 0.50);
     hero.currentMana = Math.min(hero.maxMana, hero.currentMana + regen);
     // Si Pibot marche sur sa propre batterie : applique Station de Recharge (attaque renforcée)
     if (battery.heroInstanceId === hero.instanceId) {
