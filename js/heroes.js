@@ -28,7 +28,7 @@ const ROLE_BASES = {
       {
         id: 'solo_recall', name: 'Rappel',
         description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-        manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+        manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
         damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
         targetType: 'solo_recall', zone: null, effects: []
       }
@@ -186,22 +186,22 @@ HERO_TYPES['solo_1'] = {
     {
       id: 'shamrock_q', name: 'Coeur de pierre',
       description: '130 +0.3 AP dégâts magiques — cible perd 2 PM pendant 1 tour',
-      manaCost: 100, range: 2, cooldown: 2, cdMin: 1,
+      manaCost: 100, range: 2, cooldown: 3, cdMin: 1,
       damageType: 'magical', baseDamage: 130, adRatio: 0, apRatio: 0.3,
       targetType: 'enemy_hero', zone: null,
       effects: [{ type: 'slow', pmReduction: 2, turns: 1 }]
     },
     {
       id: 'shamrock_w', name: 'Cailloux qui roule',
-      description: 'Dash sur case adjacente à l\'ennemi + 80 +0.4 AP dégâts magiques',
-      manaCost: 100, range: 3, cooldown: 2, cdMin: 1,
-      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.4,
+      description: 'Dash sur case adjacente à l\'ennemi + 130 +0.4 AP dégâts magiques',
+      manaCost: 100, range: 3, cooldown: 4, cdMin: 1,
+      damageType: 'magical', baseDamage: 130, adRatio: 0, apRatio: 0.4,
       targetType: 'dash_to_enemy', zone: null, effects: []
     },
     {
       id: 'shamrock_r', name: 'Figé dans le marbre',
       description: '110 +0.8 AP dégâts magiques + stun (losange 1-3-5-3-1)',
-      manaCost: 200, range: 5, cooldown: 6, cdMin: 2,
+      manaCost: 200, range: 5, cooldown: 7, cdMin: 2,
       damageType: 'magical', baseDamage: 110, adRatio: 0, apRatio: 0.8,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 2 },
       effects: [{ type: 'stun', turns: 1 }]
@@ -209,7 +209,7 @@ HERO_TYPES['solo_1'] = {
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -228,14 +228,14 @@ HERO_TYPES['solo_2'] = {
     {
       id: 'frigiel_q', name: 'Couperie',
       description: '140 +0.7 AD dégâts physiques sur une ligne de 2 cases',
-      manaCost: 80, range: 2, minRange: 1, maxRange: 2, cooldown: 1, cdMin: 1,
+      manaCost: 80, range: 2, minRange: 1, maxRange: 2, cooldown: 3, cdMin: 1,
       damageType: 'physical', baseDamage: 140, adRatio: 0.7, apRatio: 0,
       targetType: 'line_zone', zone: null, effects: []
     },
     {
       id: 'frigiel_w', name: 'Plastron',
       description: 'Bouclier de 130 +1 AD pendant 3 tours',
-      manaCost: 110, range: 0, cooldown: 3, cdMin: 1,
+      manaCost: 110, range: 0, cooldown: 5, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       shieldAmount: 130, adShieldRatio: 1, shieldTurns: 3,
       targetType: 'self', zone: null, effects: []
@@ -243,7 +243,7 @@ HERO_TYPES['solo_2'] = {
     {
       id: 'frigiel_r', name: 'Appel du chevalier',
       description: 'Si la cible a plus de HP max que Frigiel : inflige 130 +1.1 AD (70% physiques, 30% bruts)',
-      manaCost: 130, range: 7, cooldown: 8, cdMin: 2,
+      manaCost: 130, range: 7, cooldown: 10, cdMin: 2,
       damageType: 'physical', baseDamage: 130, adRatio: 1.1, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: [],
       conditionHigherHP: true, splitRawPct: 0.3
@@ -251,7 +251,7 @@ HERO_TYPES['solo_2'] = {
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -269,15 +269,15 @@ HERO_TYPES['solo_3'] = {
   spells: [
     {
       id: 'ondine_q', name: 'Estoc',
-      description: '115 + 0,7 AD dégâts physiques sur un ennemi adjacent',
-      manaCost: 70, range: 1, cooldown: 1, cdMin: 1,
-      damageType: 'physical', baseDamage: 115, adRatio: 0.7, apRatio: 0,
+      description: '115 + 1 AD dégâts physiques sur un ennemi adjacent',
+      manaCost: 70, range: 1, cooldown: 2, cdMin: 1,
+      damageType: 'physical', baseDamage: 115, adRatio: 1, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: []
     },
     {
       id: 'ondine_w', name: 'Fendre la lame',
       description: 'Ondine se rue derrière un adversaire en ligne droite (portée 3) et inflige 40 + 0,4 AD dégâts physiques + (30 + 0,2 AP) dégâts bruts',
-      manaCost: 60, range: 3, cooldown: 2, cdMin: 1,
+      manaCost: 60, range: 3, cooldown: 4, cdMin: 1,
       damageType: 'physical', baseDamage: 40, adRatio: 0.4, apRatio: 0,
       rawBase: 30, rawApRatio: 0.2,
       targetType: 'dash_behind_enemy', zone: null, effects: []
@@ -292,7 +292,7 @@ HERO_TYPES['solo_3'] = {
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -310,22 +310,22 @@ HERO_TYPES['roam_1'] = {
   spells: [
     {
       id: 'skjer_q', name: 'Traversée furtive',
-      description: 'Dash 2 cases en ligne droite (traverse les murs). Inflige 220 + 0.7 AD + 0.4 AP dégâts physiques aux ennemis adjacents à la case d\'arrivée.',
-      manaCost: 60, range: 2, cooldown: 2, cdMin: 1,
-      damageType: 'physical', baseDamage: 220, adRatio: 0.7, apRatio: 0.4,
+      description: 'Dash 2 cases en ligne droite (traverse les murs). Inflige 130 + 0.7 AD + 0.4 AP dégâts physiques aux ennemis adjacents à la case d\'arrivée.',
+      manaCost: 60, range: 2, cooldown: 4, cdMin: 1,
+      damageType: 'physical', baseDamage: 130, adRatio: 0.7, apRatio: 0.4,
       targetType: 'stealth_dash', zone: null, effects: []
     },
     {
       id: 'skjer_w', name: 'Renforcement',
       description: 'La prochaine attaque de Skjer inflige 0.3 AD + 0.2 AP dégâts bonus.',
-      manaCost: 70, range: 0, cooldown: 1, cdMin: 1,
+      manaCost: 70, range: 0, cooldown: 3, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0.3, apRatio: 0.2,
       targetType: 'self', empoweredAttack: true, zone: null, effects: []
     },
     {
       id: 'skjer_r', name: 'Tueur',
       description: 'Sacrifie tous les PM restants. Gagne +20% AD et +20% AP par PM sacrifié.',
-      manaCost: 100, range: 0, cooldown: 5, cdMin: 1,
+      manaCost: 100, range: 0, cooldown: 8, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'pm_sacrifice', zone: null, effects: []
     }
@@ -337,20 +337,20 @@ HERO_TYPES['mage_1'] = {
   colorFill: '#154360', colorStroke: '#2980b9',
   portrait: 'assets/heroes/electro.png',
   passive: 'electro_passive',
-  maxHP: 2000, maxMana: 300, hpRegen: 20, manaRegen: 40,
+  maxHP: 2000, maxMana: 680, hpRegen: 20, manaRegen: 35,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
       id: 'electro_q', name: 'Décharge',
       description: 'Zone en losange (1-3-1). Inflige 20 + 0.9 AP dégâts magiques.',
-      manaCost: 80, range: 6, cooldown: 2, cdMin: 1,
+      manaCost: 110, range: 6, cooldown: 3, cdMin: 1,
       damageType: 'magical', baseDamage: 20, adRatio: 0, apRatio: 0.9,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 }, effects: []
     },
     {
       id: 'electro_w', name: 'Zap Volt',
       description: 'Zone en losange (1-3-5-3-1). Inflige 30 + 0.6 AP dégâts magiques. Ralentit de 1 PM pendant 1 tour.',
-      manaCost: 100, range: 5, cooldown: 2, cdMin: 1,
+      manaCost: 130, range: 5, cooldown: 3, cdMin: 1,
       damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.6,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 2 },
       effects: [{ type: 'slow', pmReduction: 1, turns: 1 }]
@@ -358,7 +358,7 @@ HERO_TYPES['mage_1'] = {
     {
       id: 'electro_r', name: 'Tonnerre',
       description: 'Frappe tous les ennemis sur toute la carte. Inflige 30 + 0.7 AP dégâts magiques.',
-      manaCost: 180, range: 0, cooldown: 6, cdMin: 1,
+      manaCost: 180, range: 0, cooldown: 8, cdMin: 1,
       damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.7,
       targetType: 'no_target', targetAll: true, zone: null, effects: []
     }
@@ -376,21 +376,21 @@ HERO_TYPES['roam_2'] = {
     {
       id: 'masello_q', name: 'Masellojutsu',
       description: 'Dash à côté d\'un ennemi (à travers les murs) et lui inflige 100 + 0.8 AD dégâts physiques.',
-      manaCost: 60, range: 6, cooldown: 2, cdMin: 1,
+      manaCost: 60, range: 6, cooldown: 3, cdMin: 1,
       damageType: 'physical', baseDamage: 100, adRatio: 0.8, apRatio: 0,
       targetType: 'dash_to_enemy', zone: null, effects: []
     },
     {
       id: 'masello_w', name: 'Help is coming',
       description: 'Se téléporte sur une case adjacente à un allié (à travers les murs).',
-      manaCost: 40, range: 6, cooldown: 2, cdMin: 1,
+      manaCost: 40, range: 6, cooldown: 3, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'dash_to_ally', zone: null, effects: []
     },
     {
       id: 'masello_r', name: 'Energy Kick',
       description: 'Frappe toutes les cibles adjacentes (8 cases). Inflige 110 + 1 AD dégâts physiques.',
-      manaCost: 90, range: 1, cooldown: 4, cdMin: 1,
+      manaCost: 90, range: 1, cooldown: 6, cdMin: 1,
       damageType: 'physical', baseDamage: 110, adRatio: 1, apRatio: 0,
       targetType: 'no_target', adjacentHit: true, zone: null, effects: []
     }
@@ -407,7 +407,7 @@ HERO_TYPES['roam_3'] = {
     {
       id: 'layia_q', name: 'Petit Bond',
       description: 'Layia dashe de 3 cases en ligne droite (traverse les murs). Sa prochaine attaque de base inflige +0,4×AP dégâts supplémentaires.',
-      manaCost: 70, range: 3, cooldown: 3,
+      manaCost: 70, range: 3, cooldown: 4,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'stealth_dash', noDamageOnLand: true, bonusNextAttackAP: 0.4,
       zone: null, effects: []
@@ -415,7 +415,7 @@ HERO_TYPES['roam_3'] = {
     {
       id: 'layia_w', name: 'Vision',
       description: 'Pour ce tour, la portée des attaques de base de Layia augmente de 2.',
-      manaCost: 110, range: 0, cooldown: 3,
+      manaCost: 110, range: 0, cooldown: 5,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'no_target', layiaBonusPO: 2,
       zone: null, effects: []
@@ -449,14 +449,14 @@ HERO_TYPES['dpt_1'] = {
     {
       id: 'decigeno_w', name: 'Sniping',
       description: 'Frappe en ligne droite entre 3 et 7 cases. Inflige 80 + 1 AD dégâts physiques à tous les ennemis sur cette ligne.',
-      manaCost: 80, range: 7, minRange: 3, maxRange: 7, cooldown: 2, cdMin: 1,
+      manaCost: 80, range: 7, minRange: 3, maxRange: 7, cooldown: 4, cdMin: 1,
       damageType: 'physical', baseDamage: 80, adRatio: 1, apRatio: 0,
       targetType: 'line_zone', zone: null, effects: []
     },
     {
       id: 'decigeno_r', name: 'From Downtown',
       description: 'Cible un ennemi n\'importe où sur la carte. Inflige 60 + 1.3 AD dégâts physiques.',
-      manaCost: 180, range: 0, cooldown: 8, cdMin: 1,
+      manaCost: 180, range: 0, cooldown: 9, cdMin: 1,
       damageType: 'physical', baseDamage: 60, adRatio: 1.3, apRatio: 0,
       targetType: 'enemy_hero', targetAll: true, ignoresLoS: true, zone: null, effects: []
     }
@@ -482,14 +482,14 @@ HERO_TYPES['dpt_2'] = {
     {
       id: 'stank_w', name: 'Canon',
       description: '70 +1 AD dégâts physiques dans un cône de portée 5 devant Stank',
-      manaCost: 110, range: 5, cooldown: 2, cdMin: 1,
+      manaCost: 110, range: 5, cooldown: 4, cdMin: 1,
       damageType: 'physical', baseDamage: 70, adRatio: 1, apRatio: 0,
       targetType: 'cone_zone', zone: null, effects: []
     },
     {
       id: 'stank_r', name: 'Appel',
       description: 'Bombarde une zone en losange (1-3-5-3-1) : 140 +0.8 AD dégâts physiques par tour pendant 3 tours',
-      manaCost: 150, range: 0, cooldown: 10, cdMin: 2,
+      manaCost: 150, range: 0, cooldown: 11, cdMin: 2,
       damageType: 'physical', baseDamage: 140, adRatio: 0.8, apRatio: 0,
       targetType: 'bomb_zone', zone: null, effects: []
     }
@@ -506,21 +506,21 @@ HERO_TYPES['mage_2'] = {
     {
       id: 'vadro_q', name: 'Morsure',
       description: 'Inflige 30 + 0.8 AP dégâts magiques et applique Hémorragie.',
-      manaCost: 70, range: 6, cooldown: 2,
+      manaCost: 70, range: 6, cooldown: 4,
       damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.8,
       targetType: 'enemy_hero', zone: null, effects: [{ type: 'hemorrhage', turns: 1 }]
     },
     {
       id: 'vadro_w', name: 'Flaque de sang',
       description: 'Zone 1-3-1 : inflige 60 + 0.7 AP dégâts magiques à tous les ennemis touchés.',
-      manaCost: 80, range: 5, cooldown: 3,
+      manaCost: 80, range: 5, cooldown: 5,
       damageType: 'magical', baseDamage: 60, adRatio: 0, apRatio: 0.7,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 }, effects: []
     },
     {
       id: 'vadro_r', name: 'Alucard',
       description: 'Inflige 100 + 1 AP dégâts magiques à tous les héros ennemis à 6 cases ou moins.',
-      manaCost: 140, range: 6, cooldown: 7,
+      manaCost: 140, range: 6, cooldown: 9,
       damageType: 'magical', baseDamage: 100, adRatio: 0, apRatio: 1,
       targetType: 'no_target', zone: null, effects: []
     }
@@ -537,7 +537,7 @@ HERO_TYPES['mage_3'] = {
     {
       id: 'shallah_q', name: 'Glyphe de Douleur',
       description: 'Pose une glyphe (zone 1-3-5-3-1, dure 3 tours) n\'importe où à portée. Tout champion ennemi qui se déplace dans la zone subit 120 + 1.3 AP dégâts magiques.',
-      manaCost: 100, range: 5, cooldown: 1,
+      manaCost: 100, range: 5, cooldown: 3,
       damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 1.3,
       targetType: 'place_glyph', glyphType: 'pain', glyphZoneSize: 2,
       zone: null, effects: []
@@ -545,7 +545,7 @@ HERO_TYPES['mage_3'] = {
     {
       id: 'shallah_w', name: 'Glyphe de Vent',
       description: 'Zone 1-3-1 en ligne droite. Repousse les ennemis présents vers la glyphe la plus proche (direction aléatoire s\'il n\'y en a pas).',
-      manaCost: 70, range: 6, cooldown: 2,
+      manaCost: 70, range: 6, cooldown: 3,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'wind_glyph', glyphZoneSize: 1,
       lineOnly: true, zone: null, effects: []
@@ -553,7 +553,7 @@ HERO_TYPES['mage_3'] = {
     {
       id: 'shallah_r', name: 'Glyphe Ultime',
       description: 'Pose une glyphe de protection (zone 1-3-5-7-5-3-1) n\'importe où à portée. Les héros alliés à l\'intérieur sont immunisés aux débuffs jusqu\'au prochain tour de Shallah.',
-      manaCost: 230, range: 2, cooldown: 8,
+      manaCost: 230, range: 2, cooldown: 9,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'place_glyph', glyphType: 'ultimate', glyphZoneSize: 3,
       zone: null, effects: []
@@ -571,14 +571,14 @@ HERO_TYPES['mage_4'] = {
     {
       id: 'chronos_q', name: 'Distortion',
       description: 'Échange sa position avec un ennemi à portée et lui inflige 70 + 1,2×AP dégâts magiques.',
-      manaCost: 70, range: 6, cooldown: 3,
+      manaCost: 70, range: 6, cooldown: 4,
       damageType: 'magical', baseDamage: 70, adRatio: 0, apRatio: 1.2,
       targetType: 'swap_enemy', zone: null, effects: []
     },
     {
       id: 'chronos_w', name: 'Distortion Temporelle',
       description: 'Zone 1-3-5-3-1 : inflige 90 + 0,6×AP dégâts magiques et réduit de 2 PM les ennemis touchés.',
-      manaCost: 100, range: 5, cooldown: 4,
+      manaCost: 100, range: 5, cooldown: 5,
       damageType: 'magical', baseDamage: 90, adRatio: 0, apRatio: 0.6,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 2 },
       effects: [{ type: 'slow', pmReduction: 2, turns: 1 }]
@@ -586,7 +586,7 @@ HERO_TYPES['mage_4'] = {
     {
       id: 'chronos_r', name: 'Rollback',
       description: 'Retourne à sa position de début de tour (case adjacente si occupée). Inflige 120 + 1,1×AP dégâts magiques aux ennemis à 3 cases ou moins du point de réapparition.',
-      manaCost: 170, range: 0, cooldown: 8,
+      manaCost: 170, range: 0, cooldown: 10,
       damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 1.1,
       targetType: 'no_target', rollback: true, zone: null, effects: []
     }
@@ -616,9 +616,9 @@ HERO_TYPES['support_2'] = {
     },
     {
       id: 'shana_r', name: 'À la Rescousse !',
-      description: 'Soigne tous les héros alliés sur la carte de 80 + 0,3×AP HP. (Passif : Shana se soigne pour chaque allié soigné.)',
-      manaCost: 120, range: 0, cooldown: 8,
-      damageType: null, healBase: 80, healApRatio: 0.3, baseDamage: 0, adRatio: 0, apRatio: 0,
+      description: 'Soigne tous les héros alliés sur la carte de 80 + 0,5×AP HP. (Passif : Shana se soigne pour chaque allié soigné.)',
+      manaCost: 120, range: 0, cooldown: 10,
+      damageType: null, healBase: 80, healApRatio: 0.5, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'no_target', healAllAllies: true, zone: null, effects: []
     }
   ]
@@ -633,15 +633,15 @@ HERO_TYPES['support_3'] = {
   spells: [
     {
       id: 'anastasia_q', name: 'Soin Prudent',
-      description: 'Soigne un allié ou soi-même de 30 + 0,7×AP HP. Utilisable 2 fois par tour (CD réel : 0).',
-      manaCost: 70, range: 5, cooldown: 0,
+      description: 'Soigne un allié ou soi-même de 30 + 0,7×AP HP. Utilisable 2 fois par tour (CD réel : 1).',
+      manaCost: 70, range: 5, cooldown: 1,
       damageType: null, healBase: 30, healApRatio: 0.7, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'ally_hero', maxUsesPerTurn: 2, zone: null, effects: []
     },
     {
       id: 'anastasia_w', name: 'Brûlure de Désir',
       description: 'Zone 1-3-1 : inflige 140 + 0,6×AP dégâts magiques et applique Hémorragie aux ennemis touchés.',
-      manaCost: 110, range: 4, cooldown: 4,
+      manaCost: 110, range: 4, cooldown: 5,
       damageType: 'magical', baseDamage: 140, adRatio: 0, apRatio: 0.6,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 },
       effects: [{ type: 'hemorrhage', turns: 1 }]
@@ -668,7 +668,7 @@ HERO_TYPES['support_1'] = {
     {
       id: 'voodoo_q', name: 'Flaque empoisonnée',
       description: 'Zone 1-3-5-3-1 : inflige 60 + 0.6 AP dégâts magiques et réduit de 2 PM les ennemis touchés pour leur prochain tour.',
-      manaCost: 80, range: 5, cooldown: 2,
+      manaCost: 80, range: 5, cooldown: 4,
       damageType: 'magical', baseDamage: 60, adRatio: 0, apRatio: 0.6,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 2 },
       effects: [{ type: 'slow', pmReduction: 2, turns: 1 }, { type: 'hemorrhage', turns: 1 }]
@@ -683,7 +683,7 @@ HERO_TYPES['support_1'] = {
     {
       id: 'voodoo_r', name: 'Malédiction',
       description: 'Zone 1-3-5-3-1 : tous les ennemis touchés voient la portée de leurs sorts réduite de 3 (minimum 1) pour leur prochain tour.',
-      manaCost: 130, range: 5, cooldown: 5,
+      manaCost: 130, range: 5, cooldown: 6,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 2 },
       effects: [{ type: 'malediction', turns: 1, rangeReduction: 3 }, { type: 'hemorrhage', turns: 1 }]
@@ -701,7 +701,7 @@ HERO_TYPES['support_4'] = {
     {
       id: 'sharagoth_q', name: 'Terrain conquis',
       description: 'Clique sur une case : pousse l\'ennemi à portée (jusqu\'à 3 cases) vers cette destination et lui inflige 200 dégâts magiques.',
-      manaCost: 110, range: 5, cooldown: 2, cdMin: 1,
+      manaCost: 110, range: 5, cooldown: 3, cdMin: 1,
       damageType: 'magical', baseDamage: 200, adRatio: 0, apRatio: 0,
       targetType: 'push_enemy', zone: null, effects: []
     },
@@ -732,21 +732,21 @@ HERO_TYPES['roam_5'] = {
     {
       id: 'abyss_q', name: 'Blackout',
       description: 'Inflige 80 + 0,5 AD + 0,5 AP dégâts magiques et mute la cible (sorts bloqués pendant 1 tour).',
-      manaCost: 80, range: 3, cooldown: 3, cdMin: 1,
+      manaCost: 80, range: 3, cooldown: 4, cdMin: 1,
       damageType: 'magical', baseDamage: 80, adRatio: 0.5, apRatio: 0.5,
       targetType: 'enemy_hero', zone: null, effects: [{ type: 'mute', turns: 1 }]
     },
     {
       id: 'abyss_w', name: 'Nuisance noire',
       description: 'Dash en ligne droite (max 3 cases). Les ennemis à 3 cases ou moins de l\'arrivée subissent 30 + 0,25 AP dégâts magiques par tour pendant 3 tours.',
-      manaCost: 90, range: 3, cooldown: 3, cdMin: 1,
+      manaCost: 90, range: 3, cooldown: 4, cdMin: 1,
       damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.25,
       targetType: 'abyss_w', zone: null, effects: []
     },
     {
       id: 'abyss_r', name: 'Nuit infinie',
       description: 'Se rue sur un ennemi lointain (8 à 10 cases, sans ligne de vue) et lui inflige 130 + 0,7 AD + 0,5 AP dégâts physiques.',
-      manaCost: 110, range: 10, cooldown: 9, cdMin: 1,
+      manaCost: 110, range: 10, cooldown: 11, cdMin: 1,
       damageType: 'physical', baseDamage: 130, adRatio: 0.7, apRatio: 0.5,
       targetType: 'abyss_r', minRange: 8, zone: null, effects: []
     }
@@ -763,21 +763,21 @@ HERO_TYPES['roam_6'] = {
     {
       id: 'hornet_q', name: 'Lance Soyeuse',
       description: 'Lance en ligne droite (portée 5) : marque la cible jusqu\'à la fin du prochain tour, infligeant 50 + 0,6×AD dégâts physiques. Réactivation (portée infinie, de n\'importe où) sur la cible marquée : dégâts +25 + 0,4×AD + téléportation adjacente (non diagonale).',
-      manaCost: 80, range: 5, cooldown: 3, maxUsesPerTurn: 2,
+      manaCost: 80, range: 5, cooldown: 5, maxUsesPerTurn: 2,
       damageType: 'physical', baseDamage: 50, adRatio: 0.6, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: [], harpooned: true, reusable: true
     },
     {
       id: 'hornet_w', name: 'Pourfandage aiguisé',
       description: 'Attaque une cible adjacente, infligeant 30 + 1×AD dégâts physiques. Si la cible est marquée par Lance Soyeuse, inflige 15 + 0,5×AD dégâts supplémentaires et vole 1 PM.',
-      manaCost: 80, range: 1, cooldown: 2,
+      manaCost: 80, range: 1, cooldown: 4,
       damageType: 'physical', baseDamage: 30, adRatio: 1, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: [], usesHarpoon: true
     },
     {
       id: 'hornet_r', name: 'Tisse-tempête',
       description: 'Inflige 50 + 1×AD dégâts physiques autour d\'elle (zone 3PO) et retire 3 PM à toutes les cibles touchées.',
-      manaCost: 130, range: 0, cooldown: 8,
+      manaCost: 130, range: 0, cooldown: 10,
       damageType: 'physical', baseDamage: 50, adRatio: 1, apRatio: 0,
       targetType: 'no_target', zone: null, effects: [], pmSteal: 3
     }
@@ -794,7 +794,7 @@ HERO_TYPES['dpt_3'] = {
     {
       id: 'faena_q', name: 'Tir en éclat',
       description: '40 + 0,8 AD dégâts physiques dans une zone 1-3-1 (portée 6) — ralentit de 1 PM pendant 1 tour.',
-      manaCost: 70, range: 6, cooldown: 2, cdMin: 1,
+      manaCost: 70, range: 6, cooldown: 3, cdMin: 1,
       damageType: 'physical', baseDamage: 40, adRatio: 0.8, apRatio: 0,
       targetType: 'diamond_zone', zone: { size: 1 },
       effects: [{ type: 'slow', pmReduction: 1, turns: 1 }]
@@ -809,7 +809,7 @@ HERO_TYPES['dpt_3'] = {
     {
       id: 'faena_r', name: 'Flèches de douleur',
       description: 'Inflige 50 + 0,7 AD + % chance de coup critique dégâts physiques dans une zone 1-3-1 (portée 5). Peut être critique selon votre % de chance critique.',
-      manaCost: 130, range: 5, cooldown: 8, cdMin: 2,
+      manaCost: 130, range: 5, cooldown: 9, cdMin: 2,
       damageType: 'physical', baseDamage: 50, adRatio: 0.7, apRatio: 0,
       targetType: 'faena_r', zone: null, effects: []
     }
@@ -827,7 +827,7 @@ HERO_TYPES['dpt_4'] = {
     {
       id: 'cupidon_q', name: 'Flèche d\'amour',
       description: 'Zone 1-3-1 : inflige 70 + 0,8 AD dégâts physiques et retire 1 PM aux ennemis touchés.',
-      manaCost: 70, range: 5, cooldown: 3, cdMin: 1,
+      manaCost: 70, range: 5, cooldown: 4, cdMin: 1,
       damageType: 'physical', baseDamage: 70, adRatio: 0.8, apRatio: 0,
       targetType: 'diamond_zone', zone: { size: 1 },
       effects: [{ type: 'slow', pmReduction: 1, turns: 1 }]
@@ -860,7 +860,7 @@ HERO_TYPES['dpt_5'] = {
     {
       id: 'quackshot_q', name: 'Chasse à l\'épuisement',
       description: 'Inflige 60 + 0,8 AD dégâts physiques. À 8+ charges : perd 2 PM (1 tour). À 16+ charges : root (1 tour).',
-      manaCost: 100, range: 5, cooldown: 3, cdMin: 1,
+      manaCost: 100, range: 5, cooldown: 4, cdMin: 1,
       damageType: 'physical', baseDamage: 60, adRatio: 0.8, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: []
     },
@@ -873,9 +873,9 @@ HERO_TYPES['dpt_5'] = {
     },
     {
       id: 'quackshot_r', name: 'Coup de grâce',
-      description: 'Consomme toutes les charges et inflige 25 + 0,25 AD dégâts physiques par charge.',
-      manaCost: 100, range: 100, cooldown: 8, cdMin: 2,
-      damageType: 'physical', baseDamage: 25, adRatio: 0.25, apRatio: 0,
+      description: 'Consomme toutes les charges et inflige 25 + 0,10 AD dégâts physiques par charge.',
+      manaCost: 100, range: 100, cooldown: 9, cdMin: 2,
+      damageType: 'physical', baseDamage: 25, adRatio: 0.10, apRatio: 0,
       targetType: 'enemy_hero', ignoresLoS: true, zone: null, effects: []
     }
   ]
@@ -892,21 +892,21 @@ HERO_TYPES['mage_5'] = {
     {
       id: 'pibot_q', name: 'Pinces robotiques',
       description: 'Attire un ennemi de 2 cases en ligne droite et lui inflige 80 + 0,7 AP dégâts magiques.',
-      manaCost: 70, range: 6, cooldown: 2, cdMin: 1,
+      manaCost: 70, range: 6, cooldown: 3, cdMin: 1,
       damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.7,
       targetType: 'enemy_hero', requiresLine: true, pullCells: 2, zone: null, effects: []
     },
     {
       id: 'pibot_w', name: 'Station de recharge',
       description: 'Actif (sur soi-même) : la prochaine attaque de base de Pibot inflige 0,8 AP dégâts magiques supplémentaires.',
-      manaCost: 100, range: 0, cooldown: 2, cdMin: 1,
+      manaCost: 100, range: 0, cooldown: 4, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0.8,
       targetType: 'pibot_w', zone: null, effects: []
     },
     {
       id: 'pibot_r', name: 'Méga-Pibot',
       description: 'Inflige 110 + 0,9 AP dégâts magiques dans une zone 1-3-1 en ligne droite (portée 5) et gagne un bouclier égal à 1×AP pendant 2 tours.',
-      manaCost: 120, range: 5, cooldown: 8, cdMin: 2,
+      manaCost: 120, range: 5, cooldown: 10, cdMin: 2,
       damageType: 'magical', baseDamage: 110, adRatio: 0, apRatio: 0.9,
       targetType: 'pibot_r', zone: null, effects: []
     }
@@ -932,7 +932,7 @@ HERO_TYPES['support_5'] = {
     {
       id: 'gabriel_w', name: 'Parole Divine',
       description: 'Zone 1-3-1 : centre immobilise (root), autres cases retirent 2 PM. Inflige 70 + 0,7×AP dégâts magiques aux ennemis.',
-      manaCost: 80, range: 6, cooldown: 3,
+      manaCost: 80, range: 6, cooldown: 4,
       damageType: 'magical', baseDamage: 70, adRatio: 0, apRatio: 0.7,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 },
       effects: [{ type: 'root', turns: 1 }]
@@ -957,7 +957,7 @@ HERO_TYPES['roam_4'] = {
     {
       id: 'noyala_q', name: 'Invocation de Loups',
       description: 'Invoque un loup (100 PV, PM = Noyala) sur une case adjacente. Les loups collectent les zones ROAM. Quand un loup arrive adjacent à un ennemi, il meurt et lui inflige 50 + 0,7×AD dégâts physiques.',
-      manaCost: 80, range: 1, cooldown: 4,
+      manaCost: 80, range: 1, cooldown: 6,
       damageType: 'physical', baseDamage: 50, adRatio: 0.7, apRatio: 0,
       targetType: 'noyala_q', effects: []
     },
@@ -971,7 +971,7 @@ HERO_TYPES['roam_4'] = {
     {
       id: 'noyala_r', name: 'Loup et Moi',
       description: 'Échange la position de Noyala avec un de ses loups. Si elle finit son tour adjacent à un ennemi, celui-ci subit 130 + 1,1×AD dégâts physiques.',
-      manaCost: 110, range: 999, cooldown: 9,
+      manaCost: 110, range: 999, cooldown: 10,
       damageType: 'physical', baseDamage: 130, adRatio: 1.1, apRatio: 0,
       targetType: 'noyala_r', effects: []
     }
@@ -995,16 +995,16 @@ HERO_TYPES['solo_4'] = {
     },
     {
       id: 'grolith_w', name: 'Tomber à Pic',
-      description: 'Pousse un ennemi adjacent de 3 cases et lui inflige 80 + 0,4×AP dégâts magiques.',
-      manaCost: 80, range: 1, cooldown: 3,
-      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.4,
+      description: 'Pousse un ennemi adjacent de 3 cases et lui inflige 120 + 0,4×AP dégâts magiques.',
+      manaCost: 80, range: 1, cooldown: 4,
+      damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 0.4,
       targetType: 'push_enemy',
       effects: []
     },
     {
       id: 'grolith_r', name: 'Éboulement',
       description: 'Tous les ennemis adjacents à un mur reçoivent 120 + 0,6×AP dégâts magiques et sont stun 1 tour.',
-      manaCost: 130, range: 0, cooldown: 9,
+      manaCost: 130, range: 0, cooldown: 12,
       damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 0.6,
       targetType: 'no_target',
       grolihtEboulement: true,
@@ -1013,7 +1013,7 @@ HERO_TYPES['solo_4'] = {
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -1030,7 +1030,7 @@ HERO_TYPES['solo_5'] = {
     {
       id: 'salena_q', name: 'Destruction',
       description: 'Salena se dasse sur une cible en ligne droite (portée 2) et lui inflige 50 + 0,7×AP dégâts magiques. La cible perd 20% de sa RM (peut devenir négatif) pendant 2 tours.',
-      manaCost: 70, range: 2, cooldown: 3,
+      manaCost: 70, range: 2, cooldown: 5,
       damageType: 'magical', baseDamage: 50, adRatio: 0, apRatio: 0.7,
       targetType: 'dash_to_enemy', lineOnly: true, zone: null, effects: [{ type: 'mr_shred', pct: 20, turns: 2 }]
     },
@@ -1044,14 +1044,14 @@ HERO_TYPES['solo_5'] = {
     {
       id: 'salena_r', name: 'Ligne de mire',
       description: 'Les ennemis présents sur une ligne (1 à 5 cases) subissent 150 + 0,9×AP dégâts magiques.',
-      manaCost: 110, range: 5, minRange: 1, maxRange: 5, cooldown: 9,
+      manaCost: 110, range: 5, minRange: 1, maxRange: 5, cooldown: 11,
       damageType: 'magical', baseDamage: 150, adRatio: 0, apRatio: 0.9,
       targetType: 'line_zone', zone: null, effects: []
     },
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 2,
+      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -1148,6 +1148,9 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     // Solo recall state
     soloRecallActive: false,   // true after first cast, allows reactivation (return to spawn)
     spawnPosition: null,       // saved at game start
+
+    // Bâton d'Ancienneté — Développement ancien
+    batonAncienStacks: 0,
 
     // Attack count system (supports future items that grant extra attacks)
     extraAutoAttacks: 0,

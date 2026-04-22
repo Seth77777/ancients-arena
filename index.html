@@ -14,11 +14,11 @@
   <div id="menu-screen" class="screen active">
     <div id="menu-content">
       <h1 id="menu-title">⚔ ANCIENTS ARENA</h1>
+      <div id="menu-version">ver. Alpha 1.0.0 &nbsp;·&nbsp; Patch du 22 Avril 2026</div>
       <div id="menu-buttons">
         <button id="btn-menu-draft"   class="menu-btn">⚔ Draft (Local)</button>
         <button id="btn-menu-bot"     class="menu-btn">🤖 Jouer vs Bot</button>
         <button id="btn-menu-online"  class="menu-btn">🌐 Jouer en ligne</button>
-        <button id="btn-menu-editor"  class="menu-btn">✏ Éditeur</button>
         <button id="btn-menu-heroes"  class="menu-btn">📋 Infos Générales</button>
         <button id="btn-menu-stats"   class="menu-btn">📊 Statistiques</button>
         <button id="btn-menu-history" class="menu-btn">📜 Historique</button>
@@ -114,8 +114,14 @@
           <span id="timer-display">⏱ 120s</span>
           <span id="team-gold-p2" class="team-gold p2-gold">J2 : 0g</span>
         </div>
-        <div id="canvas-wrapper">
-          <canvas id="game-canvas" width="1020" height="1020"></canvas>
+        <div id="map-body">
+          <div id="canvas-wrapper">
+            <canvas id="game-canvas" width="1020" height="1020"></canvas>
+          </div>
+          <div id="log-panel">
+            <div id="combat-log-label">⚔ COMBAT</div>
+            <div id="combat-log"></div>
+          </div>
         </div>
 
         <!-- Boutique overlay (couvre la carte) -->

@@ -332,7 +332,7 @@
   <!-- ══ COLONNE PRINCIPALE ══ -->
   <div class="patch-main">
 
-    <!-- CORRECTIONS -->
+    <!-- CORRECTIONS DE BUGS -->
     <div>
       <div class="section-title"><span class="section-icon sys">⚙</span> CORRECTIONS DE BUGS</div>
       <div class="sys-grid">
@@ -340,7 +340,7 @@
         <div class="sys-card">
           <div class="sys-card-title">Skjer — Passif : Conquérant</div>
           <ul>
-            <li>Lorsque Skjer obtient un kill avec un sort ou une attaque de base, le sort / l'attaque de base utilisé est désormais correctement remis à disposition grâce au passif.</li>
+            <li>Lorsque Skjer obtient un kill avec un sort ou une attaque de base, le sort / l'attaque de base utilisé est désormais correctement remis à disposition.</li>
             <li>Auparavant, la remise à zéro des cooldowns était écrasée juste après l'application des dégâts, rendant le dernier sort ou l'attaque de base inutilisable.</li>
           </ul>
         </div>
@@ -349,6 +349,1009 @@
           <div class="sys-card-title">Faena — Description du passif corrigée</div>
           <ul>
             <li>La description indiquait une base de <span class="down">200%</span> de dégâts critiques, alors que la valeur réelle est <span class="up">350%</span>.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Hornet — Lance Soyeuse : zone de portée</div>
+          <ul>
+            <li>La zone de portée affichée pour le premier lancer se limite désormais aux 4 axes droits (haut, bas, gauche, droite), conformément à la contrainte de lancer en ligne droite.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Boutique (en ligne) — Joueur 2</div>
+          <ul>
+            <li>La boutique s'ouvre maintenant automatiquement au début du tour du joueur 2.</li>
+            <li>La boutique se ferme maintenant automatiquement après un achat côté joueur 2.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Sort Rappel — Héros Solo manquants</div>
+          <ul>
+            <li>Grolith et Salena n'avaient pas accès au Sort Rappel malgré leur rôle Solo. Corrigé.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Bâton des Abysses — Passif corrigé</div>
+          <ul>
+            <li>Le passif ignorait incorrectement 35% de la <span class="down">Résistance Magique</span> adverse (pouvait devenir négative).</li>
+            <li>Corrigé : ignore désormais 35% de l'<span class="up">Armure</span> adverse (ne peut pas devenir négative via cet item).</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AJUSTEMENTS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> AJUSTEMENTS</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">Quackshot — Épée de Double Feu</div>
+          <ul>
+            <li>L'Épée de Double Feu applique désormais <span class="up">2 charges</span> de Marque du Chasseur par attaque de base au lieu de 1, conformément au fonctionnement des effets à l'impact.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BUFFS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">▲</span> BUFFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/faena.png" alt="Faëna">
+          <div class="hero-card-name">Faëna</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Faëna</div>
+            <ul>
+              <li><span class="up">Passif — Coups critiques mortels : <strong>+1% → +5%</strong> de dégâts critiques par tranche de 10 AD.</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NERFS HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">▼</span> NERFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/frigiel.png" alt="Frigiel">
+          <div class="hero-card-name">Frigiel</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Frigiel</div>
+            <ul>
+              <li><span class="down">Couperie — CD : <strong>1 → 3</strong></span></li>
+              <li><span class="down">Plastron — CD : <strong>3 → 5</strong></span></li>
+              <li><span class="down">Appel du Chevalier — CD : <strong>8 → 10</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/grolith.png" alt="Grolith">
+          <div class="hero-card-name">Grolith</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Grolith</div>
+            <ul>
+              <li><span class="down">Tomber à Pic — CD : <strong>3 → 4</strong></span></li>
+              <li><span class="up">Tomber à Pic — Dégâts de base : <strong>80 → 120</strong></span></li>
+              <li><span class="down">Éboulement — CD : <strong>9 → 12</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/ondine.png" alt="Ondine">
+          <div class="hero-card-name">Ondine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Ondine</div>
+            <ul>
+              <li><span class="down">Estoc — CD : <strong>1 → 2</strong></span></li>
+              <li><span class="up">Estoc — Ratio AD : <strong>0,7 → 1</strong></span></li>
+              <li><span class="down">Fendre la lame — CD : <strong>2 → 4</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/salena.png" alt="Salena">
+          <div class="hero-card-name">Salena</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Salena</div>
+            <ul>
+              <li><span class="down">Destruction — CD : <strong>3 → 5</strong></span></li>
+              <li><span class="down">Ligne de mire — CD : <strong>9 → 11</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/shamrock.png" alt="Shamrock">
+          <div class="hero-card-name">Shamrock</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Shamrock</div>
+            <ul>
+              <li><span class="down">Coeur de pierre — CD : <strong>2 → 3</strong></span></li>
+              <li><span class="down">Cailloux qui roule — CD : <strong>2 → 4</strong></span></li>
+              <li><span class="up">Cailloux qui roule — Dégâts de base : <strong>80 → 130</strong></span></li>
+              <li><span class="down">Figé dans le marbre — CD : <strong>6 → 7</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/frigiel.png" alt="Rappel (tous les Solos)">
+          <div class="hero-card-name">Rappel</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Rappel — Tous les Solos</div>
+            <ul>
+              <li><span class="down">CD irréductible : ne peut plus être réduit par les items (cdMin : <strong>2 → 7</strong>)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/abyss.png" alt="Abyss">
+          <div class="hero-card-name">Abyss</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Abyss</div>
+            <ul>
+              <li><span class="down">Blackout — CD : <strong>3 → 4</strong></span></li>
+              <li><span class="down">Nuisance Noire — CD : <strong>3 → 4</strong></span></li>
+              <li><span class="down">Nuit Infinie — CD : <strong>9 → 11</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/hornet.png" alt="Hornet">
+          <div class="hero-card-name">Hornet</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Hornet</div>
+            <ul>
+              <li><span class="down">Lance Soyeuse — CD : <strong>3 → 5</strong></span></li>
+              <li><span class="down">Pourfandage Aiguisé — CD : <strong>2 → 4</strong></span></li>
+              <li><span class="down">Tisse-tempête — CD : <strong>8 → 10</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/layia.png" alt="Layia">
+          <div class="hero-card-name">Layia</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Layia</div>
+            <ul>
+              <li><span class="down">Petit Bond — CD : <strong>3 → 4</strong></span></li>
+              <li><span class="down">Vision — CD : <strong>3 → 5</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/masello.png" alt="Masello">
+          <div class="hero-card-name">Masello</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Masello</div>
+            <ul>
+              <li><span class="down">Masellojutsu — CD : <strong>2 → 3</strong></span></li>
+              <li><span class="down">Help is Coming — CD : <strong>2 → 3</strong></span></li>
+              <li><span class="down">Energy Kick — CD : <strong>4 → 6</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/noyala.png" alt="Noyala">
+          <div class="hero-card-name">Noyala</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Noyala</div>
+            <ul>
+              <li><span class="down">Invocation de Loups — CD : <strong>4 → 6</strong></span></li>
+              <li><span class="down">Loup et Moi — CD : <strong>9 → 10</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/skjer.png" alt="Skjer">
+          <div class="hero-card-name">Skjer</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Skjer</div>
+            <ul>
+              <li><span class="down">Traversée Furtive — CD : <strong>2 → 4</strong></span></li>
+              <li><span class="down">Traversée Furtive — Dégâts de base : <strong>220 → 130</strong></span></li>
+              <li><span class="down">Renforcement — CD : <strong>1 → 3</strong></span></li>
+              <li><span class="down">Tueur — CD : <strong>5 → 8</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/chronos.png" alt="Chronos">
+          <div class="hero-card-name">Chronos</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Chronos</div>
+            <ul>
+              <li><span class="down">Distortion — CD : <strong>3 → 4</strong></span></li>
+              <li><span class="down">Distortion Temporelle — CD : <strong>4 → 5</strong></span></li>
+              <li><span class="down">Rollback — CD : <strong>8 → 10</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/electro.png" alt="Electro">
+          <div class="hero-card-name">Electro</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Electro</div>
+            <ul>
+              <li><span class="down">Mana max : <strong>300 → 680</strong></span></li>
+              <li><span class="down">Regen Mana : <strong>40 → 35</strong>/tour</span></li>
+              <li><span class="down">Décharge — CD : <strong>2 → 3</strong> · Coût : <strong>80 → 110</strong> mana</span></li>
+              <li><span class="down">Zap Volt — CD : <strong>2 → 3</strong> · Coût : <strong>100 → 130</strong> mana</span></li>
+              <li><span class="down">Tonnerre — CD : <strong>6 → 8</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/pibot.png" alt="Pibot">
+          <div class="hero-card-name">Pibot</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Pibot</div>
+            <ul>
+              <li><span class="down">Pinces Robotiques — CD : <strong>2 → 3</strong></span></li>
+              <li><span class="down">Station de Recharge — CD : <strong>2 → 4</strong></span></li>
+              <li><span class="down">Méga-Pibot — CD : <strong>8 → 10</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/shallah.png" alt="Shallah">
+          <div class="hero-card-name">Shallah</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Shallah</div>
+            <ul>
+              <li><span class="down">Glyphe de Douleur — CD : <strong>1 → 3</strong></span></li>
+              <li><span class="down">Glyphe de Vent — CD : <strong>2 → 3</strong></span></li>
+              <li><span class="down">Glyphe Ultime — CD : <strong>8 → 9</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/vadro.png" alt="Vadro">
+          <div class="hero-card-name">Vadro</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Vadro</div>
+            <ul>
+              <li><span class="down">Morsure — CD : <strong>2 → 4</strong></span></li>
+              <li><span class="down">Flaque de Sang — CD : <strong>3 → 5</strong></span></li>
+              <li><span class="down">Alucard — CD : <strong>7 → 9</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/cupidon.png" alt="Cupidon">
+          <div class="hero-card-name">Cupidon</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Cupidon</div>
+            <ul>
+              <li><span class="down">Flèche d'Amour — CD : <strong>3 → 4</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/decigeno.png" alt="Decigeno">
+          <div class="hero-card-name">Decigeno</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Decigeno</div>
+            <ul>
+              <li><span class="down">Sniping — CD : <strong>2 → 4</strong></span></li>
+              <li><span class="down">From Downtown — CD : <strong>8 → 9</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/faena.png" alt="Faëna">
+          <div class="hero-card-name">Faëna</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Faëna</div>
+            <ul>
+              <li><span class="down">Tir en Éclat — CD : <strong>2 → 3</strong></span></li>
+              <li><span class="down">Flèches de Douleur — CD : <strong>8 → 9</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/quackshot.jpg" alt="Quackshot">
+          <div class="hero-card-name">Quackshot</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Quackshot</div>
+            <ul>
+              <li><span class="down">Chasse à l'Épuisement — CD : <strong>3 → 4</strong></span></li>
+              <li><span class="down">Coup de Grâce — CD : <strong>8 → 9</strong></span></li>
+              <li><span class="down">Coup de Grâce — Ratio AD : <strong>0,25 → 0,10</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/stank.png" alt="Stank">
+          <div class="hero-card-name">Stank</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Stank</div>
+            <ul>
+              <li><span class="down">Canon — CD : <strong>2 → 4</strong></span></li>
+              <li><span class="down">Appel — CD : <strong>10 → 11</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/anastasia.png" alt="Anastasia">
+          <div class="hero-card-name">Anastasia</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Anastasia</div>
+            <ul>
+              <li><span class="down">Soin Prudent — CD : <strong>0 → 1</strong></span></li>
+              <li><span class="down">Brûlure de Désir — CD : <strong>4 → 5</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/gabriel.png" alt="Gabriel">
+          <div class="hero-card-name">Gabriel</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Gabriel</div>
+            <ul>
+              <li><span class="down">Parole Divine — CD : <strong>3 → 4</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/shana.png" alt="Shana">
+          <div class="hero-card-name">Shana</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Shana</div>
+            <ul>
+              <li><span class="down">À la Rescousse ! — CD : <strong>8 → 10</strong></span></li>
+              <li><span class="up">À la Rescousse ! — Ratio AP : <strong>0,3 → 0,5</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/sharagoth.png" alt="Sharagoth">
+          <div class="hero-card-name">Sharagoth</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sharagoth</div>
+            <ul>
+              <li><span class="down">Terrain Conquis — CD : <strong>2 → 3</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/voodoo.png" alt="Voodoo">
+          <div class="hero-card-name">Voodoo</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Voodoo</div>
+            <ul>
+              <li><span class="down">Flaque Empoisonnée — CD : <strong>2 → 4</strong></span></li>
+              <li><span class="down">Malédiction — CD : <strong>5 → 6</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NOUVEAUX ITEMS -->
+    <div>
+      <div class="section-title"><span class="section-icon new">★</span> NOUVEAUX ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card new">
+          <img src="img/items/catalyseur_noir.png" alt="Catalyseur Noir">
+          <div class="item-card-name">Catalyseur Noir</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Catalyseur Noir (T2)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Cristal de Vie × 2 + Cristal de Mana + 150g</li>
+              <li><span class="up">+300 HP · +350 Mana</span></li>
+              <li>Passif : 20% des dégâts reçus → mana</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/baton_anciennete.png" alt="Bâton d'Ancienneté">
+          <div class="item-card-name">Bâton d'Ancienneté</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bâton d'Ancienneté (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Catalyseur Noir + Bâton Magique + 200g</li>
+              <li><span class="up">+45 AP · +350 HP · +500 Mana</span></li>
+              <li>Passif — Développement ancien : +3 AP, +10 HP max, +30 Mana max / tour (max ×10)</li>
+              <li>Passif : 30% des dégâts reçus → mana</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/sceptre_de_glace.png" alt="Sceptre de Glace">
+          <div class="item-card-name">Sceptre de Glace</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sceptre de Glace (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Bâton Magique + Ceinture de Vie + Petit Grimoire + 250g</li>
+              <li><span class="up">+65 AP · +400 HP</span></li>
+              <li>Passif : Vos dégâts magiques (hors objets) ralentissent les cibles de 1 PM pendant 1 tour (max 2 stacks/cible)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/lames_navitiennes.png" alt="Lames Navitiennes">
+          <div class="item-card-name">Lames Navitiennes</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Lames Navitiennes (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Petit Arc + Épées Croisées + 250g</li>
+              <li><span class="up">+1 auto-attaque/tour · +25% critique</span></li>
+              <li>Passif : Votre première auto-attaque de chaque tour réduit le CD de tous vos sorts de 1</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/plaque_du_golem.png" alt="Plaque du Golem">
+          <div class="item-card-name">Plaque du Golem</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Plaque du Golem (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Moyenne Armure + Petite Armure + Cristal de Vie</li>
+              <li><span class="up">+350 HP · +20% Armure · +1 PM</span></li>
+              <li>Passif : Esquivez 1 ralentissement par tour</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/marteau_divin.png" alt="Marteau Divin">
+          <div class="item-card-name">Marteau Divin</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Marteau Divin (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Lame Bleue + Cœur de Vie + Grande Pioche</li>
+              <li><span class="up">+35 AD · −1 CD · +425 HP</span></li>
+              <li>Passif : Attaque renforcée → 10% (7% distance) HP max cible en dégâts bruts (min 1,25×AD) · soin de 6% (3% distance) HP max (min 0,5×AD)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/echo_du_malin.png" alt="Écho du Malin">
+          <div class="item-card-name">Écho du Malin</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Écho du Malin (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Alternateur de Puissance + Grimoire Magique + 300g</li>
+              <li><span class="up">+100 AP · −1 CD · +600 Mana</span></li>
+              <li>Passif : Sorts magiques → 0,15×AP dégâts magiques supplémentaires à la cible et aux ennemis à ≤5 cases (CD : 3 tours)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/couronne_princiere.png" alt="Couronne Princière">
+          <div class="item-card-name">Couronne Princière</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Couronne Princière (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Feu Follet + Miroir de Vie + 300g</li>
+              <li><span class="up">+50 AP · −1 CD · +125% Regen Mana · +1 PM</span></li>
+              <li>Passif : Vos alliés à ≤6 cases gagnent +1 PM au début de leur tour de jeu</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/faux_bleue_du_mal.png" alt="Faux Bleue du Mal">
+          <div class="item-card-name">Faux Bleue du Mal</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Faux Bleue du Mal (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Lame Bleue + Grande Pioche + Petite Cape Critique + 300g</li>
+              <li><span class="up">+50 AD · −1 CD · +25% Critique</span></li>
+              <li>Passif : Attaque renforcée → +22% dégâts bruts (AA + bonus) · récupérez 50% de ces dégâts en mana</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/sanctuaire_de_lune.png" alt="Sanctuaire de Lune">
+          <div class="item-card-name">Sanctuaire de Lune</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sanctuaire de Lune (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Cœur de Vie + Miroir de Vie + 200g</li>
+              <li><span class="up">+25 AP · −1 CD · +200 HP · +125% Regen Mana</span></li>
+              <li>Passif — Protection engagée : lorsque vous soignez ou bouclier un allié, l'allié le plus proche de lui reçoit 40% du montant</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/bouclier_protecteur_divin.png" alt="Bouclier Protecteur Divin">
+          <div class="item-card-name">Bouclier Protecteur Divin</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bouclier Protecteur Divin (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Cœur de Vie + Petite Cape Antimagie + Petite Armure + 300g</li>
+              <li><span class="up">+300 HP · +10% Armure · +10% RM</span></li>
+              <li>Passif : Chaque tour global, vos alliés à ≤7 cases gagnent un bouclier égal à 10% de vos HP max (se réinitialise chaque tour)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/coeur_de_titane.png" alt="Cœur de Titane">
+          <div class="item-card-name">Cœur de Titane</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Cœur de Titane (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Ceinture de Vie × 2 + Collier Régénérant × 2 + 200g</li>
+              <li><span class="up">+900 HP · +100% Regen HP</span></li>
+              <li>Passif : Infliger une auto-attaque à un ennemi augmente définitivement vos HP max de 2% (max 1 fois/tour/adversaire)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/coeur_du_monde.png" alt="Cœur du Monde">
+          <div class="item-card-name">Cœur du Monde</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Cœur du Monde (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Bâton Magique + Cœur de Courage × 2</li>
+              <li><span class="up">+45 AP · +120% Regen Mana · +18% Efficacité soins/boucliers</span></li>
+              <li>Passif : +10 AP et +2% efficacité soins/boucliers par tranche de 100% de regen mana bonus</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS BUFFS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">▲</span> ITEMS BUFFS</div>
+      <div class="items-grid">
+
+        <div class="item-card buff">
+          <img src="img/items/flamme_du_soleil_flamboyant.png" alt="Flamme du Soleil Flamboyant">
+          <div class="item-card-name">Flamme du Soleil Flamboyant</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Flamme du Soleil Flamboyant</div>
+            <ul>
+              <li><span class="up">Passif dégâts adjacents : <strong>3% → 5%</strong> des HP max</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/armure_de_la_vie.png" alt="Armure de la Vie">
+          <div class="item-card-name">Armure de la Vie</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Armure de la Vie</div>
+            <ul>
+              <li><span class="up">HP max : <strong>700 → 1000</strong></span></li>
+              <li><span class="down">Retiré : +25 Regen HP fixe</span></li>
+              <li><span class="up">Ajouté : +200% Regen HP</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/masque_de_larme.png" alt="Masque de Larme">
+          <div class="item-card-name">Masque de Larme</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Masque de Larme</div>
+            <ul>
+              <li><span class="up">Passif : le DOT (2% HP max / tour, 3 tours) s'additionne désormais à chaque sort au lieu d'être renouvelé.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/soldier_dagger.png" alt="Dague du Soldat">
+          <div class="item-card-name">Dague du Soldat</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Dague du Soldat</div>
+            <ul>
+              <li><span class="up">Le bouclier de 25 HP s'applique désormais à chaque auto-attaque quelle que soit la distance, et se cumule.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/enchanteur_rouge.png" alt="Enchanteur Rouge">
+          <div class="item-card-name">Enchanteur Rouge</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Enchanteur Rouge</div>
+            <ul>
+              <li><span class="up">Efficacité soins : <strong>12% → 15%</strong></span></li>
+              <li><span class="up">Regen Mana : <strong>50% → 100%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/blason_glorieux.png" alt="Blason Glorieux">
+          <div class="item-card-name">Blason Glorieux</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Blason Glorieux</div>
+            <ul>
+              <li><span class="up">Regen Mana : <strong>75% → 120%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/couronne_de_la_reine.png" alt="Couronne de la Reine">
+          <div class="item-card-name">Couronne de la Reine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Couronne de la Reine</div>
+            <ul>
+              <li><span class="up">Regen Mana : <strong>75% → 125%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/sceptre_de_mana.png" alt="Sceptre de Mana">
+          <div class="item-card-name">Sceptre de Mana</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sceptre de Mana</div>
+            <ul>
+              <li><span class="up">Regen Mana : <strong>75% → 125%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/epee_de_mana.png" alt="Épée de Mana">
+          <div class="item-card-name">Épée de Mana</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Épée de Mana</div>
+            <ul>
+              <li><span class="up">Regen Mana : <strong>75% → 125%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/protection_divine.png" alt="Protection Divine">
+          <div class="item-card-name">Protection Divine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Protection Divine</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/bouclier_protecteur_divin.png" alt="Bouclier Protecteur Divin">
+          <div class="item-card-name">Bouclier Protecteur Divin</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bouclier Protecteur Divin</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/combattant_antimage.png" alt="Combattant Anti-Mage">
+          <div class="item-card-name">Combattant Anti-Mage</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Combattant Anti-Mage</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/couperet_du_demon.png" alt="Couperet du Démon">
+          <div class="item-card-name">Couperet du Démon</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Couperet du Démon</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/sceptre_du_malin.png" alt="Sceptre du Malin">
+          <div class="item-card-name">Sceptre du Malin</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sceptre du Malin</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+              <li><span class="up">Mana max : <strong>500 → 600</strong></span></li>
+              <li><span class="down">Retiré : +15 Regen Mana fixe</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/gantelet_refroidissant.png" alt="Gantelet Refroidissant">
+          <div class="item-card-name">Gantelet Refroidissant</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Gantelet Refroidissant</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/lame_de_nargoth.png" alt="Lame de Nargoth">
+          <div class="item-card-name">Lame de Nargoth</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Lame de Nargoth</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/livre_des_morts_vivants.png" alt="Livre des Morts-Vivants">
+          <div class="item-card-name">Livre des Morts-Vivants</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Livre des Morts-Vivants</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/magic_sword.png" alt="Épée Magique">
+          <div class="item-card-name">Épée Magique</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Épée Magique</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/holy_trinity.png" alt="Trinité Sacrée">
+          <div class="item-card-name">Trinité Sacrée</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Trinité Sacrée</div>
+            <ul>
+              <li><span class="up">Ajouté : <strong>−1 CD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS NERFS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">▼</span> ITEMS NERFS</div>
+      <div class="items-grid">
+
+
+
+      </div>
+    </div>
+
+    <!-- ITEMS AJUSTÉS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> ITEMS AJUSTÉS</div>
+      <div class="items-grid">
+
+        <div class="item-card adj">
+          <img src="img/items/coeur_de_courage.png" alt="Cœur de Courage">
+          <div class="item-card-name">Cœur de Courage</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Cœur de Courage</div>
+            <ul>
+              <li><span class="down">Recette : Cristal de Vie → Collier de Mana</span></li>
+              <li><span class="down">Coût de forge : 500g → 350g</span></li>
+              <li><span class="down">Retiré : +180 HP · +10% Efficacité soins</span></li>
+              <li><span class="up">Ajouté : +50% Regen Mana</span></li>
+            </ul>
+          </div>
+        </div>
+
+
+        <div class="item-card adj">
+          <img src="img/items/basic_shield.png" alt="Bouclier Basique">
+          <div class="item-card-name">Bouclier Basique</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bouclier Basique</div>
+            <ul>
+              <li><span class="down">Armure retirée</span></li>
+              <li><span class="down">RM retirée</span></li>
+              <li><span class="up">+18 HP Regen/tour</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/linked_names.png" alt="Nos Noms Sont Liés">
+          <div class="item-card-name">Nos Noms Sont Liés</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Nos Noms Sont Liés</div>
+            <ul>
+              <li><span class="down">Retiré : +200 HP</span></li>
+              <li><span class="up">Ajouté : +25% Regen HP · +25% Regen Mana</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/magic_ring.png" alt="Anneau Magique">
+          <div class="item-card-name">Anneau Magique</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Anneau Magique</div>
+            <ul>
+              <li><span class="up">+10 HP Regen/tour</span></li>
+              <li><span class="down">Passif zone gold : <strong>15% → 10%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/black_scythe.png" alt="Faux Noire">
+          <div class="item-card-name">Faux Noire</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Faux Noire</div>
+            <ul>
+              <li><span class="down">Gold/tour : <strong>50 → 35</strong></span></li>
+              <li><span class="up">AD : <strong>5 → 12</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/coeur_de_vie.png" alt="Cœur de Vie">
+          <div class="item-card-name">Cœur de Vie</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Cœur de Vie</div>
+            <ul>
+              <li><span class="down">Retiré : +15 Regen HP fixe</span></li>
+              <li><span class="down">HP max : <strong>220 → 200</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/minor_mage_ring.png" alt="Anneau du Mage Mineur">
+          <div class="item-card-name">Anneau du Mage Mineur</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Anneau du Mage Mineur</div>
+            <ul>
+              <li><span class="down">Retiré : Regen Mana fixe (25/tour → 15/tour)</span></li>
+              <li><span class="up">Ajouté : +35% Regen Mana</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/reinforced_boots.png" alt="Bottes Renforcées">
+          <div class="item-card-name">Bottes Renforcées</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bottes Renforcées</div>
+            <ul>
+              <li><span class="up">Regen HP : <strong>+50% → +100%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/anti_spell_boots.png" alt="Bottes Anti-Sort">
+          <div class="item-card-name">Bottes Anti-Sort</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bottes Anti-Sort</div>
+            <ul>
+              <li><span class="up">Regen HP : <strong>+50% → +100%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/sorcerer_boots.png" alt="Bottes du Sorcier">
+          <div class="item-card-name">Bottes du Sorcier</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bottes du Sorcier</div>
+            <ul>
+              <li><span class="up">AP : <strong>+15 → +25</strong></span></li>
+              <li><span class="up">Regen Mana : <strong>+50% → +75%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/boots_of_celerity.png" alt="Bottes de Célérité">
+          <div class="item-card-name">Bottes de Célérité</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bottes de Célérité</div>
+            <ul>
+              <li><span class="neu">−1 CD devient une stat de base (plus un passif)</span></li>
+              <li><span class="up">Ajouté : +50% Regen HP · +50% Regen Mana</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/speed_boots.png" alt="Bottes de Grande Vitesse">
+          <div class="item-card-name">Bottes de Grande Vitesse</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bottes de Grande Vitesse</div>
+            <ul>
+              <li><span class="up">Regen HP : <strong>+25% → +50%</strong></span></li>
+              <li><span class="up">Regen Mana : <strong>+25% → +50%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SYSTÈMES -->
+    <div>
+      <div class="section-title"><span class="section-icon new">★</span> SYSTÈMES</div>
+      <div class="sys-grid">
+
+        <div class="sys-card new">
+          <div class="sys-card-title">Log de combat</div>
+          <ul>
+            <li>Un journal de combat s'affiche désormais dans une colonne compacte à droite de la carte, entre le canvas et la barre de sorts.</li>
+            <li>Les entrées sont colorées : <span style="color:#4070a0">tour</span> · <span style="color:#c05040">dégâts</span> · <span style="color:#c09030">kill</span> · <span style="color:#406848">soin</span>.</li>
           </ul>
         </div>
 
@@ -370,18 +1373,63 @@
           <div class="tooltip">
             <div class="tooltip-name">Skjer</div>
             <ul>
-              <li><span class="neu">Correction : le passif Conquérant remet correctement à zéro le sort et l'attaque de base utilisés pour le kill.</span></li>
+              <li><span class="neu">Correction : passif Conquérant remet à zéro le sort et l'AA utilisés pour le kill.</span></li>
             </ul>
           </div>
         </div>
 
-        <div class="hero-card adj">
+        <div class="hero-card buff">
           <img src="assets/heroes/faena.png" alt="Faena">
           <div class="hero-card-name">Faena</div>
           <div class="tooltip">
             <div class="tooltip-name">Faena</div>
             <ul>
-              <li><span class="neu">Correction de description : base des critiques <span class="down">200%</span> → <span class="up">350%</span>.</span></li>
+              <li><span class="neu">Description passif : base critiques <span class="down">200%</span> → <span class="up">350%</span>.</span></li>
+              <li><span class="up">Passif : <strong>+1% → +5%</strong> dégâts crit par tranche de 10 AD.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/hornet.png" alt="Hornet">
+          <div class="hero-card-name">Hornet</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Hornet</div>
+            <ul>
+              <li><span class="neu">Lance Soyeuse : zone de portée affichée en ligne droite uniquement.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/quackshot.jpg" alt="Quackshot">
+          <div class="hero-card-name">Quackshot</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Quackshot</div>
+            <ul>
+              <li><span class="up">Épée de Double Feu : +2 charges de Marque par AA (au lieu de 1).</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/grolith.png" alt="Grolith">
+          <div class="hero-card-name">Grolith</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Grolith</div>
+            <ul>
+              <li><span class="up">Accès au Sort Rappel (Solo).</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/salena.png" alt="Salena">
+          <div class="hero-card-name">Salena</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Salena</div>
+            <ul>
+              <li><span class="up">Accès au Sort Rappel (Solo).</span></li>
             </ul>
           </div>
         </div>

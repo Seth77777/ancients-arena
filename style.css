@@ -343,7 +343,14 @@ body {
   overflow: hidden;
 }
 
-#p1-heroes-list,
+#p1-heroes-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 0;
+}
+
 #p2-heroes-list {
   flex: 1;
   display: flex;
@@ -505,11 +512,19 @@ body {
 .p1-gold   { color: #00d2ff; }
 .p2-gold   { color: #ff6b6b; }
 
+#map-body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
 #canvas-wrapper {
   flex: 1;
   min-height: 0;
   min-width: 0;
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -526,6 +541,58 @@ body {
 
 .log-line { padding: 1px 0; border-bottom: 1px solid var(--panel); }
 .log-line:last-child { color: var(--text); }
+
+/* ============================================================
+   COMBAT LOG
+   ============================================================ */
+
+#log-panel {
+  width: 150px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  padding: 6px 6px 6px 8px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+#combat-log-label {
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #554433;
+  padding-bottom: 5px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#combat-log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a transparent;
+}
+#combat-log::-webkit-scrollbar { width: 3px; }
+#combat-log::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+
+.log-entry {
+  font-size: 0.63rem;
+  color: #5a5a4a;
+  line-height: 1.45;
+  word-break: break-word;
+  flex-shrink: 0;
+}
+.log-entry.log-dmg  { color: #b04838; }
+.log-entry.log-kill { color: #b08828; font-weight: bold; }
+.log-entry.log-turn { color: #385878; font-style: italic; border-top: 1px solid #ffffff08; padding-top: 3px; margin-top: 2px; }
+.log-entry.log-heal { color: #406848; }
 
 /* ============================================================
    ACTION PANEL
@@ -928,6 +995,14 @@ body {
   letter-spacing: 6px;
   color: #f0c040;
   text-shadow: 0 0 30px rgba(240,192,64,0.4);
+  margin-bottom: 0;
+}
+
+#menu-version {
+  font-size: 0.95rem;
+  color: #8b949e;
+  letter-spacing: 1px;
+  margin-top: -28px;
 }
 
 #menu-buttons {
