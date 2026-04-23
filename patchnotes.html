@@ -317,7 +317,8 @@
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
   <div class="patch-tabs">
-    <button class="patch-tab active" onclick="showPatch('patch-102', this)">1.0.2</button>
+    <button class="patch-tab active" onclick="showPatch('patch-103', this)">Alpha 1.0.3</button>
+    <button class="patch-tab" onclick="showPatch('patch-102', this)">1.0.2</button>
     <button class="patch-tab" onclick="showPatch('patch-23avr', this)">23 Avril 2026</button>
     <button class="patch-tab" onclick="showPatch('patch-22avr', this)">22 Avril 2026</button>
     <button class="patch-tab" onclick="showPatch('patch-21avr', this)">21 Avril 2026</button>
@@ -328,7 +329,250 @@
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- PATCH 23 AVRIL 2026                                    -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="patch-102" class="patch-section active">
+<div id="patch-103" class="patch-section active">
+<div class="patch-body">
+
+  <div class="patch-main">
+
+    <!-- CORRECTIONS DE BUGS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">⚙</span> CORRECTIONS DE BUGS</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">DOTs — Icônes séparées par source</div>
+          <ul>
+            <li>Tous les DOTs étaient regroupés sous une seule icône dans la barre d'effets.</li>
+            <li>Chaque source affiche désormais sa propre icône : 🌑 Nuisance noire · 🔥 Torche Sombre · 💧 Masque de Larme.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Rappel (Sort Solo) — Coût en mana supprimé</div>
+          <ul>
+            <li>Le Sort Rappel déduisait incorrectement du mana lors de son utilisation. Désormais gratuit.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Batterie Pibot — Collecte réservée à Pibot</div>
+          <ul>
+            <li>Les ennemis déplacés ou se déplaçant sur une batterie pouvaient la collecter. Corrigé : seul Pibot peut activer une batterie.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Débuffs — Doublons d'icônes corrigés</div>
+          <ul>
+            <li>Les icônes Hémorragie et Malédiction apparaissaient en double au début du tour des ennemis débuffés par Voodoo. Corrigé.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Logs J2 (en ligne) — Arrêt de mise à jour</div>
+          <ul>
+            <li>Les logs de combat du joueur 2 cessaient de s'actualiser après ~200 entrées. Corrigé via un compteur <em>logIndex</em> monotone.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Decigeno — Passif déclenché hors portée</div>
+          <ul>
+            <li>Le passif de Decigeno s'activait même si le sort échouait (cible hors portée). Corrigé : le passif ne se déclenche que si le sort réussit.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Plastron du Diable Immortel — Timer réinitialisé</div>
+          <ul>
+            <li>Chaque coup reçu réinitialisait le timer au lieu de le laisser courir depuis le premier dégât. Corrigé.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Achat d'items — Composants T1 non consommés</div>
+          <ul>
+            <li>Acheter un T3 directement avec des composants T1 ne retirait pas ces T1 de l'inventaire. La consommation de composants est désormais récursive.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Bouclier Protecteur Divin — Application à l'achat</div>
+          <ul>
+            <li>Acheter n'importe quel item appliquait le bouclier BPD. Corrigé : le recalcul n'a lieu qu'à l'achat du BPD lui-même et en fin de tour global.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Nargoth → Létalité</div>
+          <ul>
+            <li>Le tag "Nargoth" dans les logs d'attaque renommé en <strong>Létalité</strong>.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AJUSTEMENTS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> AJUSTEMENTS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/cupidon.png" alt="Cupidon">
+          <div class="hero-card-name">Cupidon</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Cupidon</div>
+            <ul>
+              <li><span class="down">L'Amour fou — CD : <strong>7 → 12</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/vadro.png" alt="Vadro">
+          <div class="hero-card-name">Vadro</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Vadro</div>
+            <ul>
+              <li><span class="down">Regen Mana : <strong>40 → 20</strong>/tour</span></li>
+              <li><span class="up">Mana max : <strong>280 → 390</strong></span></li>
+              <li><span class="down">Morsure — Coût : <strong>70 → 90</strong> mana</span></li>
+              <li><span class="down">Flaque de sang — Coût : <strong>80 → 130</strong> mana</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS AJUSTÉS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> AJUSTEMENTS — ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card adj">
+          <img src="img/items/magic_sword.png" alt="Épée Magique">
+          <div class="item-card-name">Épée Magique</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Épée Magique</div>
+            <ul>
+              <li><span class="neu">Passif refondu : attaque renforcée → <strong>+0,75×AP</strong> dégâts magiques (au lieu de (15+0,05×AP)% AD)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/holy_trinity.png" alt="Trinité Sacrée">
+          <div class="item-card-name">Trinité Sacrée</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Trinité Sacrée</div>
+            <ul>
+              <li><span class="neu">Passif refondu : attaque renforcée → <strong>+1×AD</strong> dégâts physiques (au lieu de +22%)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/gantelet_refroidissant.png" alt="Gantelet Refroidissant">
+          <div class="item-card-name">Gantelet Refroidissant</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Gantelet Refroidissant</div>
+            <ul>
+              <li><span class="neu">Passif refondu : attaque renforcée → <strong>+3×Armure%</strong> dégâts magiques (ex : 35% armure = 105 dégâts), en plus du Gelure existant</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/faux_bleue_du_mal.png" alt="Faux Bleue du Mal">
+          <div class="item-card-name">Faux Bleue du Mal</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Faux Bleue du Mal</div>
+            <ul>
+              <li><span class="neu">Passif refondu : attaque renforcée → <strong>+0,75×AD</strong> dégâts physiques (au lieu de +22% bruts + mana)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/blason_glorieux.png" alt="Blason Glorieux">
+          <div class="item-card-name">Blason Glorieux</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Blason Glorieux</div>
+            <ul>
+              <li><span class="neu">Passif refondu : <strong>4% par débuff posé</strong> sur chaque cible (toutes les cibles touchées, au lieu de 10% sur la 1ère uniquement)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/white_walker_hammer.png" alt="Marcheur Blanc + composés">
+          <div class="item-card-name">Marcheur Blanc</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Marcheur Blanc + composés</div>
+            <ul>
+              <li><span class="neu">+1 PM limité à la <strong>première auto-attaque</strong> par tour (Trinité Sacrée, Lame de Nargoth, Couperet du Démon inclus)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/livre_incantations.png" alt="Livre d'Incantations">
+          <div class="item-card-name">Livre d'Incantations</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Livre d'Incantations</div>
+            <ul>
+              <li><span class="down">Posséder plusieurs Livres d'Incantations ne réduit désormais le CD que d'<strong>1 au total</strong> (anti-stack)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card del">
+          <img src="img/items/time_glass.png" alt="Sablier Temporel">
+          <div class="item-card-name">Sablier Temporel</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sablier Temporel</div>
+            <ul>
+              <li><span class="down">Item supprimé du jeu.</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SYSTÈMES -->
+    <div>
+      <div class="section-title"><span class="section-icon new">★</span> SYSTÈMES</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">Boutique — Onglets Critique et Multi-AA</div>
+          <ul>
+            <li>Deux nouveaux onglets de filtre ajoutés : <strong>Critique</strong> (items avec % critique) et <strong>Multi-AA</strong> (items avec attaques supplémentaires).</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Boutique — Réduction CD visible</div>
+          <ul>
+            <li>Le stat <strong>−CD</strong> apparaît désormais dans les tooltips d'items et le panneau héros de la boutique.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-main -->
+
+  <div class="patch-side">
+  </div><!-- /patch-side -->
+
+</div><!-- /patch-body -->
+</div><!-- /patch-103 -->
+
+<div id="patch-102" class="patch-section">
 <div class="patch-body">
 
   <div class="patch-main">
