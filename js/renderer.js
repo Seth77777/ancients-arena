@@ -15,6 +15,7 @@ class Renderer {
     this.zoneSpellTarget      = null;
     this.highlightPushDirs    = [];
     this.pushDirArrows        = [];
+    this.highlightSplashCells = [];
 
     // Tooltip inventaire
     this._tooltip = document.createElement('div');
@@ -399,6 +400,12 @@ class Renderer {
         ctx.fillRect(px, py, cs, cs);
       }
 
+      // Splash preview (Stank — Gros Calibre)
+      if (this.highlightSplashCells?.some(c => c.x === x && c.y === y)) {
+        ctx.fillStyle = 'rgba(231,126,34,0.28)';
+        ctx.fillRect(px, py, cs, cs);
+      }
+
       // Push direction cells (Terrain conquis — step 2)
       if (this.highlightPushDirs?.some(c => c.x === x && c.y === y)) {
         ctx.fillStyle = 'rgba(46,204,113,0.28)';
@@ -768,6 +775,7 @@ class Renderer {
       <div class="stat-row">
         <span>⚔ ${hero.ad}</span><span>✨ ${hero.ap}</span>
         <span>🛡 ${hero.armor}</span><span>🧿 ${hero.mr}</span>
+        ${(hero.cdReduction || 0) > 0 ? `<span title="Réduction de cooldown">⏬ −${hero.cdReduction} CD</span>` : ''}
         ${hero.shield > 0 ? `<span class="stat-shield">🔰 ${hero.shield}</span>` : ''}
         ${_wolfInfo}
       </div>`;
@@ -1200,7 +1208,21 @@ class Renderer {
   // SHARED HELPERS
   // ============================================================
 
-  appendLog(_msg) { /* log supprimé */ }
+  appendLog(msg) {
+    const el = document.getElementById('combat-log');
+    if (!el) return;
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    const low = msg.toLowerCase();
+    if (/──/.test(msg))                                      div.classList.add('log-turn');
+    else if (/kill|mort|éliminé/.test(low))                 div.classList.add('log-kill');
+    else if (/soigne|régénère|hp\s*\+|se soigne/.test(low)) div.classList.add('log-heal');
+    else if (/dégât|dégâts|−\d/.test(low))                  div.classList.add('log-dmg');
+    div.textContent = msg;
+    el.appendChild(div);
+    while (el.children.length > 120) el.removeChild(el.firstChild);
+    el.scrollTop = el.scrollHeight;
+  }
 
   updateTimer(seconds) {
     const el = document.getElementById('timer-display');
@@ -1226,6 +1248,7 @@ class Renderer {
     this.highlightAttack             = [];
     this.highlightAttackRange        = [];
     this.highlightAttackRangeBlocked = [];
+    this.highlightSplashCells        = [];
     this.highlightSpell       = { heroes: [], cells: [], cellsBlocked: [], heroesOutOfRange: [] };
     this.zoneSpellTarget   = null;
     this.highlightPushDirs = [];
@@ -1487,7 +1510,7 @@ class Renderer {
 
       tip.innerHTML = `
         <div class="st-name">${spell.name}</div>
-        <div class="st-meta">${spell.manaCost} mana · Portée ${spell.range} · CD ${spell.cooldown} tour${spell.cooldown > 1 ? 's' : ''}</div>
+        <div class="st-meta">${spell.manaCost} mana · Portée ${spell.range} · CD ${(() => { const eff = Math.max(spell.cdMin || 1, spell.cooldown - (hero.cdReduction || 0)); return eff === spell.cooldown ? spell.cooldown : `<span style="text-decoration:line-through;opacity:.5">${spell.cooldown}</span> ${eff}`; })()} tour${spell.cooldown > 1 ? 's' : ''}</div>
         ${dmgHtml}
         ${spell.description ? `<div class="st-desc">${spell.description}</div>` : ''}
         ${statusHtml}`;

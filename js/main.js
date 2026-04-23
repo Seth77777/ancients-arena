@@ -109,6 +109,8 @@ function renderScoreboard(matchResult) {
         const it = EQUIPMENT[id];
         return it ? `<img src="${it.icon}" class="sb-item-icon" title="${it.name}" onerror="this.style.display='none'">` : '';
       }).join('');
+      const dmgStr  = h.damageDealt ? `⚔ ${h.damageDealt.toLocaleString('fr-FR')}` : '';
+      const healStr = h.healingDone ? `💚 ${h.healingDone.toLocaleString('fr-FR')}` : '';
       return `
         <div class="scoreboard-hero-row">
           ${portrait}
@@ -116,7 +118,9 @@ function renderScoreboard(matchResult) {
             <div style="display:flex;align-items:center;gap:8px">
               <span class="sb-name">${h.name}</span>
               <span class="sb-kda"><span>${h.kills}</span> / <span style="color:#e74c3c">${h.deaths}</span> / <span>${h.assists}</span></span>
-              <span class="sb-gold">⚔ ${h.kills}K ${h.assists}A &nbsp;💰 ${h.totalGold}g</span>
+              <span class="sb-gold">💰 ${h.totalGold}g</span>
+              ${dmgStr  ? `<span class="sb-dmg">${dmgStr}</span>`   : ''}
+              ${healStr ? `<span class="sb-heal">${healStr}</span>` : ''}
             </div>
             <div class="sb-items">${items}</div>
           </div>
@@ -228,7 +232,11 @@ function _renderHeroesSection() {
   return sections || '<p class="heroes-empty">Aucun héros personnalisé défini.</p>';
 }
 
-function _renderItemsSection() {
+let _infoItemsCat = 'all';
+
+function _renderItemsSection(cat) {
+  cat = cat || _infoItemsCat || 'all';
+
   const STAT_LABELS = {
     ad: '⚔ AD', ap: '✨ AP', maxHP: '❤ HP max', maxMana: '🔵 Mana max',
     armor: '🛡 Armure', mr: '🔮 RM', lifeSteal: '🩸 Vol de vie',
@@ -236,23 +244,64 @@ function _renderItemsSection() {
     cdReduction: '⏬ Réd. CD', bonusSpellRange: '🎯 Portée sorts',
     goldPerTurn: '💰 Or/tour', healEfficiency: '💚 Efficacité soins',
     goldSharePct: '🤝 Partage or', manaOnSpell: '💧 Mana/sort',
-    manaOnSpellMax: '(max via passif)'
+    manaOnSpellMax: '(max via passif)',
+    critChance: '🎯 Crit %', extraAutoAttacks: '⚡ +1 Att./tour'
   };
 
+  const CAT_FILTERS = {
+    all:          () => true,
+    starter:      it => !!it.isStarter,
+    boots:        it => !!it.isBoots,
+    ad:           it => (it.stats.ad || 0) > 0,
+    ap:           it => (it.stats.ap || 0) > 0,
+    hp:           it => (it.stats.maxHP || 0) > 0,
+    res:          it => (it.stats.armor || 0) > 0 || (it.stats.mr || 0) > 0,
+    mana:         it => (it.stats.maxMana || 0) > 0 || (it.stats.manaRegen || 0) > 0 || (it.stats.manaRegenPct || 0) > 0,
+    util:         it => (it.stats.lifeSteal || 0) > 0 || (it.stats.cdReduction || 0) > 0 ||
+                        (it.stats.hpRegen || 0) > 0 || (it.stats.goldPerTurn || 0) > 0 ||
+                        (it.stats.healEfficiency || 0) > 0 || (it.stats.manaOnSpell || 0) > 0 ||
+                        (it.stats.goldSharePct || 0) > 0 || (it.stats.bonusSpellRange || 0) > 0 ||
+                        (it.stats.pm || 0) > 0,
+    crit:         it => (it.stats.critChance || 0) > 0,
+    extra_attack: it => (it.stats.extraAutoAttacks || 0) > 0,
+  };
+
+  const CAT_LABELS = [
+    { cat: 'all',          label: 'Tout' },
+    { cat: 'starter',      label: 'Starter' },
+    { cat: 'boots',        label: 'Bottes' },
+    { cat: 'ad',           label: 'AD' },
+    { cat: 'ap',           label: 'AP' },
+    { cat: 'hp',           label: 'HP' },
+    { cat: 'res',          label: 'Armure / RM' },
+    { cat: 'mana',         label: 'Mana' },
+    { cat: 'util',         label: 'Utilitaire' },
+    { cat: 'crit',         label: 'Crit %' },
+    { cat: 'extra_attack', label: '+1 Att./tour' },
+  ];
+
+  const filterFn = CAT_FILTERS[cat] || CAT_FILTERS.all;
+
   const tierLabels = { 1: 'Tier 1 — Starters', 2: 'Tier 2', 3: 'Tier 3' };
-  const items = Object.values(EQUIPMENT);
+  const allItems = Object.values(EQUIPMENT).filter(filterFn);
   const byTier = {};
-  items.forEach(it => {
+  allItems.forEach(it => {
     if (!byTier[it.tier]) byTier[it.tier] = [];
     byTier[it.tier].push(it);
   });
 
-  return Object.keys(byTier).sort().map(tier => {
+  const filterTabsHtml = `<div id="item-filter-tabs">${
+    CAT_LABELS.map(({ cat: c, label }) =>
+      `<button class="item-filter-tab${c === cat ? ' active' : ''}" data-cat="${c}">${label}</button>`
+    ).join('')
+  }</div>`;
+
+  const tiersHtml = Object.keys(byTier).sort().map(tier => {
     const cards = byTier[tier].map(it => {
       const statsLines = Object.entries(it.stats || {}).map(([k, v]) => {
         if (k === 'manaOnSpellMax') return null;
         const lbl = STAT_LABELS[k] || k;
-        const suffix = ['armor','mr','lifeSteal','healEfficiency','goldSharePct','manaRegenPct'].includes(k) ? '%' : '';
+        const suffix = ['armor','mr','lifeSteal','healEfficiency','goldSharePct','manaRegenPct','critChance'].includes(k) ? '%' : '';
         return `<div class="ic-stat"><span class="ic-stat-lbl">${lbl}</span><span>+${v}${suffix}</span></div>`;
       }).filter(Boolean).join('');
 
@@ -285,7 +334,9 @@ function _renderItemsSection() {
     }).join('');
 
     return `<div class="items-tier-group"><div class="items-tier-title">${tierLabels[tier] || 'Tier ' + tier}</div><div class="items-grid">${cards}</div></div>`;
-  }).join('');
+  }).join('') || '<p class="heroes-empty">Aucun item dans cette catégorie.</p>';
+
+  return filterTabsHtml + tiersHtml;
 }
 
 // ============================================================
@@ -454,7 +505,17 @@ function _renderItemStatsSection() {
 
 function renderInfoScreen(tab) {
   const body = document.getElementById('heroes-body');
-  body.innerHTML = tab === 'items' ? _renderItemsSection() : _renderHeroesSection();
+  if (tab === 'items') {
+    body.innerHTML = _renderItemsSection(_infoItemsCat);
+    body.querySelector('#item-filter-tabs').addEventListener('click', e => {
+      const btn = e.target.closest('.item-filter-tab');
+      if (!btn) return;
+      _infoItemsCat = btn.dataset.cat;
+      renderInfoScreen('items');
+    });
+  } else {
+    body.innerHTML = _renderHeroesSection();
+  }
   document.querySelectorAll('.info-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
@@ -626,7 +687,10 @@ window.addEventListener('DOMContentLoaded', () => {
           heroes: p.heroes.map(h => ({
             name: h.name, portrait: h.portrait, colorFill: h.colorFill,
             kills: h.kills || 0, deaths: h.deaths || 0, assists: h.assists || 0,
-            totalGold: h.totalGoldEarned || h.gold, items: [...(h.items || [])]
+            totalGold: h.totalGoldEarned || h.gold,
+            damageDealt: Stats.getCurDamage(h.id),
+            healingDone: Stats.getCurHeals(h.id),
+            items: [...(h.items || [])]
           }))
         }))
       };

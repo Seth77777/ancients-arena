@@ -344,6 +344,30 @@ class InputHandler {
       r.hideMapHeroTooltip();
     }
 
+    // Splash preview — Stank Gros Calibre en mode attaque
+    if (g.actionMode === 'attack' && g.currentHero?.passive === 'gros_calibre') {
+      const target = cell ? g.getHeroAt(cell.x, cell.y) : null;
+      if (target && target.playerIdx !== g.currentHero.playerIdx && target.isAlive && target.position) {
+        const splash = [];
+        for (let dx = -4; dx <= 4; dx++) {
+          for (let dy = -4; dy <= 4; dy++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) <= 4) {
+              const cx = target.position.x + dx, cy = target.position.y + dy;
+              if (cx >= 0 && cx < MAP_SIZE && cy >= 0 && cy < MAP_SIZE) {
+                splash.push({ x: cx, y: cy });
+              }
+            }
+          }
+        }
+        r.highlightSplashCells = splash;
+      } else {
+        r.highlightSplashCells = [];
+      }
+      r.render();
+      return;
+    }
+    r.highlightSplashCells = [];
+
     if (g.actionMode !== 'spell') return;
     const spell = g.selectedSpell;
     if (!spell || spell.targetType === 'self' || spell.targetType === 'no_target' || spell.targetType === 'pm_sacrifice') return;

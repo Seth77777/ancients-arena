@@ -135,6 +135,9 @@ const Stats = (() => {
 
     getData() { return _data; },
 
+    getCurDamage(heroId) { const d = _cur.damage[heroId]; return d ? (d.phys + d.mag) : 0; },
+    getCurHeals(heroId)  { return _cur.heals[heroId] || 0; },
+
     getTotalGames() {
       return Object.values(_data.heroes).reduce((m, h) => Math.max(m, h.games), 0);
     },

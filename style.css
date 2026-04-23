@@ -1287,6 +1287,30 @@ body {
    ITEMS — Infos Générales
    ============================================================ */
 
+#item-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px 6px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.item-filter-tab {
+  background: #21262d;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 14px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.item-filter-tab:hover  { background: #2d333b; color: var(--text); }
+.item-filter-tab.active { background: #1c2541; border-color: #58a6ff; color: #58a6ff; }
+
 .items-tier-group {
   width: 100%;
 }
@@ -1720,7 +1744,9 @@ body {
 .sb-name { font-weight: bold; font-size: 0.9rem; min-width: 60px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sb-kda { font-size: 0.85rem; color: #8b949e; white-space: nowrap; }
 .sb-kda span { color: #e6edf3; font-weight: bold; }
-.sb-gold { font-size: 0.8rem; color: #f0c040; margin-left: auto; white-space: nowrap; }
+.sb-gold  { font-size: 0.8rem; color: #f0c040; margin-left: auto; white-space: nowrap; }
+.sb-dmg   { font-size: 0.8rem; color: #e05c5c; white-space: nowrap; }
+.sb-heal  { font-size: 0.8rem; color: #4caf7d; white-space: nowrap; }
 .sb-items { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
 .sb-item-icon { width: 22px; height: 22px; border-radius: 3px; object-fit: cover; }
 .sb-hero-info { flex: 1; min-width: 0; }
