@@ -128,7 +128,7 @@ const EQUIPMENT = {
   bouclier_protecteur_divin: { tier: 3, categories: ['support', 'bruiser'], name: 'Bouclier Protecteur Divin', icon: 'img/items/bouclier_protecteur_divin.png', combineCost: 300,
                                recipe: ['coeur_de_vie', 'small_antimagic_cape', 'small_armor'],
                                stats: { maxHP: 300, cdReduction: 1, armor: 10, mr: 10 },
-                               passive: 'Au début de chaque tour global, vos alliés à 7 cases ou moins gagnent un bouclier égal à 10% de vos HP max (se réinitialise chaque tour global).' },
+                               passive: 'Au début de chaque tour global, vos alliés à 6 cases ou moins gagnent un bouclier égal à 1,5% de vos HP max × le nombre de héros ennemis à 6 cases ou moins de vous. Se réactive à chaque tour global.' },
 
   coeur_du_monde:       { tier: 3, categories: ['support', 'mage'], name: 'Cœur du Monde',      icon: 'img/items/coeur_du_monde.png',       combineCost: 0,
                           recipe: ['baton_magique', 'coeur_de_courage', 'coeur_de_courage'],
@@ -173,6 +173,16 @@ const EQUIPMENT = {
   boule_de_piques:      { tier: 2, categories: ['bruiser'], name: 'Boule de Piques',        icon: 'img/items/boule_de_piques.png',      combineCost: 500, recipe: ['life_crystal'],
                           stats: { maxHP: 250 },
                           passive: 'Renvoie 20% des dégâts physiques subis (après calcul d\'armure) à l\'attaquant.' },
+
+  plastron_du_diable_immortel: { tier: 3, categories: ['bruiser'], name: 'Plastron du Diable Immortel', icon: 'img/items/plastron_du_diable_immortel.png', combineCost: 0,
+                                  recipe: ['moyenne_armure', 'coeur_de_vie', 'life_crystal'],
+                                  stats: { maxHP: 500, cdReduction: 1, armorPct: 15 },
+                                  passive: '2 tours après avoir subi des dégâts, inflige 7% de vos HP max aux ennemis à ≤5 cases en dégâts magiques et vous soigne de 150% des dégâts totaux infligés (après résistances).' },
+
+  couronne_du_gladiateur: { tier: 3, categories: ['bruiser', 'support'], name: 'Couronne du Gladiateur', icon: 'img/items/couronne_du_gladiateur.png', combineCost: 250,
+                            recipe: ['coeur_de_vie', 'moyenne_armure', 'regen_necklace'],
+                            stats: { maxHP: 250, hpRegenPct: 100, armorPct: 15 },
+                            passive: 'Lorsque l\'allié le plus proche de votre position subit des dégâts, vous redirigez 20% de ces dégâts (pré-résistances) vers vous, puis appliquez vos propres résistances.' },
 
   armure_de_stalnoth:   { tier: 3, categories: ['bruiser'], name: 'Armure de Stal\'noth',   icon: 'img/items/armure_de_stalnoth.png',   combineCost: 600,
                           recipe: ['boule_de_piques', 'plastron_brulant'],
@@ -244,6 +254,11 @@ const EQUIPMENT = {
                       recipe: ['short_sword'],
                       stats: { ad: 18 },
                       passive: 'Vos dégâts physiques appliquent Hémorragie pendant 1 tour aux cibles touchées (soins −50%).' },
+
+  epee_ensanglantee: { tier: 3, categories: ['dpt', 'bruiser', 'assassin'], name: 'Épée Ensanglantée', icon: 'img/items/epee_ensanglantee.png', combineCost: 200,
+                       recipe: ['grande_pioche', 'grosse_lame', 'sceptre_de_vie'],
+                       stats: { ad: 80, lifeSteal: 20 },
+                       passive: '25% des dégâts physiques infligés (après résistances) vous sont donnés sous forme de bouclier pendant 3 tours (stackable).' },
 
   epee_cinglante:  { tier: 2, categories: [], name: 'Épée Cinglante',         icon: 'img/items/epee_cinglante.png',  combineCost: 400,
                      recipe: ['short_sword', 'short_sword'],
@@ -395,6 +410,11 @@ const EQUIPMENT = {
                         recipe: ['petit_grimoire'],
                         stats: { ap: 30, cdReduction: 1 } },
 
+  focus_lointain:     { tier: 3, categories: ['mage'], name: 'Focus Lointain',             icon: 'img/items/focus_lointain.png',     combineCost: 450,
+                        recipe: ['livre_incantations', 'livre_incantations', 'petit_grimoire'],
+                        stats: { ap: 75, cdReduction: 2 },
+                        passive: 'Toucher un ennemi à plus de 5 cases avec un sort magique pose une marque. Le prochain sort magique sur cette cible ce tour inflige 15% de dégâts supplémentaires.' },
+
   catalyseur_noir:    { tier: 2, categories: ['mage', 'bruiser'], name: 'Catalyseur Noir', icon: 'img/items/catalyseur_noir.png',    combineCost: 150,
                         recipe: ['life_crystal', 'life_crystal', 'mana_crystal'],
                         stats: { maxHP: 300, maxMana: 350 },
@@ -403,6 +423,11 @@ const EQUIPMENT = {
   miroir_de_vie:      { tier: 2, categories: ['mage'], name: 'Miroir de Vie',             icon: 'img/items/miroir_de_vie.png',      combineCost: 250,
                         recipe: ['mana_necklace', 'petit_grimoire'],
                         stats: { ap: 25, manaRegenPct: 50 } },
+
+  echo_du_coeur:      { tier: 3, categories: ['mage', 'support'], name: 'Écho du Cœur',         icon: 'img/items/echo_du_coeur.png',      combineCost: 250,
+                        recipe: ['coeur_de_vie', 'miroir_de_vie'],
+                        stats: { ap: 35, cdReduction: 1, maxHP: 200, manaRegenPct: 125 },
+                        passive: 'Gagnez 35% des dégâts infligés aux champions ennemis (avant résistances) en charges. Consommez ces charges lors de vos soins ou boucliers pour les amplifier.' },
 
   blason_glorieux:    { tier: 3, categories: ['mage'], name: 'Blason Glorieux',           icon: 'img/items/blason_glorieux.png',    combineCost: 300,
                         recipe: ['miroir_de_vie', 'livre_incantations'],
@@ -445,8 +470,8 @@ const EQUIPMENT = {
 
   torche_sombre:      { tier: 3, categories: ['mage'], name: 'Torche Sombre',              icon: 'img/items/torche_sombre.png',      combineCost: 400,
                         recipe: ['grimoire_magique', 'grimoire_magique'],
-                        stats: { ap: 80, cdReduction: 1, maxMana: 500, manaRegenPct: 25 },
-                        passive: 'Réduit de 1 le CD de tous vos sorts lors de leur utilisation (minimum 1 ; minimum 2 pour les sorts infligeant un stun). Toucher un ennemi avec un sort lui inflige 20 + 0,02×AP dégâts magiques par tour pendant 3 tours.' },
+                        stats: { ap: 80, cdReduction: 1, maxMana: 500 },
+                        passive: 'Toucher un ennemi avec un sort lui inflige 20 + 0,1×AP dégâts magiques par tour pendant 3 tours.' },
 
   casque_necrometien: { tier: 3, categories: [], name: 'Casque du Nécromentien',        icon: 'img/items/casque_necrometien.png', combineCost: 600,
                         recipe: ['feu_follet', 'livre_incantations'],
@@ -544,7 +569,7 @@ const EQUIPMENT = {
   faux_bleue_du_mal:   { tier: 3, categories: ['dpt', 'bruiser'], name: 'Faux Bleue du Mal',  icon: 'img/items/faux_bleue_du_mal.png',   combineCost: 300,
                          recipe: ['blue_blade', 'grande_pioche', 'small_crit_cape'],
                          stats: { ad: 50, cdReduction: 1, critChance: 25 },
-                         passive: 'Vos attaques de base renforcées par un sort infligent 22% de dégâts bruts supplémentaires (AA + bonus) et vous restituent 50% de ces dégâts en mana.' },
+                         passive: 'Vos attaques de base renforcées par un sort infligent 22% de dégâts physiques supplémentaires (AA + bonus) et vous restituent 50% de ces dégâts en mana.' },
 };
 
 // Assign id to each item

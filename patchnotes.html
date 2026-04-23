@@ -317,16 +317,381 @@
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
   <div class="patch-tabs">
-    <button class="patch-tab active" onclick="showPatch('patch-22avr', this)">22 Avril 2026</button>
+    <button class="patch-tab active" onclick="showPatch('patch-23avr', this)">23 Avril 2026</button>
+    <button class="patch-tab" onclick="showPatch('patch-22avr', this)">22 Avril 2026</button>
     <button class="patch-tab" onclick="showPatch('patch-21avr', this)">21 Avril 2026</button>
     <button class="patch-tab" onclick="showPatch('patch-19avr', this)">19 Avril 2026</button>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
-<!-- PATCH 21 AVRIL 2026                                    -->
+<!-- PATCH 23 AVRIL 2026                                    -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="patch-22avr" class="patch-section active">
+<div id="patch-23avr" class="patch-section active">
+<div class="patch-body">
+
+  <!-- ══ COLONNE PRINCIPALE ══ -->
+  <div class="patch-main">
+
+    <!-- CORRECTIONS DE BUGS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">⚙</span> CORRECTIONS DE BUGS</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">Stank — Gros Calibre : dégâts splash incorrects</div>
+          <ul>
+            <li>Les ennemis proches de la cible recevaient <span class="down">1×AD</span> de dégâts splash, soit 4× plus que la cible principale (qui reçoit <span class="up">0,25×AD</span>).</li>
+            <li>Corrigé : les cibles splash reçoivent désormais exactement les mêmes dégâts que la cible principale.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Hornet — Tisse-tempête : −3 PM non appliqués</div>
+          <ul>
+            <li>Les −3 PM infligés par Tisse-tempête n'étaient pas correctement appliqués (notamment en mode en ligne).</li>
+            <li>Corrigé : le ralentissement passe désormais par le système de statusEffects, identique aux autres ralentissements.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Hornet — Lance Soyeuse : réactivation et cooldown</div>
+          <ul>
+            <li>Si Lance Soyeuse n'était pas réactivée dans le même tour, la réactivation au tour suivant était bloquée (distance et obstacles pris en compte à tort).</li>
+            <li>La réactivation est maintenant possible depuis n'importe où, sans condition de portée ni de ligne de vue.</li>
+            <li>Si la marque expirait sans réactivation, aucun cooldown n'était appliqué. Corrigé : le CD s'applique normalement à l'expiration.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Pibot — Batterie : activation involontaire de Station de Recharge</div>
+          <ul>
+            <li>Marcher sur une batterie activait le bonus d'attaque renforcée de Station de Recharge.</li>
+            <li>Corrigé : la collecte d'une batterie ne donne plus que le bonus de mana.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">En ligne — Logs de combat absents (J2)</div>
+          <ul>
+            <li>Les messages du journal de combat n'apparaissaient pas côté joueur 2 en mode en ligne.</li>
+            <li>Corrigé : les nouvelles entrées reçues dans l'état sérialisé sont maintenant affichées dans le log.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">En ligne — Timer bloqué à 120s (J2)</div>
+          <ul>
+            <li>Le timer de tour restait figé à 120s côté joueur 2 — aucun compte à rebours local ne tournait.</li>
+            <li>Corrigé : à chaque réception d'état, le joueur 2 démarre un compte à rebours local calé sur la valeur de l'hôte.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AJUSTEMENTS SYSTÈME -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> AJUSTEMENTS — SYSTÈME</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">Dash / Téléport — Cases adjacentes orthogonales uniquement</div>
+          <ul>
+            <li>Tous les sorts de dash ou téléport vers une case adjacente à une cible (Lance Soyeuse, Rappel, Nuit Infinie, etc.) utilisaient les 8 cases autour, diagonales comprises.</li>
+            <li>Corrigé : seules les 4 cases orthogonales (haut, bas, gauche, droite) sont désormais considérées.</li>
+            <li>La case d'arrivée est automatiquement la plus proche de la position actuelle du lanceur.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Fin de partie — Dégâts et soins dans le tableau</div>
+          <ul>
+            <li>Le tableau de fin de partie affiche maintenant les <span class="up">dégâts totaux infligés</span> et les <span class="up">soins totaux prodigués</span> par chaque héros.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AJUSTEMENTS ITEMS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> AJUSTEMENTS — ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card adj">
+          <img src="img/items/bouclier_protecteur_divin.png" alt="Bouclier Protecteur Divin">
+          <div class="item-card-name">Bouclier Protecteur Divin</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Bouclier Protecteur Divin</div>
+            <ul>
+              <li><span class="neu">Passif entièrement refondu :</span></li>
+              <li><span class="down">Ancien : alliés à ≤7 cases gagnent 10% HP max en bouclier.</span></li>
+              <li><span class="up">Nouveau : alliés à ≤6 cases gagnent 1,5% HP max × nombre d'ennemis à ≤6 cases de vous en bouclier (se réactive chaque tour global).</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/faux_bleue_du_mal.png" alt="Faux Bleue du Mal">
+          <div class="item-card-name">Faux Bleue du Mal</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Faux Bleue du Mal</div>
+            <ul>
+              <li><span class="neu">Type de dégâts du bonus 22% :</span> <span class="down">Bruts</span> → <span class="up">Physiques</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/magic_sword.png" alt="Épée Magique">
+          <div class="item-card-name">Épée Magique</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Épée Magique</div>
+            <ul>
+              <li><span class="up">Le bonus de dégâts magiques s'applique désormais aussi au bonus du sort qui a boosté l'attaque (ex : Station de Recharge de Pibot).</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="assets/heroes/stank.png" alt="Gros Calibre">
+          <div class="item-card-name">Gros Calibre</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Stank — Passif Gros Calibre</div>
+            <ul>
+              <li><span class="up">Les effets à l'impact (on-hit) s'appliquent désormais aux cibles splash :</span></li>
+              <li>Arc Perforant des Anges, Épée de l'Ange, Lame du Diable, Poignard de Dieu, Tueur de Dieux</li>
+              <li>Double proc avec Épée Double Feu inclus.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AJUSTEMENT GLOBAL -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> AJUSTEMENTS — HÉROS GLOBAUX</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">Regen HP — Tous les héros</div>
+          <ul>
+            <li>La régénération de HP de base de tous les héros est augmentée de <span class="up">+20 HP/tour</span>.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NERFS HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">▼</span> NERFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/grolith.png" alt="Grolith">
+          <div class="hero-card-name">Grolith</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Grolith</div>
+            <ul>
+              <li><span class="down">Éboulement — Indisponible au 1er tour (CD initial de 1)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/electro.png" alt="Electro">
+          <div class="hero-card-name">Electro</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Electro</div>
+            <ul>
+              <li><span class="down">Regen Mana : <strong>35 → 20</strong>/tour</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BUFFS HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">▲</span> BUFFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/ondine.png" alt="Ondine">
+          <div class="hero-card-name">Ondine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Ondine</div>
+            <ul>
+              <li><span class="up">AD de base : <strong>50 → 75</strong></span></li>
+              <li><span class="up">Fendre la lame — Dégâts bruts : <strong>30 + 0,2 AP → 50 + 0,5 AD</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NOUVEAUX ITEMS -->
+    <div>
+      <div class="section-title"><span class="section-icon new">★</span> NOUVEAUX ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card new">
+          <img src="img/items/couronne_du_gladiateur.png" alt="Couronne du Gladiateur">
+          <div class="item-card-name">Couronne du Gladiateur</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Couronne du Gladiateur (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Cœur de Vie + Moyenne Armure + Collier Régénérant + 250g</li>
+              <li><span class="up">+250 HP · +100% Regen HP · +15% Armure</span></li>
+              <li>Passif : Lorsque l'allié le plus proche subit des dégâts, redirigez 20% de ces dégâts (pré-résistances) vers vous (vos résistances s'appliquent)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/epee_ensanglantee.png" alt="Épée Ensanglantée">
+          <div class="item-card-name">Épée Ensanglantée</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Épée Ensanglantée (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Grande Pioche + Grosse Lame + Sceptre de Vie + 200g</li>
+              <li><span class="up">+80 AD · +20% Vol de vie</span></li>
+              <li>Passif : 25% des dégâts physiques infligés (après résistances) → bouclier stackable 3 tours</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/focus_lointain.png" alt="Focus Lointain">
+          <div class="item-card-name">Focus Lointain</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Focus Lointain (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Livre d'Incantations × 2 + Petit Grimoire + 450g</li>
+              <li><span class="up">+75 AP · −2 CD</span></li>
+              <li>Passif : Sort magique à >5 cases → marque. Prochain sort magique sur la cible ce tour : +15% dégâts</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/echo_du_coeur.png" alt="Écho du Cœur">
+          <div class="item-card-name">Écho du Cœur</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Écho du Cœur (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Cœur de Vie + Miroir de Vie + 250g</li>
+              <li><span class="up">+35 AP · −1 CD · +200 HP · +125% Regen Mana</span></li>
+              <li>Passif : 35% des dégâts infligés aux ennemis → charges. Soigner/bouclier un allié consomme et ajoute ces charges</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/plastron_du_diable_immortel.png" alt="Plastron du Diable Immortel">
+          <div class="item-card-name">Plastron du Diable Immortel</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Plastron du Diable Immortel (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Moyenne Armure + Cœur de Vie + Cristal de Vie</li>
+              <li><span class="up">+500 HP · −1 CD · +15% Armure</span></li>
+              <li>Passif : 2 tours après avoir subi des dégâts, inflige 7% HP max aux ennemis à ≤5 cases (magique) · soin de 150% des dégâts infligés</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS AJUSTÉS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> ITEMS AJUSTÉS</div>
+      <div class="items-grid">
+
+        <div class="item-card adj">
+          <img src="img/items/torche_sombre.png" alt="Torche Sombre">
+          <div class="item-card-name">Torche Sombre</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Torche Sombre</div>
+            <ul>
+              <li><span class="down">Retiré : +25% Regen Mana</span></li>
+              <li><span class="down">Passif : réduction CD retirée du passif (conservée en stats)</span></li>
+              <li><span class="up">DOT : <strong>20 + 0,02 AP → 20 + 0,1 AP</strong> dégâts magiques/tour</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-main -->
+
+  <!-- ══ COLONNE SECONDAIRE ══ -->
+  <div class="patch-side">
+
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> HÉROS CONCERNÉS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/stank.png" alt="Stank">
+          <div class="hero-card-name">Stank</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Stank</div>
+            <ul>
+              <li><span class="neu">Gros Calibre : dégâts splash = dégâts cible principale.</span></li>
+              <li><span class="up">Gros Calibre : on-hits s'appliquent aux cibles splash.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/hornet.png" alt="Hornet">
+          <div class="hero-card-name">Hornet</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Hornet</div>
+            <ul>
+              <li><span class="neu">Tisse-tempête : −3 PM correctement appliqués.</span></li>
+              <li><span class="neu">Lance Soyeuse : réactivation sans restriction de portée/obstacles.</span></li>
+              <li><span class="neu">Lance Soyeuse : CD appliqué à l'expiration de la marque.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/pibot.png" alt="Pibot">
+          <div class="hero-card-name">Pibot</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Pibot</div>
+            <ul>
+              <li><span class="neu">Batterie : ne déclenche plus Station de Recharge.</span></li>
+              <li><span class="up">Épée Magique amplifie le bonus de Station de Recharge.</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-side -->
+
+</div><!-- /patch-body -->
+</div><!-- /patch-23avr -->
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- PATCH 22 AVRIL 2026                                    -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="patch-22avr" class="patch-section">
 <div class="patch-body">
 
   <!-- ══ COLONNE PRINCIPALE ══ -->
