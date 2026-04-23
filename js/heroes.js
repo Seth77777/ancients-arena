@@ -500,20 +500,20 @@ HERO_TYPES['mage_2'] = {
   id: 'mage_2', name: 'Vadro', role: 'MAGE', roleId: 'mage', roleOrder: 3,
   portrait: 'assets/heroes/vadro.png', passive: 'vadro_passive',
   colorFill: '#154360', colorStroke: '#2980b9',
-  maxHP: 2100, maxMana: 280, hpRegen: 40, manaRegen: 40,
+  maxHP: 2100, maxMana: 390, hpRegen: 40, manaRegen: 20,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 50, pm: 4, po: 4,
   spells: [
     {
       id: 'vadro_q', name: 'Morsure',
       description: 'Inflige 30 + 0.8 AP dégâts magiques et applique Hémorragie.',
-      manaCost: 70, range: 6, cooldown: 4,
+      manaCost: 90, range: 6, cooldown: 4,
       damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.8,
       targetType: 'enemy_hero', zone: null, effects: [{ type: 'hemorrhage', turns: 1 }]
     },
     {
       id: 'vadro_w', name: 'Flaque de sang',
       description: 'Zone 1-3-1 : inflige 60 + 0.7 AP dégâts magiques à tous les ennemis touchés.',
-      manaCost: 80, range: 5, cooldown: 5,
+      manaCost: 130, range: 5, cooldown: 5,
       damageType: 'magical', baseDamage: 60, adRatio: 0, apRatio: 0.7,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 }, effects: []
     },
@@ -842,7 +842,7 @@ HERO_TYPES['dpt_4'] = {
     {
       id: 'cupidon_r', name: 'L\'amour fou',
       description: 'Zone 1-3-5-3-1 : les héros ennemis se déplacent dans des directions aléatoires lorsqu\'ils traversent cette zone.',
-      manaCost: 100, range: 5, cooldown: 7, cdMin: 2,
+      manaCost: 100, range: 5, cooldown: 12, cdMin: 2,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'diamond_zone', zone: { size: 2 }, effects: []
     }
@@ -1137,8 +1137,6 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     quackshotCharges: {},  // enemyInstanceId → charge count
     quackshotCurrentTarget: null,  // current auto-attack target instanceId
 
-    // Blason Glorieux passive state
-    blasonGlorieuxUsedThisTurn: false,  // limit to 1 activation per turn
 
     // Focus Lointain passive state
     focusLointainMarks: {},  // { targetInstanceId: true } — reset each hero turn

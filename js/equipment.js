@@ -141,7 +141,7 @@ const EQUIPMENT = {
   ceinture_de_vie:      { tier: 2, categories: ['bruiser'], name: 'Ceinture de Vie',        icon: 'img/items/ceinture_de_vie.png',      combineCost: 450, recipe: ['life_crystal'],
                           stats: { maxHP: 280 } },
 
-  armure_esprit_magique: { tier: 3, categories: ['bruiser'], name: 'Armure de l\'Esprit Magique', icon: 'img/items/armure_esprit_magique.png', combineCost: 550,
+  armure_esprit_magique: { tier: 3, notInUtil: true, categories: ['bruiser'], name: 'Armure de l\'Esprit Magique', icon: 'img/items/armure_esprit_magique.png', combineCost: 550,
                            recipe: ['coeur_de_vie', 'cape_antimagie_moyenne'],
                            stats: { maxHP: 550, mr: 15, healEfficiency: 25 },
                            passive: 'Tous vos soins et régénérations sont améliorés de 25%.' },
@@ -174,7 +174,7 @@ const EQUIPMENT = {
                           stats: { maxHP: 250 },
                           passive: 'Renvoie 20% des dégâts physiques subis (après calcul d\'armure) à l\'attaquant.' },
 
-  plastron_du_diable_immortel: { tier: 3, categories: ['bruiser'], name: 'Plastron du Diable Immortel', icon: 'img/items/plastron_du_diable_immortel.png', combineCost: 0,
+  plastron_du_diable_immortel: { tier: 3, notInUtil: true, categories: ['bruiser'], name: 'Plastron du Diable Immortel', icon: 'img/items/plastron_du_diable_immortel.png', combineCost: 0,
                                   recipe: ['moyenne_armure', 'coeur_de_vie', 'life_crystal'],
                                   stats: { maxHP: 500, cdReduction: 1, armorPct: 15 },
                                   passive: '2 tours après avoir subi des dégâts, inflige 7% de vos HP max aux ennemis à ≤5 cases en dégâts magiques et vous soigne de 150% des dégâts totaux infligés (après résistances).' },
@@ -189,7 +189,7 @@ const EQUIPMENT = {
                           stats: { maxHP: 450, armor: 17 },
                           passive: 'Subir des dégâts physiques applique Hémorragie sur l\'attaquant. Renvoie (20 + max(0, Armure×0,2))% des dégâts physiques subis (avant calcul d\'armure) à l\'attaquant.' },
 
-  pistolet_magique:     { tier: 3, categories: ['dpt', 'mage'], name: 'Pistolet Magique',    icon: 'img/items/pistolet_magique.png',  combineCost: 400,
+  pistolet_magique:     { tier: 3, notInUtil: true, categories: ['dpt', 'mage'], name: 'Pistolet Magique',    icon: 'img/items/pistolet_magique.png',  combineCost: 400,
                           recipe: ['sceptre_de_vie', 'alternateur_de_puissance', 'petit_grimoire'],
                           stats: { ad: 40, ap: 80, lifeSteal: 10 },
                           passive: 'Vos sorts ayant à la fois un ratio AD et un ratio AP infligent 20% de dégâts supplémentaires.' },
@@ -197,7 +197,7 @@ const EQUIPMENT = {
   lame_antimagie:       { tier: 2, categories: [], name: 'Lame Antimagie',         icon: 'img/items/lame_antimagie.png',       combineCost: 350, recipe: ['short_sword', 'small_antimagic_cape'],
                           stats: { ad: 30, mr: 10 } },
 
-  combattant_antimage:  { tier: 3, categories: ['dpt', 'bruiser', 'assassin'], name: 'Combattant Anti-Mage',  icon: 'img/items/combattant_antimage.png',  combineCost: 500,
+  combattant_antimage:  { tier: 3, notInUtil: true, categories: ['dpt', 'bruiser', 'assassin'], name: 'Combattant Anti-Mage',  icon: 'img/items/combattant_antimage.png',  combineCost: 500,
                           recipe: ['lame_antimagie', 'lame_antimagie'],
                           stats: { ad: 60, cdReduction: 1, mr: 22 },
                           passive: 'Réduit tous les dégâts magiques reçus de 0,1×AD (appliqué après calcul des résistances).' },
@@ -205,7 +205,7 @@ const EQUIPMENT = {
   sceptre_de_vie:  { tier: 2, categories: [], name: 'Sceptre de Vie',          icon: 'img/items/sceptre_de_vie.png',   combineCost: 500, recipe: ['short_sword'],
                      stats: { ad: 20, lifeSteal: 10 } },
 
-  lame_du_diable:  { tier: 3, categories: ['dpt'], name: 'Lame du Diable',     icon: 'img/items/lame_du_diable.png',  combineCost: 450,
+  lame_du_diable:  { tier: 3, notInUtil: true, categories: ['dpt'], name: 'Lame du Diable',     icon: 'img/items/lame_du_diable.png',  combineCost: 450,
                      recipe: ['petit_arc', 'sceptre_de_vie'],
                      stats: { ad: 40, extraAutoAttacks: 1, lifeSteal: 12 },
                      passive: 'Vos auto-attaques infligent des dégâts magiques bonus égaux à 7% des HP actuels de la cible.' },
@@ -255,7 +255,7 @@ const EQUIPMENT = {
                       stats: { ad: 18 },
                       passive: 'Vos dégâts physiques appliquent Hémorragie pendant 1 tour aux cibles touchées (soins −50%).' },
 
-  epee_ensanglantee: { tier: 3, categories: ['dpt', 'bruiser', 'assassin'], name: 'Épée Ensanglantée', icon: 'img/items/epee_ensanglantee.png', combineCost: 200,
+  epee_ensanglantee: { tier: 3, notInUtil: true, categories: ['dpt', 'bruiser', 'assassin'], name: 'Épée Ensanglantée', icon: 'img/items/epee_ensanglantee.png', combineCost: 200,
                        recipe: ['grande_pioche', 'grosse_lame', 'sceptre_de_vie'],
                        stats: { ad: 80, lifeSteal: 20 },
                        passive: '25% des dégâts physiques infligés (après résistances) vous sont donnés sous forme de bouclier pendant 3 tours (stackable).' },
@@ -265,7 +265,7 @@ const EQUIPMENT = {
                      stats: { ad: 25 },
                      passive: 'Chaque sort ou attaque de base réduit l\'armure de la cible de 3% de son armure totale (max 20%) pendant 5 tours.' },
 
-  couperet_du_demon: { tier: 3, categories: ['dpt', 'bruiser'], name: 'Couperet du Démon', icon: 'img/items/couperet_du_demon.png', combineCost: 400,
+  couperet_du_demon: { tier: 3, notInUtil: true, categories: ['dpt', 'bruiser'], name: 'Couperet du Démon', icon: 'img/items/couperet_du_demon.png', combineCost: 400,
                        recipe: ['epee_cinglante', 'white_walker_hammer'],
                        stats: { ad: 55, cdReduction: 1, maxHP: 350 },
                        passive: 'Fuite — Chaque attaque de base infligée à un ennemi vous octroie 1 PM supplémentaire ce tour. Brise Armure — Chaque sort ou attaque de base réduit l\'armure de la cible de 6% de son armure totale (max 30%) pendant 5 tours.' },
@@ -292,9 +292,6 @@ const EQUIPMENT = {
   mana_necklace:   { tier: 1, categories: [], name: 'Collier de Mana',       icon: 'img/items/mana_necklace.png',   combineCost: 240, recipe: [],
                      stats: { manaRegenPct: 25 } },
 
-  time_glass:      { tier: 1, categories: [], name: 'Sablier Temporel',      icon: 'img/items/time_glass.png',      combineCost: 500, recipe: [],
-                     stats: { cdReduction: 1 },
-                     passive: 'Passif Unique — Réduit de 1 le CD de tous vos sorts lors de leur utilisation (minimum 1 ; minimum 2 pour les sorts infligeant un stun). Ne se cumule pas avec plusieurs Sabliers Temporels.' },
 
 
   small_crit_cape:      { tier: 1, categories: [], name: 'Petite Cape Critique',   icon: 'img/items/small_crit_cape.png',   combineCost: 400, recipe: [],
@@ -410,7 +407,7 @@ const EQUIPMENT = {
                         recipe: ['petit_grimoire'],
                         stats: { ap: 30, cdReduction: 1 } },
 
-  focus_lointain:     { tier: 3, categories: ['mage'], name: 'Focus Lointain',             icon: 'img/items/focus_lointain.png',     combineCost: 450,
+  focus_lointain:     { tier: 3, notInUtil: true, categories: ['mage'], name: 'Focus Lointain',             icon: 'img/items/focus_lointain.png',     combineCost: 450,
                         recipe: ['livre_incantations', 'livre_incantations', 'petit_grimoire'],
                         stats: { ap: 75, cdReduction: 2 },
                         passive: 'Toucher un ennemi à plus de 5 cases avec un sort magique pose une marque. Le prochain sort magique sur cette cible ce tour inflige 15% de dégâts supplémentaires.' },
@@ -432,9 +429,9 @@ const EQUIPMENT = {
   blason_glorieux:    { tier: 3, categories: ['mage'], name: 'Blason Glorieux',           icon: 'img/items/blason_glorieux.png',    combineCost: 300,
                         recipe: ['miroir_de_vie', 'livre_incantations'],
                         stats: { ap: 60, manaRegenPct: 120, cdReduction: 1 },
-                        passive: 'Infliger un débuff à un ennemi lui inflige également 10% de ses HP max en dégâts magiques.' },
+                        passive: 'Chaque débuff infligé par un sort compte pour 4% des HP max de la cible en dégâts magiques (ex : slow + hémorragie = 8%). S\'applique à toutes les cibles touchées.' },
 
-  poignard_de_dieu:   { tier: 3, categories: ['mage', 'bruiser'], name: 'Poignard de Dieu',    icon: 'img/items/poignard_de_dieu.png',   combineCost: 350,
+  poignard_de_dieu:   { tier: 3, notInUtil: true, categories: ['mage', 'bruiser'], name: 'Poignard de Dieu',    icon: 'img/items/poignard_de_dieu.png',   combineCost: 350,
                         recipe: ['livre_incantations', 'baton_magique', 'petit_arc'],
                         stats: { maxHP: 180, ap: 80, cdReduction: 1, extraAutoAttacks: 1 },
                         passive: 'Vos attaques de base infligent 0,35×AP dégâts magiques supplémentaires (n\'active pas les passifs d\'items liés aux attaques de base).' },
@@ -443,7 +440,7 @@ const EQUIPMENT = {
                         recipe: ['petit_grimoire', 'life_crystal'],
                         stats: { ap: 30, maxHP: 200 } },
 
-  oeil_demoniaque:    { tier: 3, categories: ['mage', 'bruiser'], name: 'Oeil Démoniaque',      icon: 'img/items/oeil_demoniaque.png',    combineCost: 350,
+  oeil_demoniaque:    { tier: 3, notInUtil: true, categories: ['mage', 'bruiser'], name: 'Oeil Démoniaque',      icon: 'img/items/oeil_demoniaque.png',    combineCost: 350,
                         recipe: ['masque_hante', 'livre_incantations'],
                         stats: { ap: 70, cdReduction: 1, maxHP: 200, lifeSteal: 10 },
                         passive: 'Chaque source de dégâts magiques inflige des dégâts bruts supplémentaires équivalents à 7% des dégâts magiques infligés.' },
@@ -463,17 +460,17 @@ const EQUIPMENT = {
                         stats: { ap: 65, maxHP: 400 },
                         passive: 'Vos dégâts magiques (hors objets) ralentissent les cibles de 1 PM pendant 1 tour (max 2 stacks par cible via cet item).' },
 
-  sceptre_du_malin:   { tier: 3, categories: ['mage'], name: 'Sceptre du Malin',           icon: 'img/items/sceptre_du_malin.png',   combineCost: 600,
+  sceptre_du_malin:   { tier: 3, notInUtil: true, categories: ['mage'], name: 'Sceptre du Malin',           icon: 'img/items/sceptre_du_malin.png',   combineCost: 600,
                         recipe: ['grimoire_magique', 'baton_magique'],
                         stats: { ap: 90, cdReduction: 1, maxMana: 600 },
                         passive: 'Réduit de 1 le CD de votre ultime lors de son utilisation (minimum 1). Si votre ultime inflige des dégâts magiques, les ennemis touchés reçoivent 20 + 0,15×AP dégâts magiques supplémentaires.' },
 
-  torche_sombre:      { tier: 3, categories: ['mage'], name: 'Torche Sombre',              icon: 'img/items/torche_sombre.png',      combineCost: 400,
+  torche_sombre:      { tier: 3, notInUtil: true, categories: ['mage'], name: 'Torche Sombre',              icon: 'img/items/torche_sombre.png',      combineCost: 400,
                         recipe: ['grimoire_magique', 'grimoire_magique'],
                         stats: { ap: 80, cdReduction: 1, maxMana: 500 },
                         passive: 'Toucher un ennemi avec un sort lui inflige 20 + 0,1×AP dégâts magiques par tour pendant 3 tours.' },
 
-  casque_necrometien: { tier: 3, categories: [], name: 'Casque du Nécromentien',        icon: 'img/items/casque_necrometien.png', combineCost: 600,
+  casque_necrometien: { tier: 3, notInUtil: true, categories: [], name: 'Casque du Nécromentien',        icon: 'img/items/casque_necrometien.png', combineCost: 600,
                         recipe: ['feu_follet', 'livre_incantations'],
                         stats: { ap: 75, cdReduction: 1, pm: 1 },
                         passive: 'Toucher Magique — Toucher une cible avec un sort infligeant des dégâts magiques vous donne +1 PM pour ce tour (une fois par sort).' },
@@ -500,10 +497,10 @@ const EQUIPMENT = {
                          recipe: ['small_armor', 'mana_crystal'],
                          stats: { maxMana: 130, manaRegen: 10, armor: 13 } },
 
-  gantelet_refroidissant: { tier: 3, categories: ['bruiser'], name: 'Gantelet Refroidissant', icon: 'img/items/gantelet_refroidissant.png', combineCost: 0,
+  gantelet_refroidissant: { tier: 3, notInUtil: true, categories: ['bruiser'], name: 'Gantelet Refroidissant', icon: 'img/items/gantelet_refroidissant.png', combineCost: 0,
                             recipe: ['bouclier_gele', 'blue_blade'],
                             stats: { maxMana: 250, manaRegen: 15, cdReduction: 1, armor: 15 },
-                            passive: 'Gelure — Vos attaques de base renforcées infligent 15% de dégâts supplémentaires et ralentissent la cible (−1 PM au prochain tour). La zone autour de la cible augmente avec votre armure totale (≥20% : 1-3-1 ; ≥30% : 1-3-5-3-1, cappé à 40%).' },
+                            passive: 'Gelure — Vos attaques de base renforcées ralentissent la cible (−1 PM au prochain tour). La zone autour de la cible augmente avec votre armure totale (≥20% : 1-3-1 ; ≥30% : 1-3-5-3-1, cappé à 40%). De plus, inflige 3×Armure% dégâts magiques supplémentaires (ex : 35% armure → 105 dégâts).' },
 
   couronne_de_la_reine: { tier: 3, categories: ['support', 'mage'], name: 'Couronne de la Reine', icon: 'img/items/couronne_de_la_reine.png', combineCost: 200,
                           recipe: ['coeur_de_courage', 'mana_tear', 'life_crystal'],
@@ -515,7 +512,7 @@ const EQUIPMENT = {
                          stats: { maxHP: 250, maxMana: 300, manaRegenPct: 125, healEfficiency: 15, manaOnSpell: 40, manaOnSpellMax: 700 },
                          passive: 'Vous gagnez 80 golds supplémentaires par tour hors zone à golds. Vos soins sont augmentés de 3% de votre Mana max.' },
 
-  sceptre_de_mana: { tier: 3, categories: ['mage'], name: 'Sceptre de Mana',         icon: 'img/items/sceptre_de_mana.png',     combineCost: 450,
+  sceptre_de_mana: { tier: 3, notInUtil: true, categories: ['mage'], name: 'Sceptre de Mana',         icon: 'img/items/sceptre_de_mana.png',     combineCost: 450,
                      recipe: ['grimoire_magique', 'mana_tear', 'petit_grimoire'],
                      stats: { ap: 60, cdReduction: 1, maxMana: 300, manaRegenPct: 125, manaOnSpell: 40, manaOnSpellMax: 700 },
                      passive: 'Chaque sort lancé augmente votre Mana max de 40 (max +700 au total). Lorsque le cap est atteint, le Sceptre se transforme en Sceptre de l\'Ange.' },
@@ -525,7 +522,7 @@ const EQUIPMENT = {
                      stats: { ap: 60, cdReduction: 1, maxMana: 300, manaRegenPct: 125, manaOnSpell: 40, manaOnSpellMax: 700 },
                      passive: 'Solde de mana — Vos sorts coûtent 15% de mana en moins. Dernier Recours — Lorsque vos HP tombent sous 30%, vous gagnez un bouclier égal à 35% de votre mana actuel pendant 3 tours (CD 8 tours).' },
 
-  epee_de_mana:    { tier: 3, categories: ['dpt'], name: 'Épée de Mana',             icon: 'img/items/epee_de_mana.png',        combineCost: 500,
+  epee_de_mana:    { tier: 3, notInUtil: true, categories: ['dpt'], name: 'Épée de Mana',             icon: 'img/items/epee_de_mana.png',        combineCost: 500,
                      recipe: ['mana_tear', 'marteau_sinad'],
                      stats: { ad: 35, cdReduction: 1, maxMana: 200, manaRegenPct: 125, manaOnSpell: 40, manaOnSpellMax: 700 },
                      passive: 'Chaque sort lancé augmente votre Mana max de 40 (max +700 au total). Lorsque le cap est atteint, l\'Épée se transforme en Épée de l\'Ange.' },
@@ -537,39 +534,39 @@ const EQUIPMENT = {
 
   // ─── TIER 3 — Assassin ──────────────────────────────────────
 
-  lame_de_nargoth:     { tier: 3, categories: ['assassin'], name: 'Lame de Nargoth',          icon: 'img/items/lame_de_nargoth.png',     combineCost: 300,
+  lame_de_nargoth:     { tier: 3, notInUtil: true, categories: ['assassin'], name: 'Lame de Nargoth',          icon: 'img/items/lame_de_nargoth.png',     combineCost: 300,
                          recipe: ['black_blade', 'white_walker_hammer'],
                          stats: { ad: 80, cdReduction: 1, maxHP: 250 },
                          passive: 'Ignore 7% d\'armure adverse. Vigilance Sombre : si la cible a moins de 15% d\'armure, vos dégâts sont augmentés de 10%. Chaque attaque de base infligée à un ennemi vous octroie 1 PM ce tour.' },
 
   // ─── TIER 3 — Mage ──────────────────────────────────────────
 
-  livre_des_morts_vivants: { tier: 3, categories: ['mage'], name: 'Livre des Morts-Vivants', icon: 'img/items/livre_des_morts_vivants.png', combineCost: 550,
+  livre_des_morts_vivants: { tier: 3, notInUtil: true, categories: ['mage'], name: 'Livre des Morts-Vivants', icon: 'img/items/livre_des_morts_vivants.png', combineCost: 550,
                              recipe: ['boule_du_demon', 'baton_magique'],
                              stats: { ap: 80, cdReduction: 1, maxHP: 150 },
                              passive: 'Vos dégâts magiques appliquent Hémorragie à la cible pendant 1 tour (soins −50%).' },
 
-  magic_sword:         { tier: 3, categories: ['mage'], name: 'Épée Magique',              icon: 'img/items/magic_sword.png',         combineCost: 500,
+  magic_sword:         { tier: 3, notInUtil: true, categories: ['mage'], name: 'Épée Magique',              icon: 'img/items/magic_sword.png',         combineCost: 500,
                          recipe: ['baton_magique', 'blue_blade'],
                          stats: { ap: 55, cdReduction: 1 },
-                         passive: 'Vos attaques de base renforcées par un sort infligent (15 + 0,05×AP)% de dégâts magiques supplémentaires.' },
+                         passive: 'Vos attaques de base renforcées par un sort infligent 0,75×AP dégâts magiques supplémentaires.' },
 
   // ─── TIER 3 — Bruiser / Tank ────────────────────────────────
 
-  holy_trinity:        { tier: 3, categories: ['bruiser'], name: 'Trinité Sacrée',            icon: 'img/items/holy_trinity.png',        combineCost: 350,
+  holy_trinity:        { tier: 3, notInUtil: true, categories: ['bruiser'], name: 'Trinité Sacrée',            icon: 'img/items/holy_trinity.png',        combineCost: 350,
                          recipe: ['white_walker_hammer', 'blue_blade'],
                          stats: { maxHP: 350, ad: 40, cdReduction: 1, maxMana: 100 },
-                         passive: 'Chaque attaque de base infligée à un ennemi vous octroie 1 PM ce tour. Vos attaques renforcées par un sort infligent 22% de dégâts supplémentaires.' },
+                         passive: 'Chaque attaque de base infligée à un ennemi vous octroie 1 PM ce tour (1 fois par tour). Vos attaques renforcées par un sort infligent 1×AD dégâts physiques supplémentaires.' },
 
-  echo_du_malin:       { tier: 3, categories: ['mage'], name: 'Écho du Malin',              icon: 'img/items/echo_du_malin.png',       combineCost: 300,
+  echo_du_malin:       { tier: 3, notInUtil: true, categories: ['mage'], name: 'Écho du Malin',              icon: 'img/items/echo_du_malin.png',       combineCost: 300,
                          recipe: ['alternateur_de_puissance', 'grimoire_magique'],
                          stats: { ap: 100, cdReduction: 1, maxMana: 600 },
                          passive: 'Vos sorts à dégâts magiques infligent 0,15×AP dégâts magiques supplémentaires à la cible et aux ennemis à 5 cases ou moins (CD : 3 tours).' },
 
-  faux_bleue_du_mal:   { tier: 3, categories: ['dpt', 'bruiser'], name: 'Faux Bleue du Mal',  icon: 'img/items/faux_bleue_du_mal.png',   combineCost: 300,
+  faux_bleue_du_mal:   { tier: 3, notInUtil: true, categories: ['dpt', 'bruiser'], name: 'Faux Bleue du Mal',  icon: 'img/items/faux_bleue_du_mal.png',   combineCost: 300,
                          recipe: ['blue_blade', 'grande_pioche', 'small_crit_cape'],
                          stats: { ad: 50, cdReduction: 1, critChance: 25 },
-                         passive: 'Vos attaques de base renforcées par un sort infligent 22% de dégâts physiques supplémentaires (AA + bonus) et vous restituent 50% de ces dégâts en mana.' },
+                         passive: 'Vos attaques de base renforcées par un sort infligent 0,75×AD dégâts physiques supplémentaires.' },
 };
 
 // Assign id to each item

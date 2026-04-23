@@ -200,6 +200,7 @@ class GameState {
     this.globalTurn    = 1;
     this.heroTurnIndex = 0;
     this.log           = [];
+    this.logIndex      = 0;   // monotonically increasing, never resets
     this.winner        = null;
 
     // Per-hero-turn state
@@ -420,6 +421,7 @@ class GameState {
     hero.hornetIsReactivation = {};
     hero._titanHeartThisTurn  = new Set();
     hero._plaqueGolemDodgedThisTurn = false;
+    hero._walkerPMUsedThisTurn      = false;
     if ((hero._echoCooldown || 0) > 0) hero._echoCooldown--;
     this.canBuy             = true;
     this.actionMode         = null;
@@ -632,10 +634,6 @@ class GameState {
       hero.cupidonAttackedThisTurn = new Set();
     }
 
-    // Blason Glorieux : réinitialiser le flag d'utilisation par tour
-    if (hero.items.includes('blason_glorieux')) {
-      hero.blasonGlorieuxUsedThisTurn = false;
-    }
 
     // Focus Lointain : réinitialiser les marques au début de chaque tour héros
     if (hero.items.includes('focus_lointain')) {
@@ -1050,21 +1048,55 @@ class GameState {
     return true;
   }
 
-  // Cost to buy: combineCost + coût des composants manquants (les possédés seront consommés)
+  // Coût récursif : crédite les sous-composants possédés même pour les intermédiaires manquants
+  _missingCostRecursive(ownedCopy, recipe) {
+    let cost = 0;
+    for (const cId of recipe) {
+      const idx = ownedCopy.indexOf(cId);
+      if (idx !== -1) {
+        ownedCopy.splice(idx, 1);
+      } else {
+        const comp = EQUIPMENT[cId];
+        cost += comp.combineCost + this._missingCostRecursive(ownedCopy, comp.recipe);
+      }
+    }
+    return cost;
+  }
+
   getBuyCost(hero, itemId) {
     const item = EQUIPMENT[itemId];
     if (!item.recipe.length) return item.combineCost;
-    const ownedCopy = [...hero.items];
-    let missingCost = 0;
-    for (const cId of item.recipe) {
-      const idx = ownedCopy.indexOf(cId);
+    return item.combineCost + this._missingCostRecursive([...hero.items], item.recipe);
+  }
+
+  // Consomme les composants récursivement (sous-composants si l'intermédiaire est absent)
+  _consumeComponents(hero, recipe) {
+    for (const cId of recipe) {
+      const idx = hero.items.indexOf(cId);
       if (idx !== -1) {
-        ownedCopy.splice(idx, 1); // possédé → sera consommé, pas de coût
+        hero.items.splice(idx, 1);
+        Object.entries(EQUIPMENT[cId].stats).forEach(([stat, val]) => {
+          hero[stat] -= val;
+          if (stat === 'pm') this.movementLeft = Math.max(0, this.movementLeft - val);
+          if (stat === 'extraAutoAttacks') this.autoAttacksAllowed = Math.max(1, this.autoAttacksAllowed - val);
+        });
+        hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP);
+        hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
       } else {
-        missingCost += _itemTotalCost(cId); // manquant → ajouter au coût
+        this._consumeComponents(hero, EQUIPMENT[cId].recipe);
       }
     }
-    return item.combineCost + missingCost;
+  }
+
+  // Compte les slots d'inventaire libérés récursivement
+  _slotsFreedRecursive(ownedCopy, recipe) {
+    let freed = 0;
+    for (const cId of recipe) {
+      const idx = ownedCopy.indexOf(cId);
+      if (idx !== -1) { ownedCopy.splice(idx, 1); freed++; }
+      else { freed += this._slotsFreedRecursive(ownedCopy, EQUIPMENT[cId].recipe); }
+    }
+    return freed;
   }
 
   buyItem(itemId) {
@@ -1078,13 +1110,15 @@ class GameState {
       { this.addLog(`${item.name} est réservé aux ${item.roleRestriction}s !`); return false; }
     if (item.isStarter && hero.items.some(id => EQUIPMENT[id]?.isStarter))
       { this.addLog('Vous possédez déjà un item Starter !'); return false; }
-    // Calculer les composants possédés (seront toujours consommés, même si incomplet)
+    // Calculer les slots libérés et bottes récursivement
     const _ownedComps = [...hero.items];
-    let slotsFreed = 0, bootsFreed = 0;
-    for (const cId of item.recipe) {
-      const idx = _ownedComps.indexOf(cId);
-      if (idx !== -1) { _ownedComps.splice(idx, 1); slotsFreed++; if (EQUIPMENT[cId]?.isBoots) bootsFreed++; }
-    }
+    const slotsFreed  = this._slotsFreedRecursive(_ownedComps, item.recipe);
+    const _ownedComps2 = [...hero.items];
+    const bootsFreed  = item.recipe.reduce((n, cId) => {
+      const idx = _ownedComps2.indexOf(cId);
+      if (idx !== -1) { _ownedComps2.splice(idx, 1); return n + (EQUIPMENT[cId]?.isBoots ? 1 : 0); }
+      return n;
+    }, 0);
     const bootsInInv = hero.items.filter(id => EQUIPMENT[id]?.isBoots).length;
     if (item.isBoots && bootsInInv - bootsFreed >= 1)
       { this.addLog('Vous portez déjà des bottes !'); return false; }
@@ -1094,20 +1128,8 @@ class GameState {
     const cost = this.getBuyCost(hero, itemId);
     if (hero.gold < cost) { this.addLog('Pas assez d\'or !'); return false; }
 
-    // Consommer tous les composants possédés (toujours, même si recipe incomplet)
-    item.recipe.forEach(cId => {
-      const idx = hero.items.indexOf(cId);
-      if (idx === -1) return;
-      hero.items.splice(idx, 1);
-      const comp = EQUIPMENT[cId];
-      Object.entries(comp.stats).forEach(([stat, val]) => {
-        hero[stat] -= val;
-        if (stat === 'pm') this.movementLeft = Math.max(0, this.movementLeft - val);
-        if (stat === 'extraAutoAttacks') this.autoAttacksAllowed = Math.max(1, this.autoAttacksAllowed - val);
-      });
-      hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP);
-      hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
-    });
+    // Consommer récursivement tous les composants (y compris les sous-composants d'items intermédiaires manquants)
+    this._consumeComponents(hero, item.recipe);
 
     hero.gold -= cost;
 
@@ -1131,7 +1153,7 @@ class GameState {
     const verb = slotsFreed === item.recipe.length ? 'forge' : slotsFreed > 0 ? 'assemble' : 'achète';
     this.addLog(`${hero.name} ${verb} ${item.name} (−${cost}g) → reste ${hero.gold}g`);
     this._recalcEnchanteurAura();
-    this._recalcBPDShield();
+    if (itemId === 'bouclier_protecteur_divin') this._recalcBPDShield();
     if (window.renderer) renderer.closeShop();
     return true;
   }
@@ -1159,7 +1181,6 @@ class GameState {
     hero.gold += refund;
     this.addLog(`${hero.name} vend ${item.name} → +${refund}g`);
     this._recalcEnchanteurAura();
-    this._recalcBPDShield();
     return true;
   }
 
@@ -1399,8 +1420,8 @@ class GameState {
             dmg += empBonus;
           }
         }
-        // Passif Lame Bleue / Trinité Sacrée / Gantelet Refroidissant : +15% si attaque boostée
-        const hasBlade = hadSpellBonus && attacker.items.some(id => ['blue_blade', 'holy_trinity', 'gantelet_refroidissant'].includes(id));
+        // Passif Lame Bleue : +22% si attaque boostée
+        const hasBlade = hadSpellBonus && attacker.items.includes('blue_blade');
         if (hasBlade) {
           dmg = Math.floor(dmg * 1.22);
           empMagicalDmg = Math.floor(empMagicalDmg * 1.22);
@@ -1408,6 +1429,17 @@ class GameState {
         if (empMagicalDmg > 0) {
           this._applyDamage(e, empMagicalDmg, attacker, 'magical');
           this.addLog(`${attacker.name} — Rock and Roll : +${empMagicalDmg} dégâts magiques${hasBlade ? ' (Lame Bleue)' : ''}`);
+        }
+        // Passif Trinité Sacrée : +1×AD dégâts physiques sur attaque renforcée
+        if (hadSpellBonus && attacker.items.includes('holy_trinity') && e.isAlive) {
+          const _htDmg = this._reduceDmg(attacker.ad, 'physical', e, armorPen, 0, armorPenPct);
+          if (_htDmg > 0) { this._applyDamage(e, _htDmg, attacker, 'physical'); this.addLog(`${attacker.name} — Trinité Sacrée : +${_htDmg} dégâts physiques`); }
+        }
+        // Passif Gantelet Refroidissant : +3×Armure% dégâts magiques sur attaque renforcée
+        if (hadSpellBonus && attacker.items.includes('gantelet_refroidissant') && e.isAlive) {
+          const _ganArmor = Math.floor(attacker.armor * (1 + (attacker.armorPct || 0) / 100));
+          const _ganDmg = this._reduceDmg(_ganArmor * 3, 'magical', e);
+          if (_ganDmg > 0) { this._applyDamage(e, _ganDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Gantelet Refroidissant : +${_ganDmg} dégâts magiques`); }
         }
         // Passif Vigilance Sombre (Lame de Nargoth) : +10% si armure effective cible < 15
         if (attacker.items.includes('lame_de_nargoth') && Math.floor(e.armor * (1 - 7 / 100)) < 15) dmg = Math.floor(dmg * 1.1);
@@ -1434,25 +1466,18 @@ class GameState {
         if (attacker.items.includes('lame_electrique') && e.position) {
           this._applyLameElectrique(attacker, e);
         }
-        // Passif Épée Magique : dégâts magiques bonus si attaque boostée
+        // Passif Épée Magique : +0,75×AP dégâts magiques sur attaque renforcée
         const hasMagicSword = hadSpellBonus && attacker.items.includes('magic_sword');
-        if (hasMagicSword) {
-          const pct = (15 + 0.05 * this._effectiveAP(attacker)) / 100;
-          const magicBonusDmg = this._reduceDmg(Math.floor(attacker.ad * pct), 'magical', e, 0, attacker.items.includes('sorcerer_boots') ? 5 : 0);
-          this._applyDamage(e, magicBonusDmg, attacker, 'magical');
-          this.addLog(`${attacker.name} — Épée Magique : +${magicBonusDmg} dégâts magiques`);
+        if (hasMagicSword && e.isAlive) {
+          const _msDmg = this._reduceDmg(Math.floor(this._effectiveAP(attacker) * 0.75), 'magical', e);
+          if (_msDmg > 0) { this._applyDamage(e, _msDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Épée Magique : +${_msDmg} dégâts magiques`); }
         }
-        const tag = [isCrit ? 'CRITIQUE' : null, wasEmpowered ? 'renforcé' : null, bonusFlat > 0 ? 'Petit Bond' : null, hasBlade ? 'Lame Bleue' : null, hasMagicSword ? 'Épée Magique' : null, armorPen > 0 ? 'Nargoth' : null].filter(Boolean).join(', ');
+        const tag = [isCrit ? 'CRITIQUE' : null, wasEmpowered ? 'renforcé' : null, bonusFlat > 0 ? 'Petit Bond' : null, hasBlade ? 'Lame Bleue' : null, hasMagicSword ? 'Épée Magique' : null, armorPen > 0 ? 'Létalité' : null].filter(Boolean).join(', ');
         this.addLog(`${attacker.name} → ${e.name}: −${dmg} HP${tag ? ` (${tag})` : ''}`);
-        // Passif Faux Bleue du Mal : +22% dégâts bruts sur attaque améliorée + 50% récup mana
+        // Passif Faux Bleue du Mal : +0,75×AD dégâts physiques sur attaque améliorée
         if (hadSpellBonus && attacker.items.includes('faux_bleue_du_mal') && e.isAlive) {
-          const _fbBonus = Math.floor((dmg + empMagicalDmg) * 0.22);
-          if (_fbBonus > 0) {
-            this._applyDamage(e, _fbBonus, attacker, 'raw');
-            const _fbMana = Math.floor(_fbBonus * 0.5);
-            attacker.currentMana = Math.min(attacker.maxMana, (attacker.currentMana || 0) + _fbMana);
-            this.addLog(`${attacker.name} — Faux Bleue : +${_fbBonus} dégâts bruts → +${_fbMana} mana`);
-          }
+          const _fbBonus = this._reduceDmg(Math.floor(attacker.ad * 0.75), 'physical', e, armorPen, 0, armorPenPct);
+          if (_fbBonus > 0) { this._applyDamage(e, _fbBonus, attacker, 'physical'); this.addLog(`${attacker.name} — Faux Bleue : +${_fbBonus} dégâts physiques`); }
         }
         // Passif Marteau Divin : attaque améliorée → dégâts + soin basés sur HP max cible
         if (hadSpellBonus && attacker.items.includes('marteau_divin') && e.isAlive) {
@@ -1506,8 +1531,10 @@ class GameState {
           this.addLog(`${attacker.name} — Lame du Diable : −${diableDmg} dégâts magiques`);
         });
       }
-      if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'couperet_du_demon'].includes(id))) {
+      if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'couperet_du_demon'].includes(id))
+          && !attacker._walkerPMUsedThisTurn) {
         this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
+        attacker._walkerPMUsedThisTurn = true;
         this.addLog(`${attacker.name} — Passif : +1 PM`);
       }
       // Passif Cupidon : tracker les ennemis attaqués pour le passif Amour fou
@@ -1617,8 +1644,8 @@ class GameState {
       }
       attacker.empoweredAttack = null;
     }
-    // Passif Lame Bleue / Trinité Sacrée / Gantelet Refroidissant : +15% si attaque boostée
-    const hasBlade2 = hadSpellBonus && attacker.items.some(id => ['blue_blade', 'holy_trinity', 'gantelet_refroidissant'].includes(id));
+    // Passif Lame Bleue : +22% si attaque boostée
+    const hasBlade2 = hadSpellBonus && attacker.items.includes('blue_blade');
     if (hasBlade2) {
       dmg = Math.floor(dmg * 1.22);
       empMagicalDmg2 = Math.floor(empMagicalDmg2 * 1.22);
@@ -1695,25 +1722,28 @@ class GameState {
           }
         });
     }
-    // Passif Épée Magique : dégâts magiques bonus si attaque boostée
-    if (hasMagicSword2) {
-      const pct = (15 + 0.05 * attacker.ap) / 100;
-      const magicBonusDmg = this._reduceDmg(Math.floor(attacker.ad * pct), 'magical', targetHero);
-      // Amplifie aussi le bonus du sort qui a boosté l'attaque
-      const magicEmpBonus = empMagicalDmg2 > 0 && targetHero.isAlive
-        ? this._reduceDmg(Math.floor(empMagicalDmg2 * pct), 'magical', targetHero) : 0;
-      const magicTotal = magicBonusDmg + magicEmpBonus;
-      if (magicTotal > 0) this._applyDamage(targetHero, magicTotal, attacker, 'magical');
-      this.addLog(`${attacker.name} — Épée Magique : +${magicTotal} dégâts magiques`);
+    // Passif Trinité Sacrée : +1×AD dégâts physiques sur attaque renforcée
+    if (hadSpellBonus && attacker.items.includes('holy_trinity') && targetHero.isAlive) {
+      const _htDmg2 = this._reduceDmg(attacker.ad, 'physical', targetHero, armorPen2, 0, armorPenPct2);
+      if (_htDmg2 > 0) { this._applyDamage(targetHero, _htDmg2, attacker, 'physical'); this.addLog(`${attacker.name} — Trinité Sacrée : +${_htDmg2} dégâts physiques`); }
     }
-    // Passif Faux Bleue du Mal : +22% dégâts bruts sur attaque améliorée + 50% récup mana
+    // Passif Gantelet Refroidissant : +3×Armure% dégâts magiques sur attaque renforcée
+    if (hadSpellBonus && attacker.items.includes('gantelet_refroidissant') && targetHero.isAlive) {
+      const _ganArmor2 = Math.floor(attacker.armor * (1 + (attacker.armorPct || 0) / 100));
+      const _ganDmg2 = this._reduceDmg(_ganArmor2 * 3, 'magical', targetHero);
+      if (_ganDmg2 > 0) { this._applyDamage(targetHero, _ganDmg2, attacker, 'magical'); this.addLog(`${attacker.name} — Gantelet Refroidissant : +${_ganDmg2} dégâts magiques`); }
+    }
+    // Passif Épée Magique : +0,75×AP dégâts magiques sur attaque renforcée
+    if (hasMagicSword2 && targetHero.isAlive) {
+      const _msDmg2 = this._reduceDmg(Math.floor(this._effectiveAP(attacker) * 0.75), 'magical', targetHero);
+      if (_msDmg2 > 0) { this._applyDamage(targetHero, _msDmg2, attacker, 'magical'); this.addLog(`${attacker.name} — Épée Magique : +${_msDmg2} dégâts magiques`); }
+    }
+    // Passif Faux Bleue du Mal : +0,75×AD dégâts physiques sur attaque améliorée
     if (hadSpellBonus && attacker.items.includes('faux_bleue_du_mal') && targetHero.isAlive) {
-      const _fbBonus2 = Math.floor((dmg + empMagicalDmg2) * 0.22);
+      const _fbBonus2 = this._reduceDmg(Math.floor(attacker.ad * 0.75), 'physical', targetHero, armorPen2, 0, armorPenPct2);
       if (_fbBonus2 > 0) {
         this._applyDamage(targetHero, _fbBonus2, attacker, 'physical');
-        const _fbMana2 = Math.floor(_fbBonus2 * 0.5);
-        attacker.currentMana = Math.min(attacker.maxMana, (attacker.currentMana || 0) + _fbMana2);
-        this.addLog(`${attacker.name} — Faux Bleue : +${_fbBonus2} dégâts bruts → +${_fbMana2} mana`);
+        this.addLog(`${attacker.name} — Faux Bleue : +${_fbBonus2} dégâts physiques`);
       }
     }
     // Passif Marteau Divin : attaque améliorée → dégâts + soin basés sur HP max cible
@@ -1764,9 +1794,11 @@ class GameState {
       this._applyDamage(targetHero, _tdRaw, attacker, 'raw');
       this.addLog(`${attacker.name} — Tueur de Dieux : −${_tdRaw} dégâts bruts`);
     }
-    // Passif Marteau du Marcheur Blanc / Trinité Sacrée / Lame de Nargoth / Lame du Diable : +1 PM après attaque de base
-    if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'couperet_du_demon'].includes(id))) {
+    // Passif Marteau du Marcheur Blanc / Trinité Sacrée / Lame de Nargoth / Couperet du Démon : +1 PM (1 fois par tour, sauf avec Épée Double de Feu)
+    if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'couperet_du_demon'].includes(id))
+        && !attacker._walkerPMUsedThisTurn) {
       this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
+      attacker._walkerPMUsedThisTurn = true;
       this.addLog(`${attacker.name} — Passif : +1 PM`);
     }
     // Passif Cupidon : tracker les ennemis attaqués pour le passif Amour fou
@@ -1881,19 +1913,10 @@ class GameState {
       }
     }
 
-    if (!_isRecallReactivation) caster.currentMana -= _effectiveManaCost;
+    if (!_isRecallReactivation && spell.id !== 'solo_recall') caster.currentMana -= _effectiveManaCost;
 
     // Passif Toucher Magique (casque_necrometien) — prêt à se déclencher pour ce sort
     this._toucherMagiqueReady = caster.items.includes('casque_necrometien');
-
-    // Passif Decigeno : consume PM restants → +5% dégâts par PM (avant calcul des dégâts)
-    if (caster.passive === 'decigeno_passive' && this.movementLeft > 0) {
-      const pmLeft = this.movementLeft;
-      const bonus  = 5 * pmLeft;
-      caster.decigenoDmgPct = (caster.decigenoDmgPct || 0) + bonus;
-      this.movementLeft     = 0;
-      this.addLog(`${caster.name} — Passif : consume ${pmLeft} PM → +${bonus}% dégâts`);
-    }
 
     let success = true;
     this._spellDmgContext = true;
@@ -2091,7 +2114,6 @@ class GameState {
           this.addLog(`${enemy.name} attiré de ${spell.pullCells} case(s) vers ${caster.name}`);
           this._checkTrap(enemy);
           if (enemy.roleId === 'roam') this._checkBrownCollection(enemy);
-          this._checkPibotBattery(enemy);
         }
         break;
       }
@@ -2389,7 +2411,7 @@ class GameState {
           e.isAlive && e.position && this._manhattan(caster.position, e.position) <= 3
         );
         dotTargets.forEach(e => {
-          (e.dots = e.dots || []).push({ dmgPerTurn: dotDmgPerTurn, turns: 3, caster, type: 'magical' });
+          (e.dots = e.dots || []).push({ dmgPerTurn: dotDmgPerTurn, turns: 3, caster, type: 'magical', label: 'Nuisance noire' });
           this.addLog(`${e.name} subit Nuisance noire : −${dotDmgPerTurn} dégâts magiques/tour pendant 3 tours`);
           if (!e.debuffContributors) e.debuffContributors = {};
           e.debuffContributors[caster.id] = this.globalTurn;
@@ -2962,6 +2984,14 @@ class GameState {
     this._spellDmgContext = false;
 
     if (success) {
+      // Passif Decigeno : consume PM restants → +5% dégâts par PM
+      if (caster.passive === 'decigeno_passive' && this.movementLeft > 0) {
+        const pmLeft = this.movementLeft;
+        const bonus  = 5 * pmLeft;
+        caster.decigenoDmgPct = (caster.decigenoDmgPct || 0) + bonus;
+        this.movementLeft     = 0;
+        this.addLog(`${caster.name} — Passif : consume ${pmLeft} PM → +${bonus}% dégâts`);
+      }
       // Passif Skjer : si kill pendant ce sort, CD et spellsUsed déjà remis à zéro — ne pas écraser
       const _skjerReset = !!caster._skjerPassiveFired;
       if (_skjerReset) delete caster._skjerPassiveFired;
@@ -2969,8 +2999,8 @@ class GameState {
       if (!_skjerReset && spell.cooldown > 0) {
         const _hasStun = spell.effects?.some(e => e.type === 'stun');
         const _minCd   = _hasStun ? 2 : 1;
-        const _timeGlassCount = caster.items.filter(id => id === 'time_glass').length;
-        const _effectiveCdRed = (caster.cdReduction || 0) - Math.max(0, _timeGlassCount - 1);
+        const _livreCount = caster.items.filter(id => id === 'livre_incantations').length;
+        const _effectiveCdRed = (caster.cdReduction || 0) - Math.max(0, _livreCount - 1);
         let _cd = Math.max(_minCd, spell.cooldown - _effectiveCdRed);
         // Bottes de Célérité : -1 CD supplémentaire sur tous les sorts
         if (caster.items.includes('boots_of_celerity') && _cd > _minCd) _cd--;
@@ -3590,8 +3620,8 @@ class GameState {
       this.addLog(`${target.name} est invincible — dégâts annulés !`);
       return;
     }
-    // Passif Plastron du Diable Immortel : recharge le timer de 2 tours globaux à chaque dégât reçu
-    if (damage > 0 && target.items?.includes('plastron_du_diable_immortel')) {
+    // Passif Plastron du Diable Immortel : démarre le timer 2 tours globaux après le 1er dégât (ne se réinitialise pas si déjà actif)
+    if (damage > 0 && target.items?.includes('plastron_du_diable_immortel') && !(target.plastronDiableTriggerTurn > 0)) {
       target.plastronDiableTriggerTurn = this.globalTurn + 2;
     }
     // Passif Cupidon : Amour fou — réduit les dégâts de 50% si on a attaqué le caster au tour dernier
@@ -3990,7 +4020,7 @@ class GameState {
   }
 
   _checkPibotBattery(hero) {
-    if (!hero.position) return;
+    if (!hero.position || hero.passive !== 'pibot_passive') return;
     const idx = this.pibotBatteries.findIndex(b =>
       b.x === hero.position.x && b.y === hero.position.y
     );
@@ -4193,6 +4223,7 @@ class GameState {
 
   _applySpellEffects(spell, targets) {
     if (!spell.effects?.length) return;
+    const _blasonCounts = {};  // { instanceId: nbDebuffsApplied }
     spell.effects.forEach(eff => {
       targets.forEach(t => {
         if (!t.isAlive) return;
@@ -4208,6 +4239,7 @@ class GameState {
           this.addLog(`${t.name} — Vaillance : débuff annulé !`);
           return;
         }
+        let debuffApplied = false;
         if (eff.type === 'stun') {
           // Passif Protection Divine : un allié à moins de 10 cases peut annuler le stun
           const protector = this._getAllies(t.playerIdx).find(a =>
@@ -4223,45 +4255,60 @@ class GameState {
             (t.statusEffects = t.statusEffects || []).push({ ...eff });
             this.addLog(`${t.name} est étourdi !`);
             if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+            debuffApplied = true;
           }
         } else if (eff.type === 'slow') {
           (t.statusEffects = t.statusEffects || []).push({ ...eff });
           this.addLog(`${t.name} perd ${eff.pmReduction} PM au prochain tour`);
           if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+          debuffApplied = true;
         } else if (eff.type === 'hemorrhage') {
           (t.statusEffects = t.statusEffects || []).push({ ...eff });
           this.addLog(`${t.name} subit une hémorragie (soins -50% pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''})`);
           if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+          debuffApplied = true;
         } else if (eff.type === 'malediction') {
           (t.statusEffects = t.statusEffects || []).push({ ...eff });
           this.addLog(`${t.name} est maudit (portée sorts -3 pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''})`);
           if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+          debuffApplied = true;
         } else if (eff.type === 'mute') {
           if (!(t.statusEffects || []).some(e => e.type === 'mute')) {
             (t.statusEffects = t.statusEffects || []).push({ ...eff });
             this.addLog(`${t.name} est muet — sorts bloqués pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''} !`);
             if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+            debuffApplied = true;
           }
         } else if (eff.type === 'root') {
           t.rootTurns = Math.max(t.rootTurns || 0, eff.turns);
           this.addLog(`${t.name} est immobilisé (PM et dash bloqués) pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''} !`);
           if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+          debuffApplied = true;
         } else if (eff.type === 'mr_shred') {
           (t.statusEffects = t.statusEffects || []).push({ ...eff });
           this.addLog(`${t.name} perd 20% de RM pendant ${eff.turns} tours`);
           if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
+          debuffApplied = true;
         }
-        // Passif Blason Glorieux : débuff → 10% HP max dégâts magiques (1x par tour max)
-        if (this.currentHero?.items.includes('blason_glorieux') && t.isAlive && !this.currentHero.blasonGlorieuxUsedThisTurn) {
-          const blasonDmg = this._reduceDmg(Math.floor(t.maxHP * 0.10), 'magical', t);
-          if (blasonDmg > 0) {
-            this._applyDamage(t, blasonDmg, this.currentHero, 'magical');
-            this.addLog(`${t.name} — Blason Glorieux : −${blasonDmg} dégâts magiques`);
-            this.currentHero.blasonGlorieuxUsedThisTurn = true;
-          }
+        if (debuffApplied && this.currentHero?.items.includes('blason_glorieux')) {
+          _blasonCounts[t.instanceId] = (_blasonCounts[t.instanceId] || 0) + 1;
         }
       });
     });
+
+    // Passif Blason Glorieux : 4% HP max par débuff posé, appliqué sur toutes les cibles touchées
+    if (this.currentHero?.items.includes('blason_glorieux')) {
+      targets.forEach(t => {
+        const count = _blasonCounts[t.instanceId] || 0;
+        if (count > 0 && t.isAlive) {
+          const blasonDmg = this._reduceDmg(Math.floor(t.maxHP * 0.04 * count), 'magical', t);
+          if (blasonDmg > 0) {
+            this._applyDamage(t, blasonDmg, this.currentHero, 'magical');
+            this.addLog(`${t.name} — Blason Glorieux : −${blasonDmg} dégâts magiques (${count}×4%)`);
+          }
+        }
+      });
+    }
   }
 
   _getAdjacentFreeCells(pos, exclude) {
@@ -4280,6 +4327,7 @@ class GameState {
 
   addLog(msg) {
     this.log.push(msg);
+    this.logIndex++;
     if (this.log.length > 200) this.log.shift();
     if (window.renderer) renderer.appendLog(msg);
   }
@@ -4346,7 +4394,7 @@ class GameState {
       ...hero,
       dots: (hero.dots || []).map(d => ({
         dmgPerTurn: d.dmgPerTurn, turns: d.turns,
-        casterId: heroToId(d.caster), type: d.type
+        casterId: heroToId(d.caster), type: d.type, label: d.label
       }))
     });
     const serObj = obj => {
@@ -4371,6 +4419,7 @@ class GameState {
       globalTurn:         this.globalTurn,
       heroTurnIndex:      this.heroTurnIndex,
       log:                this.log,
+      logIndex:           this.logIndex,
       winner:             this.winner,
       currentHeroId:      heroToId(this.currentHero),
       actionMode:         this.actionMode,
@@ -4397,11 +4446,13 @@ class GameState {
     this.teamGoldEarned     = s.teamGoldEarned;
     this.globalTurn         = s.globalTurn;
     this.heroTurnIndex      = s.heroTurnIndex;
-    const _prevLogLen = this.log.length;
+    const _prevLogIndex = this.logIndex || 0;
     this.log                = s.log;
+    this.logIndex           = s.logIndex || 0;
     // Afficher les nouvelles entrées de log côté receveur (mode en ligne)
-    if (window.renderer && s.log.length > _prevLogLen) {
-      s.log.slice(_prevLogLen).forEach(msg => renderer.appendLog(msg));
+    const _newCount = this.logIndex - _prevLogIndex;
+    if (window.renderer && _newCount > 0) {
+      s.log.slice(-_newCount).forEach(msg => renderer.appendLog(msg));
     }
     this.winner             = s.winner;
     this.actionMode         = s.actionMode;

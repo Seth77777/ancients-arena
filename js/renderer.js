@@ -677,15 +677,24 @@ class Renderer {
       if (e.type === 'malediction')badges.push(b('debuff', '🔮', `Malédiction portée −3 (${e.turns}t)`));
       if (e.type === 'mute')       badges.push(b('debuff', '🔇', `Muet — sorts bloqués (${e.turns}t)`));
     }
-    // DOTs
+    // DOTs — une icône par source distincte
     if (hero.dots && hero.dots.length > 0) {
-      const totalDot = hero.dots.reduce((s, d) => s + d.dmgPerTurn, 0);
-      const maxTurns = Math.max(...hero.dots.map(d => d.turns));
-      const dotLabels = [...new Set(hero.dots.map(d => d.label || 'Nuisance noire'))].join(', ');
-      badges.push(b('debuff', '🌑', `${dotLabels} −${totalDot}/tour (${maxTurns}t)`));
+      const _dotIcons = { 'Nuisance noire': '🌑', 'Torche Sombre': '🔥', 'Masque de Larme': '💧' };
+      const _dotGroups = {};
+      hero.dots.forEach(d => {
+        const key = d.label || 'Nuisance noire';
+        if (!_dotGroups[key]) _dotGroups[key] = { dmg: 0, turns: 0 };
+        _dotGroups[key].dmg   += d.dmgPerTurn;
+        _dotGroups[key].turns  = Math.max(_dotGroups[key].turns, d.turns);
+      });
+      Object.entries(_dotGroups).forEach(([label, { dmg, turns }]) => {
+        const icon = _dotIcons[label] || '☠️';
+        badges.push(b('debuff', icon, `${label} −${dmg}/tour (${turns}t)`));
+      });
     }
-    if ((hero.hemorrhageTurns || 0) > 0) badges.push(b('debuff', '🩸', `Hémorragie soins −50% (${hero.hemorrhageTurns}t)`));
-    if ((hero.maledictionTurns|| 0) > 0) badges.push(b('debuff', '🔮', `Malédiction portée −3 (${hero.maledictionTurns}t)`));
+    const _seTypes = new Set((hero.statusEffects || []).map(e => e.type));
+    if ((hero.hemorrhageTurns || 0) > 0 && !_seTypes.has('hemorrhage')) badges.push(b('debuff', '🩸', `Hémorragie soins −50% (${hero.hemorrhageTurns}t)`));
+    if ((hero.maledictionTurns|| 0) > 0 && !_seTypes.has('malediction')) badges.push(b('debuff', '🔮', `Malédiction portée −3 (${hero.maledictionTurns}t)`));
     if ((hero.rootTurns       || 0) > 0) badges.push(b('debuff', '🌿', `Immobilisé (${hero.rootTurns}t)`));
 
     // Boucliers
@@ -883,6 +892,7 @@ class Renderer {
       maxHP:'HP max', maxMana:'Mana max', pm:'PM', po:'PO',
       lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana', manaRegenPct:'Regen Mana %',
       critChance:'Chance Critique %', extraAutoAttacks:'Attaques/tour',
+      cdReduction:'Réduction CD',
       goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
       goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort', armorPct:'Armure %' };
 
@@ -961,10 +971,17 @@ class Renderer {
     document.getElementById('shop-bar-mana-num').textContent = `${hero.currentMana}/${hero.maxMana}`;
 
     const STAT_LABELS = { ad:'⚔ AD', ap:'✨ AP', armor:'🛡 Armure', mr:'🧿 RésistMag',
-                          pm:'🏃 PM', po:'🎯 PO', lifeSteal:'🩸 VolVie', hpRegen:'💚 RegenHP', manaRegen:'💙 RegenMana' };
+                          pm:'🏃 PM', po:'🎯 PO', lifeSteal:'🩸 VolVie', hpRegen:'💚 RegenHP', manaRegen:'💙 RegenMana',
+                          critChance:'🎲 Crit', extraAutoAttacks:'💥 AA/tour', cdReduction:'⏬ −CD' };
+    const _STAT_PCT = new Set(['lifeSteal', 'critChance']);
     const statsEl = document.getElementById('shop-hero-stats');
     statsEl.innerHTML = Object.entries(STAT_LABELS)
-      .map(([k, lbl]) => `<span>${lbl}: <b>${hero[k] ?? 0}${k === 'lifeSteal' ? '%' : ''}</b></span>`)
+      .filter(([k]) => (k !== 'extraAutoAttacks' && k !== 'critChance') || (hero[k] ?? 0) > 0)
+      .map(([k, lbl]) => {
+        const val = hero[k] ?? 0;
+        const display = _STAT_PCT.has(k) ? `${val}%` : k === 'extraAutoAttacks' ? `+${val}` : val;
+        return `<span>${lbl}: <b>${display}</b></span>`;
+      })
       .join('');
 
     const invEl = document.getElementById('shop-inventory');
@@ -1096,11 +1113,12 @@ class Renderer {
       hp:   i => (i.stats.maxHP || 0) > 0,
       res:  i => (i.stats.armor || 0) > 0 || (i.stats.mr || 0) > 0,
       mana: i => (i.stats.maxMana || 0) > 0 || (i.stats.manaRegen || 0) > 0 || (i.stats.manaRegenPct || 0) > 0,
-      util: i => (i.stats.critChance    || 0) > 0 || (i.stats.lifeSteal      || 0) > 0 ||
-                 (i.stats.cdReduction   || 0) > 0 || (i.stats.bonusSpellRange || 0) > 0 ||
-                 (i.stats.hpRegen       || 0) > 0 || (i.stats.goldPerTurn     || 0) > 0 ||
-                 (i.stats.healEfficiency|| 0) > 0 || (i.stats.manaOnSpell     || 0) > 0 ||
-                 (i.stats.goldSharePct  || 0) > 0
+      util: i => !i.notInUtil && ((i.stats.lifeSteal       || 0) > 0 || (i.stats.cdReduction    || 0) > 0 ||
+                 (i.stats.bonusSpellRange|| 0) > 0 || (i.stats.hpRegen         || 0) > 0 ||
+                 (i.stats.goldPerTurn    || 0) > 0 || (i.stats.healEfficiency   || 0) > 0 ||
+                 (i.stats.manaOnSpell    || 0) > 0 || (i.stats.goldSharePct     || 0) > 0),
+      crit: i => (i.stats.critChance       || 0) > 0,
+      aa:   i => (i.stats.extraAutoAttacks || 0) > 0
     };
     const statFilter = STAT_FILTERS[cat];
     if (statFilter) {
@@ -1131,6 +1149,7 @@ class Renderer {
                           maxHP:'HP max', maxMana:'Mana max', pm:'PM', po:'PO',
                           lifeSteal:'Vol de vie %', hpRegen:'Regen HP', manaRegen:'Regen Mana', manaRegenPct:'Regen Mana %',
                           critChance:'Chance Critique %', extraAutoAttacks:'Attaques/tour',
+                          cdReduction:'Réduction CD',
                           goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
                           goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort' };
     const netStats = { ...item.stats };

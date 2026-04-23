@@ -317,7 +317,8 @@
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
   <div class="patch-tabs">
-    <button class="patch-tab active" onclick="showPatch('patch-23avr', this)">23 Avril 2026</button>
+    <button class="patch-tab active" onclick="showPatch('patch-102', this)">1.0.2</button>
+    <button class="patch-tab" onclick="showPatch('patch-23avr', this)">23 Avril 2026</button>
     <button class="patch-tab" onclick="showPatch('patch-22avr', this)">22 Avril 2026</button>
     <button class="patch-tab" onclick="showPatch('patch-21avr', this)">21 Avril 2026</button>
     <button class="patch-tab" onclick="showPatch('patch-19avr', this)">19 Avril 2026</button>
@@ -327,7 +328,63 @@
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- PATCH 23 AVRIL 2026                                    -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="patch-23avr" class="patch-section active">
+<div id="patch-102" class="patch-section active">
+<div class="patch-body">
+
+  <div class="patch-main">
+
+    <!-- CORRECTIONS DE BUGS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">⚙</span> CORRECTIONS DE BUGS</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">DOTs — Icônes séparées par source</div>
+          <ul>
+            <li>Tous les DOTs étaient regroupés sous une seule icône 🌑 dans la barre d'effets.</li>
+            <li>Corrigé : chaque source de DOT affiche désormais sa propre icône (🌑 Nuisance noire · 🔥 Torche Sombre · 💧 Masque de Larme).</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Rappel (Sort Solo) — Coût en mana supprimé</div>
+          <ul>
+            <li>Le Sort Rappel déduisait incorrectement du mana lors de son utilisation.</li>
+            <li>Corrigé : le Rappel est désormais gratuit en mana (premier lancer et réactivation).</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-main -->
+
+  <div class="patch-side">
+
+    <div>
+      <div class="section-title"><span class="section-icon sys">⚙</span> HÉROS CONCERNÉS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card neu">
+          <img src="assets/heroes/shamrock.png" alt="Solos">
+          <div class="hero-card-name">Tous les Solos</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Tous les Solos</div>
+            <ul>
+              <li><span class="neu">Rappel : coût en mana supprimé</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-side -->
+
+</div><!-- /patch-body -->
+</div><!-- /patch-102 -->
+
+<div id="patch-23avr" class="patch-section">
 <div class="patch-body">
 
   <!-- ══ COLONNE PRINCIPALE ══ -->
