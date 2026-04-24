@@ -358,9 +358,15 @@ class Renderer {
       }
 
 
-      // Zone
+      // Zone à gold
       if (ZONE_CELL_SET.has(key)) {
         ctx.fillStyle = 'rgba(212,172,13,0.35)';
+        ctx.fillRect(px, py, cs, cs);
+      }
+
+      // Zone de soin
+      if (HEAL_ZONE_CELL_SET.has(key)) {
+        ctx.fillStyle = 'rgba(46,204,113,0.22)';
         ctx.fillRect(px, py, cs, cs);
       }
 

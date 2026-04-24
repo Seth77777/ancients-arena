@@ -228,14 +228,14 @@ HERO_TYPES['solo_2'] = {
     {
       id: 'frigiel_q', name: 'Couperie',
       description: '140 +0.7 AD dégâts physiques sur une ligne de 2 cases',
-      manaCost: 80, range: 2, minRange: 1, maxRange: 2, cooldown: 3, cdMin: 1,
+      manaCost: 50, range: 2, minRange: 1, maxRange: 2, cooldown: 3, cdMin: 1,
       damageType: 'physical', baseDamage: 140, adRatio: 0.7, apRatio: 0,
       targetType: 'line_zone', zone: null, effects: []
     },
     {
       id: 'frigiel_w', name: 'Plastron',
       description: 'Bouclier de 130 +1 AD pendant 3 tours',
-      manaCost: 110, range: 0, cooldown: 5, cdMin: 1,
+      manaCost: 70, range: 0, cooldown: 5, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       shieldAmount: 130, adShieldRatio: 1, shieldTurns: 3,
       targetType: 'self', zone: null, effects: []
@@ -243,7 +243,7 @@ HERO_TYPES['solo_2'] = {
     {
       id: 'frigiel_r', name: 'Appel du chevalier',
       description: 'Si la cible a plus de HP max que Frigiel : inflige 130 +1.1 AD (70% physiques, 30% bruts)',
-      manaCost: 130, range: 7, cooldown: 10, cdMin: 2,
+      manaCost: 80, range: 7, cooldown: 10, cdMin: 2,
       damageType: 'physical', baseDamage: 130, adRatio: 1.1, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: [],
       conditionHigherHP: true, splitRawPct: 0.3
@@ -280,7 +280,7 @@ HERO_TYPES['solo_3'] = {
       manaCost: 60, range: 3, cooldown: 4, cdMin: 1,
       damageType: 'physical', baseDamage: 40, adRatio: 0.4, apRatio: 0,
       rawBase: 50, rawAdRatio: 0.5,
-      targetType: 'dash_behind_enemy', zone: null, effects: []
+      targetType: 'dash_behind_enemy', ignoresLoS: true, zone: null, effects: []
     },
     {
       id: 'ondine_r', name: 'Lame d\'eau',
@@ -343,7 +343,7 @@ HERO_TYPES['mage_1'] = {
     {
       id: 'electro_q', name: 'Décharge',
       description: 'Zone en losange (1-3-1). Inflige 20 + 0.9 AP dégâts magiques.',
-      manaCost: 110, range: 6, cooldown: 3, cdMin: 1,
+      manaCost: 140, range: 6, cooldown: 3, cdMin: 1,
       damageType: 'magical', baseDamage: 20, adRatio: 0, apRatio: 0.9,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 }, effects: []
     },
@@ -358,7 +358,7 @@ HERO_TYPES['mage_1'] = {
     {
       id: 'electro_r', name: 'Tonnerre',
       description: 'Frappe tous les ennemis sur toute la carte. Inflige 30 + 0.7 AP dégâts magiques.',
-      manaCost: 180, range: 0, cooldown: 8, cdMin: 1,
+      manaCost: 180, range: 0, cooldown: 11, cdMin: 1,
       damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.7,
       targetType: 'no_target', targetAll: true, zone: null, effects: []
     }
@@ -371,7 +371,7 @@ HERO_TYPES['roam_2'] = {
   portrait: 'assets/heroes/masello.png',
   passive: 'masello_passive',
   maxHP: 2150, maxMana: 360, hpRegen: 40, manaRegen: 35,
-  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 1,
+  ad: 70, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 1,
   spells: [
     {
       id: 'masello_q', name: 'Masellojutsu',
@@ -389,9 +389,9 @@ HERO_TYPES['roam_2'] = {
     },
     {
       id: 'masello_r', name: 'Energy Kick',
-      description: 'Frappe toutes les cibles adjacentes (8 cases). Inflige 110 + 1 AD dégâts physiques.',
+      description: 'Frappe toutes les cibles adjacentes (8 cases). Inflige 110 + 1,3 AD dégâts physiques.',
       manaCost: 90, range: 1, cooldown: 6, cdMin: 1,
-      damageType: 'physical', baseDamage: 110, adRatio: 1, apRatio: 0,
+      damageType: 'physical', baseDamage: 110, adRatio: 1.3, apRatio: 0,
       targetType: 'no_target', adjacentHit: true, zone: null, effects: []
     }
   ]
@@ -437,14 +437,14 @@ HERO_TYPES['dpt_1'] = {
   portrait: 'assets/heroes/decigeno.png',
   passive: 'decigeno_passive',
   maxHP: 1800, maxMana: 250, hpRegen: 50, manaRegen: 30,
-  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 7,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 7,
   spells: [
     {
       id: 'decigeno_q', name: 'Traque',
-      description: 'Pose un piège pendant 3 tours. Si un ennemi marche dessus : 160 + 0.4 AD + 1 AP dégâts magiques.',
+      description: 'Pose un piège permanent. Si un ennemi marche dessus : 80 + 1,3 AD dégâts physiques. Le piège ne disparaît pas après déclenchement.',
       manaCost: 80, range: 6, cooldown: 2, cdMin: 1,
-      damageType: 'magical', baseDamage: 160, adRatio: 0.4, apRatio: 1,
-      targetType: 'trap', zone: null, effects: []
+      damageType: 'physical', baseDamage: 80, adRatio: 1.3, apRatio: 0,
+      targetType: 'trap', permanent: true, zone: null, effects: []
     },
     {
       id: 'decigeno_w', name: 'Sniping',
@@ -505,9 +505,9 @@ HERO_TYPES['mage_2'] = {
   spells: [
     {
       id: 'vadro_q', name: 'Morsure',
-      description: 'Inflige 30 + 0.8 AP dégâts magiques et applique Hémorragie.',
+      description: 'Inflige 60 + 0.6 AP dégâts magiques et applique Hémorragie.',
       manaCost: 90, range: 6, cooldown: 4,
-      damageType: 'magical', baseDamage: 30, adRatio: 0, apRatio: 0.8,
+      damageType: 'magical', baseDamage: 60, adRatio: 0, apRatio: 0.6,
       targetType: 'enemy_hero', zone: null, effects: [{ type: 'hemorrhage', turns: 1 }]
     },
     {
@@ -519,9 +519,9 @@ HERO_TYPES['mage_2'] = {
     },
     {
       id: 'vadro_r', name: 'Alucard',
-      description: 'Inflige 100 + 1 AP dégâts magiques à tous les héros ennemis à 6 cases ou moins.',
+      description: 'Inflige 80 + 0,8 AP dégâts magiques à tous les héros ennemis à 6 cases ou moins.',
       manaCost: 140, range: 6, cooldown: 9,
-      damageType: 'magical', baseDamage: 100, adRatio: 0, apRatio: 1,
+      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.8,
       targetType: 'no_target', zone: null, effects: []
     }
   ]
@@ -762,24 +762,24 @@ HERO_TYPES['roam_6'] = {
   spells: [
     {
       id: 'hornet_q', name: 'Lance Soyeuse',
-      description: 'Lance en ligne droite (portée 5) : marque la cible jusqu\'à la fin du prochain tour, infligeant 50 + 0,6×AD dégâts physiques. Réactivation (portée infinie, de n\'importe où) sur la cible marquée : dégâts +25 + 0,4×AD + téléportation adjacente (non diagonale).',
+      description: 'Lance en ligne droite (portée 5) : marque la cible jusqu\'à la fin du prochain tour, infligeant 50 + 0,6×AD dégâts physiques. Réactivation (portée infinie, de n\'importe où) sur la cible marquée : dégâts +25 + 0,3×AD + téléportation adjacente (non diagonale).',
       manaCost: 80, range: 5, cooldown: 5, maxUsesPerTurn: 2,
       damageType: 'physical', baseDamage: 50, adRatio: 0.6, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: [], harpooned: true, reusable: true
     },
     {
       id: 'hornet_w', name: 'Pourfandage aiguisé',
-      description: 'Attaque une cible adjacente, infligeant 30 + 1×AD dégâts physiques. Si la cible est marquée par Lance Soyeuse, inflige 15 + 0,5×AD dégâts supplémentaires et vole 1 PM.',
+      description: 'Attaque une cible adjacente, infligeant 30 + 0,6×AD dégâts physiques. Si la cible est marquée par Lance Soyeuse, inflige 15 + 0,8×AD dégâts supplémentaires et vole 1 PM.',
       manaCost: 80, range: 1, cooldown: 4,
-      damageType: 'physical', baseDamage: 30, adRatio: 1, apRatio: 0,
+      damageType: 'physical', baseDamage: 30, adRatio: 0.6, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: [], usesHarpoon: true
     },
     {
       id: 'hornet_r', name: 'Tisse-tempête',
-      description: 'Inflige 50 + 1×AD dégâts physiques autour d\'elle (zone 3PO) et retire 3 PM à toutes les cibles touchées.',
+      description: 'Inflige 50 + 1×AD dégâts physiques autour d\'elle (zone 3PO) et retire 2 PM à toutes les cibles touchées.',
       manaCost: 130, range: 0, cooldown: 10,
       damageType: 'physical', baseDamage: 50, adRatio: 1, apRatio: 0,
-      targetType: 'no_target', zone: null, effects: [], pmSteal: 3
+      targetType: 'no_target', zone: null, effects: [], pmSteal: 2
     }
   ]
 };
@@ -887,20 +887,20 @@ HERO_TYPES['mage_5'] = {
   portrait: 'assets/heroes/pibot.png',
   passive: 'pibot_passive',
   maxHP: 2100, maxMana: 300, hpRegen: 40, manaRegen: 30,
-  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 6,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
   spells: [
     {
       id: 'pibot_q', name: 'Pinces robotiques',
-      description: 'Attire un ennemi de 2 cases en ligne droite et lui inflige 80 + 0,7 AP dégâts magiques.',
+      description: 'Attire un ennemi au corps à corps en ligne droite et lui inflige 110 + 0,8 AP dégâts magiques.',
       manaCost: 70, range: 6, cooldown: 3, cdMin: 1,
-      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.7,
-      targetType: 'enemy_hero', requiresLine: true, pullCells: 2, zone: null, effects: []
+      damageType: 'magical', baseDamage: 110, adRatio: 0, apRatio: 0.8,
+      targetType: 'enemy_hero', requiresLine: true, pullCells: 20, zone: null, effects: []
     },
     {
       id: 'pibot_w', name: 'Station de recharge',
-      description: 'Actif (sur soi-même) : la prochaine attaque de base de Pibot inflige 0,8 AP dégâts magiques supplémentaires.',
+      description: 'Actif (sur soi-même) : la prochaine attaque de base de Pibot inflige 40 + 1,1 AP dégâts magiques supplémentaires.',
       manaCost: 100, range: 0, cooldown: 4, cdMin: 1,
-      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0.8,
+      damageType: 'magical', baseDamage: 40, adRatio: 0, apRatio: 1.1,
       targetType: 'pibot_w', zone: null, effects: []
     },
     {
@@ -1003,8 +1003,8 @@ HERO_TYPES['solo_4'] = {
     },
     {
       id: 'grolith_r', name: 'Éboulement',
-      description: 'Tous les ennemis adjacents à un mur reçoivent 120 + 0,6×AP dégâts magiques et sont stun 1 tour.',
-      manaCost: 130, range: 0, cooldown: 12, initialCooldown: 1,
+      description: 'Tous les ennemis adjacents à un mur dans un rayon de 20 cases (Manhattan) reçoivent 120 + 0,6×AP dégâts magiques et sont stun 1 tour.',
+      manaCost: 130, range: 20, cooldown: 12, initialCooldown: 1,
       damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 0.6,
       targetType: 'no_target',
       grolihtEboulement: true,

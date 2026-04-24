@@ -317,7 +317,8 @@
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
   <div class="patch-tabs">
-    <button class="patch-tab active" onclick="showPatch('patch-103', this)">Alpha 1.0.3</button>
+    <button class="patch-tab active" onclick="showPatch('patch-110', this)">Alpha 1.1.0</button>
+    <button class="patch-tab" onclick="showPatch('patch-103', this)">Alpha 1.0.3</button>
     <button class="patch-tab" onclick="showPatch('patch-102', this)">1.0.2</button>
     <button class="patch-tab" onclick="showPatch('patch-23avr', this)">23 Avril 2026</button>
     <button class="patch-tab" onclick="showPatch('patch-22avr', this)">22 Avril 2026</button>
@@ -327,9 +328,334 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
+<!-- PATCH ALPHA 1.1.0                                      -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="patch-110" class="patch-section active">
+<div class="patch-body">
+
+  <div class="patch-main">
+
+    <!-- SYSTÈME -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">⚙</span> SYSTÈME</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">Zones à gold — Condition de gain modifiée</div>
+          <ul>
+            <li>Les héros gagnent les golds d'une zone à gold s'ils ont <strong>terminé leur propre tour</strong> sur cette zone, et non plus à la fin du tour global.</li>
+            <li>Si un héros est déplacé de force après son tour (poussée, téléportation ennemie…), il conserve son droit aux golds.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Layia — Passif (Attaque globale)</div>
+          <ul>
+            <li>Les attaques de base de Layia frappaient uniquement la cible sélectionnée si celle-ci était derrière un mur. Corrigé : toutes les cibles à portée sont désormais touchées, y compris derrière les murs.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Zones de soin — Nouvelle fonctionnalité</div>
+          <ul>
+            <li>Des zones de soin (teinte verte) apparaissent désormais autour des zones de spawn de chaque équipe.</li>
+            <li>Un héros qui <strong>termine son tour individuel</strong> sur une case de soin récupère <strong>35 % de ses HP manquants</strong>.</li>
+            <li>Ce soin est réduit de 50 % par l'effet <strong>Hémorragie</strong>.</li>
+            <li>Cooldown de <strong>2 tours</strong> par zone après déclenchement.</li>
+            <li>Zones de coin : carrés 3×3 autour de chaque spawn. Zone midlane : 2×2, positionnée vers les côtés de la carte.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BUFFS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">↑</span> BUFFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/frigiel.png" alt="Frigiel">
+          <div class="hero-card-name">Frigiel</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Frigiel</div>
+            <ul>
+              <li><span class="up">Couperie — Coût mana : <strong>80 → 50</strong></span></li>
+              <li><span class="up">Plastron — Coût mana : <strong>110 → 70</strong></span></li>
+              <li><span class="up">Appel du Chevalier — Coût mana : <strong>130 → 80</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/ondine.png" alt="Ondine">
+          <div class="hero-card-name">Ondine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Ondine</div>
+            <ul>
+              <li><span class="up">PM : <strong>3 → 4</strong></span></li>
+              <li><span class="up">Fendre la lame — Ignore désormais la ligne de vue (traverse les murs)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/masello.png" alt="Masello">
+          <div class="hero-card-name">Masello</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Masello</div>
+            <ul>
+              <li><span class="up">AD de base : <strong>50 → 70</strong></span></li>
+              <li><span class="up">Energy Kick — Ratio AD : <strong>1,0 → 1,3</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/decigeno.png" alt="Decigeno">
+          <div class="hero-card-name">Decigeno</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Decigeno</div>
+            <ul>
+              <li><span class="up">PM : <strong>3 → 4</strong></span></li>
+              <li><span class="up">Predator Mode — Bonus : <strong>+5% → +15%</strong> par PM consommé</span></li>
+              <li><span class="up">Traque — Piège permanent (ne disparaît plus après déclenchement)</span></li>
+              <li><span class="up">Traque — Dégâts : <strong>160 + 0,4 AD + 1 AP mag → 80 + 1,3 AD phys</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NERFS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">↓</span> NERFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/hornet.png" alt="Hornet">
+          <div class="hero-card-name">Hornet</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Hornet</div>
+            <ul>
+              <li><span class="down">Lance Soyeuse — Réactivation : <strong>25 + 0,4 AD → 25 + 0,3 AD</strong></span></li>
+              <li><span class="down">Pourfandage aiguisé — Base : <strong>30 + 1 AD → 30 + 0,6 AD</strong></span></li>
+              <li><span class="neu">Pourfandage aiguisé — Bonus marque : <strong>15 + 0,5 AD → 15 + 0,8 AD</strong></span></li>
+              <li><span class="neu">Tisse-tempête — PM retirés : <strong>3 → 2</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/grolith.png" alt="Grolith">
+          <div class="hero-card-name">Grolith</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Grolith</div>
+            <ul>
+              <li><span class="down">Éboulement — Portée : <strong>carte entière → 20 cases Manhattan</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/electro.png" alt="Electro">
+          <div class="hero-card-name">Electro</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Electro</div>
+            <ul>
+              <li><span class="down">Décharge — Coût mana : <strong>110 → 140</strong></span></li>
+              <li><span class="down">Tonnerre — CD : <strong>8 → 11</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/vadro.png" alt="Vadro">
+          <div class="hero-card-name">Vadro</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Vadro</div>
+            <ul>
+              <li><span class="neu">Morsure — Dégâts : <strong>30 + 0,8 AP → 60 + 0,6 AP</strong></span></li>
+              <li><span class="down">Alucard — Dégâts : <strong>100 + 1 AP → 80 + 0,8 AP</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AJUSTEMENTS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> AJUSTEMENTS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/pibot.png" alt="Pibot">
+          <div class="hero-card-name">Pibot</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Pibot</div>
+            <ul>
+              <li><span class="down">PO de base : <strong>6 → 1</strong></span></li>
+              <li><span class="up">Pinces robotiques — Attire au corps à corps (au lieu de 2 cases)</span></li>
+              <li><span class="neu">Pinces robotiques — Dégâts : <strong>80 + 0,7 AP → 110 + 0,8 AP</strong></span></li>
+              <li><span class="up">Station de recharge — Bonus AA : <strong>0,8 AP → 40 + 1,1 AP</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS BUFFS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">↑</span> BUFFS — ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card buff">
+          <img src="img/items/coeur_de_titane.png" alt="Cœur de Titane">
+          <div class="item-card-name">Cœur de Titane</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Cœur de Titane</div>
+            <ul>
+              <li><span class="up">Gain HP max : <strong>2% → 3%</strong> par auto-attaque</span></li>
+              <li><span class="up">Nouveau : inflige <strong>2% de vos HP max</strong> en dégâts physiques à la cible</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/faux_bleue_du_mal.png" alt="Faux Bleue du Mal">
+          <div class="item-card-name">Faux Bleue du Mal</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Faux Bleue du Mal</div>
+            <ul>
+              <li><span class="up">Nouveau : récupère <strong>10% du mana manquant</strong> sur attaque renforcée</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/furie_magique.png" alt="Furie Magique">
+          <div class="item-card-name">Furie Magique</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Furie Magique</div>
+            <ul>
+              <li><span class="up">Ignorance RM : <strong>5% → 7%</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/sceptre_ange.png" alt="Sceptre de l'Ange">
+          <div class="item-card-name">Sceptre de l'Ange</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sceptre de l'Ange</div>
+            <ul>
+              <li><span class="up">Dernier Recours — Bouclier : <strong>35% → 100%</strong> du mana actuel</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/epee_ange.png" alt="Épée de l'Ange">
+          <div class="item-card-name">Épée de l'Ange</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Épée de l'Ange</div>
+            <ul>
+              <li><span class="up">Mana Renforçant : <strong>3% → 5%</strong> du mana max en dégâts AA</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/diademe_de_la_reine.png" alt="Diadème de la Reine">
+          <div class="item-card-name">Diadème de la Reine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Diadème de la Reine</div>
+            <ul>
+              <li><span class="up">Bonus soins : <strong>3% → 6%</strong> du mana max</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS NERFS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">↓</span> NERFS — ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card nerf">
+          <img src="img/items/sceptre_du_malin.png" alt="Sceptre du Malin">
+          <div class="item-card-name">Sceptre du Malin</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sceptre du Malin</div>
+            <ul>
+              <li><span class="down">Mana max : <strong>600 → 400</strong></span></li>
+              <li><span class="up">CD ultime : <strong>−1 → −2</strong> lors de l'utilisation</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/torche_sombre.png" alt="Torche Sombre">
+          <div class="item-card-name">Torche Sombre</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Torche Sombre</div>
+            <ul>
+              <li><span class="down">Mana max : <strong>500 → 350</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS AJUSTEMENTS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">◈</span> AJUSTEMENTS — ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card adj">
+          <img src="img/items/lame_du_diable.png" alt="Lame du Diable">
+          <div class="item-card-name">Lame du Diable</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Lame du Diable</div>
+            <ul>
+              <li><span class="up">Corps à corps (PO 1) : <strong>7% → 8%</strong> HP actuels</span></li>
+              <li><span class="down">Distance : <strong>7% → 6%</strong> HP actuels</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/blue_blade.png" alt="Lame Bleue">
+          <div class="item-card-name">Lame Bleue</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Lame Bleue</div>
+            <ul>
+              <li><span class="neu">Passif refondu : attaque renforcée → <strong>+0,5×AD</strong> dégâts physiques (au lieu de +15%)</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-main -->
+
+  <div class="patch-side">
+  </div><!-- /patch-side -->
+
+</div><!-- /patch-body -->
+</div><!-- /patch-110 -->
+
+<!-- ══════════════════════════════════════════════════════ -->
 <!-- PATCH 23 AVRIL 2026                                    -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="patch-103" class="patch-section active">
+<div id="patch-103" class="patch-section">
 <div class="patch-body">
 
   <div class="patch-main">
