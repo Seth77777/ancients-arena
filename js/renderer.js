@@ -813,12 +813,8 @@ class Renderer {
       const isActive = g.actionMode === 'spell' && g.selectedSpell?.id === spell.id;
 
       btn.className = 'action-btn spell-btn';
-      let noBattery = false;
-      if (spell.targetType === 'pibot_w') {
-        noBattery = !g.pibotBatteries.some(b => b.heroInstanceId === hero.instanceId);
-      }
       const _recallReactivation = spell.targetType === 'solo_recall' && hero.soloRecallActive;
-      btn.disabled  = used || (cd > 0 && !_recallReactivation) || (noMana && !_recallReactivation) || g.actionsUsed >= MAX_ACTIONS || noBattery;
+      btn.disabled  = used || (cd > 0 && !_recallReactivation) || (noMana && !_recallReactivation) || g.actionsUsed >= MAX_ACTIONS;
       btn.classList.toggle('active-mode', isActive);
       if (_recallReactivation) btn.classList.add('recall-ready');
       btn.dataset.spellId = spell.id;
@@ -1316,6 +1312,26 @@ class Renderer {
     this.highlightSpell = targets;
   }
 
+  setWindGlyphDirectionHighlight(cx, cy) {
+    this.highlightPushDirs = [];
+    this.pushDirArrows     = [];
+    const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+    dirs.forEach(({dx, dy}) => {
+      const cells = [];
+      for (let step = 1; step <= 3; step++) {
+        const nx = cx + dx * step, ny = cy + dy * step;
+        if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) break;
+        if (isWall(nx, ny)) break;
+        cells.push({ x: nx, y: ny });
+      }
+      if (cells.length) {
+        cells.forEach(c => this.highlightPushDirs.push(c));
+        const end = cells[cells.length - 1];
+        this.pushDirArrows.push({ x: end.x, y: end.y, dx, dy });
+      }
+    });
+  }
+
   setPushDirectionHighlight(enemy) {
     this.highlightPushDirs = [];
     this.pushDirArrows     = [];
@@ -1433,6 +1449,18 @@ class Renderer {
         if (x !== tx || y !== ty) return { inZone: false, valid: false };
         const t = g.getHeroAt(tx, ty);
         return { inZone: true, valid: !!t && t.playerIdx === hero.playerIdx && t !== hero };
+      }
+      case 'fenino_q': {
+        if (x !== tx || y !== ty) return { inZone: false, valid: false };
+        const t = g.getHeroAt(tx, ty);
+        if (!t || t.playerIdx !== hero.playerIdx || t === hero) return { inZone: true, valid: false };
+        return { inZone: true, valid: g._manhattan(hero.position, t.position) <= sp.range };
+      }
+      case 'fenino_w': {
+        if (x !== tx || y !== ty) return { inZone: false, valid: false };
+        const t = g.getHeroAt(tx, ty);
+        if (!t || t.playerIdx === hero.playerIdx) return { inZone: true, valid: false };
+        return { inZone: true, valid: g._manhattan(hero.position, t.position) <= sp.range };
       }
       case 'dash_behind_enemy': {
         if (x !== tx || y !== ty) return { inZone: false, valid: false };

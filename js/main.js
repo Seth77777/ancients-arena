@@ -15,6 +15,7 @@ const PASSIVE_LABELS = {
   chronos_passive:  'Maître du Temps — Chaque sort lancé rapporte 50 PO à Chronos.',
   shana_passive:    'Félin pour l\'autre — Quand Shana soigne un allié, elle se soigne aussi du même montant.',
   anastasia_passive: 'Soins Intéressés — Chaque fois qu\'Anastasia soigne un héros (allié ou elle-même), elle gagne 50 PO. Elle peut soigner des cibles à pleine vie.',
+  fenino_passive:    'Impulsion — Lorsque Fenino effectue un dash (Sort 1 ou Sort 2), il gagne +1 PM jusqu\'à la fin de son tour.',
   dans_la_chair:      'Dans la chair — Chaque sort de Frigiel inflige 5% des HP max de la cible en dégâts bruts supplémentaires.',
   gros_calibre:       'Gros Calibre — Les attaques de base de Stank infligent les mêmes dégâts physiques à tous les ennemis dans un rayon de 4 cases autour de la cible.',
   sharagoth_passive:  'Plus forts ensemble — Au début de son tour, Sharagoth gagne un bouclier de 10% de ses HP max par allié présent à moins de 10 cases (Manhattan), pendant 2 tours.',

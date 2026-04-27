@@ -265,7 +265,7 @@ HERO_TYPES['solo_3'] = {
   portrait: 'assets/heroes/ondine.png',
   passive: 'vaillance',
   maxHP: 2450, maxMana: 400, hpRegen: 45, manaRegen: 50,
-  ad: 75, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 1,
+  ad: 75, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
   spells: [
     {
       id: 'ondine_q', name: 'Estoc',
@@ -634,7 +634,7 @@ HERO_TYPES['support_3'] = {
     {
       id: 'anastasia_q', name: 'Soin Prudent',
       description: 'Soigne un allié ou soi-même de 30 + 0,7×AP HP. Utilisable 2 fois par tour (CD réel : 1).',
-      manaCost: 70, range: 5, cooldown: 1,
+      manaCost: 70, range: 5, cooldown: 1, cdMin: 0,
       damageType: null, healBase: 30, healApRatio: 0.7, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'ally_hero', maxUsesPerTurn: 2, zone: null, effects: []
     },
@@ -1055,6 +1055,40 @@ HERO_TYPES['solo_5'] = {
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
+    }
+  ]
+};
+
+HERO_TYPES['support_6'] = {
+  id: 'support_6', name: 'Fenino', role: 'SUPPORT', roleId: 'support', roleOrder: 5,
+  colorFill: '#9a6b0e', colorStroke: '#f39c12',
+  portrait: 'assets/heroes/fenino.png',
+  passive: 'fenino_passive',
+  maxHP: 2100, maxMana: 420, hpRegen: 50, manaRegen: 25,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
+  spells: [
+    {
+      id: 'fenino_q', name: 'Ton meilleur ami',
+      description: 'Dash sur une case adjacente à un allié (portée 4) et le soigne de 50 + 0,8×AP.',
+      manaCost: 80, range: 4, cooldown: 4,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      healBase: 50, healApRatio: 0.8,
+      targetType: 'fenino_q', zone: null, effects: []
+    },
+    {
+      id: 'fenino_w', name: 'On s\'arrête',
+      description: 'Dash sur une case adjacente à un ennemi (portée 3) et lui inflige 180 + 0,3×AP dégâts magiques. La cible perd 4 PM ce tour.',
+      manaCost: 110, range: 3, cooldown: 5,
+      damageType: 'magical', baseDamage: 180, adRatio: 0, apRatio: 0.3,
+      targetType: 'fenino_w', zone: null,
+      effects: [{ type: 'slow', pmReduction: 4, turns: 1 }]
+    },
+    {
+      id: 'fenino_r', name: 'Figez vous !',
+      description: 'Ce tour, chaque ennemi adjacent à Fenino lors d\'un déplacement ou d\'un dash est root et voit ses dégâts réduits de 30% à son prochain tour.',
+      manaCost: 130, range: 0, cooldown: 10,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'no_target', feninoR: true, zone: null, effects: []
     }
   ]
 };

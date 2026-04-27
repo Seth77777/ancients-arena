@@ -252,11 +252,46 @@ class InputHandler {
       const heroTargetTypes = ['enemy_hero','swap_enemy','ally_hero','swap_ally',
         'dash_to_enemy','dash_to_ally','dash_behind_enemy','abyss_r','solo_recall'];
       const cellTargetTypes = ['cell','zone','diamond_zone','stealth_dash','trap',
-        'line_zone','place_glyph','wind_glyph','cone_zone','bomb_zone',
+        'line_zone','place_glyph','cone_zone','bomb_zone',
         'hate_wall','lame_eau','abyss_w','faena_w','faena_r','pibot_r',
         'noyala_q','noyala_r'];
 
       let done = false;
+
+      if (spell.targetType === 'wind_glyph') {
+        if (!g.windGlyphTarget) {
+          const hero = g.currentHero;
+          const relX = cell.x - hero.position.x, relY = cell.y - hero.position.y;
+          const isCardinal = (relX === 0) !== (relY === 0);
+          const dist = Math.abs(relX) + Math.abs(relY);
+          if (isCardinal && dist >= 1 && dist <= spell.range && !isWall(cell.x, cell.y)) {
+            g.windGlyphTarget = { x: cell.x, y: cell.y };
+            r.setWindGlyphDirectionHighlight(cell.x, cell.y);
+            r.render(); r.updateUI();
+          }
+        } else {
+          const zc = g.windGlyphTarget;
+          const relX = cell.x - zc.x, relY = cell.y - zc.y;
+          if ((relX !== 0) !== (relY !== 0)) {
+            const dx = Math.sign(relX), dy = Math.sign(relY);
+            const dist = Math.abs(relX) + Math.abs(relY);
+            if (dist >= 1 && dist <= 3) {
+              if (isGuest) {
+                window.OnlineMode.sendGuestAction({ type: 'spell', spellId: spell.id,
+                  target: { x: zc.x, y: zc.y, dx, dy } });
+              } else {
+                g.castSpell(spell, { x: zc.x, y: zc.y, dx, dy });
+                this._onlineSync();
+              }
+              g.windGlyphTarget = null;
+              done = true;
+            }
+          }
+        }
+        if (done) { r.clearHighlights(); g.actionMode = null; g.selectedSpell = null; }
+        r.render(); r.updateUI();
+        return;
+      }
 
       if (spell.targetType === 'push_enemy') {
         if (!g.pushTarget) {
@@ -372,6 +407,7 @@ class InputHandler {
     const spell = g.selectedSpell;
     if (!spell || spell.targetType === 'self' || spell.targetType === 'no_target' || spell.targetType === 'pm_sacrifice') return;
     if (spell.targetType === 'push_enemy' && g.pushTarget) return;
+    if (spell.targetType === 'wind_glyph' && g.windGlyphTarget) return;
     if (!cell) { r.zoneSpellTarget = null; r.render(); return; }
     r.zoneSpellTarget = cell;
     r.render();
@@ -478,7 +514,7 @@ class InputHandler {
 
   _cancelMode() {
     const g = this.game, r = this.renderer;
-    g.actionMode = null; g.selectedSpell = null; g.pushTarget = null; g.selectedWolf = null;
+    g.actionMode = null; g.selectedSpell = null; g.pushTarget = null; g.windGlyphTarget = null; g.selectedWolf = null;
     r.clearHighlights(); r.render(); r.updateUI();
   }
 

@@ -802,13 +802,28 @@ class GameState {
           const healFactor = hero.hemorrhageTurns > 0 ? 0.5 : 1;
           const heal = Math.floor(missing * 0.35 * healFactor);
           hero.currentHP = Math.min(hero.maxHP, hero.currentHP + heal);
-          hero.healZoneCooldown = 2;
+          hero.healZoneCooldown = 4;
           this.addLog(`${hero.name} — Zone de soin : +${heal} HP${hero.hemorrhageTurns > 0 ? ' (hémorragie -50%)' : ''}`);
         }
       } else {
         this.addLog(`${hero.name} — Zone de soin en recharge (${hero.healZoneCooldown} tour${hero.healZoneCooldown > 1 ? 's' : ''})`);
       }
     }
+
+    // Fenino Sort 3 — appliquer root + réduction dégâts aux ennemis tagués
+    if (hero && hero.feninoRActive && hero.feninoRTagged?.size > 0) {
+      hero.feninoRTagged.forEach(instanceId => {
+        const tagged = this.players.flatMap(p => p.heroes).find(h => h.instanceId === instanceId);
+        if (!tagged || !tagged.isAlive) return;
+        tagged.rootTurns = Math.max(tagged.rootTurns || 0, 1);
+        tagged.feninoDebuffActive = true;
+        this.addLog(`${tagged.name} — Figez vous ! : root + dégâts −30% au prochain tour`);
+      });
+    }
+    if (hero) { hero.feninoRActive = false; hero.feninoRTagged = null; }
+
+    // Nettoyer le debuff Fenino en fin de tour du héros affecté
+    if (hero && hero.feninoDebuffActive) hero.feninoDebuffActive = false;
 
     // Passif Anneau Magique : +10% or si seul dans une zone à gold
     if (hero && hero.items.includes('magic_ring') && hero.position) {
@@ -1296,6 +1311,7 @@ class GameState {
     this.addLog(`${hero.name} → (${tx},${ty}) [−${result.cost} PM, reste ${this.movementLeft}]`);
     if (hero.roleId === 'roam') this._checkBrownCollection(hero);
     this._checkPibotBattery(hero);
+    this._feninoRCheckAdjacent(hero);
     this._checkTrap(hero);
     this._checkBombZone(hero);
     return true;
@@ -1627,6 +1643,15 @@ class GameState {
           }
         });
       }
+      // Passif Épée de Mana : +manaOnAutoAttack Mana max par attaque de base (plafonné)
+      if (attacker.manaOnAutoAttack > 0 && attacker.manaOnSpellGained < attacker.manaOnSpellMax) {
+        const aaGain = Math.min(attacker.manaOnAutoAttack, attacker.manaOnSpellMax - attacker.manaOnSpellGained);
+        attacker.maxMana += aaGain;
+        attacker.manaOnSpellGained += aaGain;
+        this.addLog(`${attacker.name} — Épée de Mana : +${aaGain} Mana max`);
+        if (attacker.manaOnSpellGained >= attacker.manaOnSpellMax && attacker.items.includes('epee_de_mana'))
+          this._transformItem(attacker, 'epee_de_mana', 'epee_ange');
+      }
       if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
       this.actionsUsed++;
       this.canBuy = false;
@@ -1668,6 +1693,15 @@ class GameState {
         const titanDmg = this._reduceDmg(Math.floor(attacker.maxHP * 0.02), 'physical', targetHero);
         if (titanDmg > 0) this._applyDamage(targetHero, titanDmg, attacker, 'physical');
         this.addLog(`${attacker.name} — Cœur de Titane : +${gain} HP max, −${titanDmg} dégâts physiques`);
+      }
+      // Passif Épée de Mana : +manaOnAutoAttack Mana max par attaque de base (plafonné)
+      if (attacker.manaOnAutoAttack > 0 && attacker.manaOnSpellGained < attacker.manaOnSpellMax) {
+        const aaGain = Math.min(attacker.manaOnAutoAttack, attacker.manaOnSpellMax - attacker.manaOnSpellGained);
+        attacker.maxMana += aaGain;
+        attacker.manaOnSpellGained += aaGain;
+        this.addLog(`${attacker.name} — Épée de Mana : +${aaGain} Mana max`);
+        if (attacker.manaOnSpellGained >= attacker.manaOnSpellMax && attacker.items.includes('epee_de_mana'))
+          this._transformItem(attacker, 'epee_de_mana', 'epee_ange');
       }
       if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
       this.actionsUsed++;
@@ -1890,6 +1924,15 @@ class GameState {
       if (titanDmg > 0) this._applyDamage(targetHero, titanDmg, attacker, 'physical');
       this.addLog(`${attacker.name} — Cœur de Titane : +${gain} HP max, −${titanDmg} dégâts physiques`);
     }
+    // Passif Épée de Mana : +manaOnAutoAttack Mana max par attaque de base (plafonné)
+    if (attacker.manaOnAutoAttack > 0 && attacker.manaOnSpellGained < attacker.manaOnSpellMax) {
+      const aaGain = Math.min(attacker.manaOnAutoAttack, attacker.manaOnSpellMax - attacker.manaOnSpellGained);
+      attacker.maxMana += aaGain;
+      attacker.manaOnSpellGained += aaGain;
+      this.addLog(`${attacker.name} — Épée de Mana : +${aaGain} Mana max`);
+      if (attacker.manaOnSpellGained >= attacker.manaOnSpellMax && attacker.items.includes('epee_de_mana'))
+        this._transformItem(attacker, 'epee_de_mana', 'epee_ange');
+    }
     if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
     this.actionsUsed++;
     this.canBuy = false;
@@ -1950,7 +1993,7 @@ class GameState {
     if (caster.mutedThisTurn || (caster.statusEffects || []).some(e => e.type === 'mute')) {
       this.addLog(`${caster.name} est muet — sorts bloqués !`); return false;
     }
-    const _dashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy','swap_enemy','swap_ally','faena_w','pibot_w'];
+    const _dashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy','swap_enemy','swap_ally','faena_w','pibot_w','fenino_q','fenino_w'];
     if ((caster.rootTurns || 0) > 0 && _dashTypes.includes(spell.targetType)) {
       this.addLog(`${caster.name} est immobilisé — dash bloqué !`); return false;
     }
@@ -2649,6 +2692,14 @@ class GameState {
           this._checkGameOver();
           break;
         }
+        // Fenino — Figez vous ! : active le tracking d'adjacence durant le tour
+        if (spell.feninoR) {
+          caster.feninoRActive = true;
+          caster.feninoRTagged = new Set();
+          this._feninoRCheckAdjacent(caster);
+          this.addLog(`${caster.name} → ${spell.name} : actif ce tour !`);
+          break;
+        }
         // Shana — À la Rescousse : soigne tous les alliés
         if (spell.healAllAllies) {
           const _echoHealBonus2 = this._consumeEchoCharges(caster);
@@ -2806,6 +2857,42 @@ class GameState {
         if (caster.passive === 'electro_passive') { caster.ap += 5; this.addLog(`${caster.name} — Passif : +5 AP`); }
         break;
       }
+      case 'fenino_q': {
+        const ally = target?.hero;
+        if (!ally || ally.playerIdx !== caster.playerIdx || ally === caster) { success = false; break; }
+        const fqAdj = this._getAdjacentFreeCells(ally.position, caster);
+        if (!fqAdj.length) { this.addLog('Aucune case libre autour de l\'allié !'); success = false; break; }
+        const fqDest = fqAdj.reduce((best, c) =>
+          this._manhattan(caster.position, c) < this._manhattan(caster.position, best) ? c : best
+        );
+        caster.position = fqDest;
+        this._checkTrap(caster);
+        this._feninoRCheckAdjacent(caster);
+        if (caster.passive === 'fenino_passive') { this.movementLeft = Math.min(caster.pm, this.movementLeft + 1); this.addLog(`${caster.name} — Passif : +1 PM`); }
+        const fqHeal = Math.floor((spell.healBase || 0) + this._effectiveAP(caster) * (spell.healApRatio || 0));
+        const fqHealFinal = Math.floor(fqHeal * (1 + (ally.healEfficiency || 0) / 100) * (ally.hemorrhageTurns > 0 ? 0.5 : 1));
+        ally.currentHP = Math.min(ally.maxHP, ally.currentHP + fqHealFinal);
+        this.addLog(`${caster.name} → ${spell.name} → ${ally.name} : +${fqHealFinal} HP`);
+        break;
+      }
+      case 'fenino_w': {
+        const fwEnemy = target?.hero;
+        if (!fwEnemy || fwEnemy.playerIdx === caster.playerIdx) { success = false; break; }
+        const fwAdj = this._getAdjacentFreeCells(fwEnemy.position, caster);
+        if (!fwAdj.length) { this.addLog('Aucune case libre autour de la cible !'); success = false; break; }
+        const fwDest = fwAdj.reduce((best, c) =>
+          this._manhattan(caster.position, c) < this._manhattan(caster.position, best) ? c : best
+        );
+        caster.position = fwDest;
+        this._checkTrap(caster);
+        this._feninoRCheckAdjacent(caster);
+        if (caster.passive === 'fenino_passive') { this.movementLeft = Math.min(caster.pm, this.movementLeft + 1); this.addLog(`${caster.name} — Passif : +1 PM`); }
+        const fwDmg = this._calcSpellDmg(caster, spell, fwEnemy);
+        this._applySpellDamage(caster, spell, fwEnemy, fwDmg);
+        this.addLog(`${caster.name} → ${spell.name} → ${fwEnemy.name}: −${fwDmg} HP`);
+        this._applySpellEffects(spell, [fwEnemy]);
+        break;
+      }
       case 'dash_behind_enemy': {
         const enemy = target?.hero;
         if (!enemy || enemy.playerIdx === caster.playerIdx) { success = false; break; }
@@ -2953,10 +3040,13 @@ class GameState {
           e.position && zoneCells.some(c => c.x === e.position.x && c.y === e.position.y)
         );
         if (!enemies.length) { this.addLog('Aucun ennemi dans la zone !'); success = false; break; }
+        const chosenDir = (target.dx !== undefined && target.dy !== undefined) ? { dx: target.dx, dy: target.dy } : null;
         const myGlyphs = this.glyphs.filter(g => g.playerIdx === caster.playerIdx && g.type === 'pain');
         enemies.forEach(enemy => {
           let pushDir;
-          if (myGlyphs.length > 0) {
+          if (chosenDir) {
+            pushDir = chosenDir;
+          } else if (myGlyphs.length > 0) {
             const nearest = myGlyphs.reduce((best, g) =>
               this._manhattan(enemy.position, { x: g.centerX, y: g.centerY }) <
               this._manhattan(enemy.position, { x: best.centerX, y: best.centerY }) ? g : best
@@ -3057,7 +3147,7 @@ class GameState {
       // CD 0 = pas de rechargement ; sinon réduction normale
       if (!_skjerReset && spell.cooldown > 0) {
         const _hasStun = spell.effects?.some(e => e.type === 'stun');
-        const _minCd   = _hasStun ? 2 : 1;
+        const _minCd   = spell.cdMin ?? (_hasStun ? 2 : 1);
         const _livreCount = caster.items.filter(id => id === 'livre_incantations').length;
         const _effectiveCdRed = (caster.cdReduction || 0) - Math.max(0, _livreCount - 1);
         let _cd = Math.max(_minCd, spell.cooldown - _effectiveCdRed);
@@ -3228,6 +3318,22 @@ class GameState {
           }
         });
         return { heroes: [], heroesOutOfRange: [], cells };
+      }
+      case 'fenino_q': {
+        const all = this._getAllies(hero.playerIdx).filter(a => a !== hero && a.isAlive);
+        return {
+          heroes:           all.filter(a => this._manhattan(hero.position, a.position) <= effRange),
+          heroesOutOfRange: all.filter(a => this._manhattan(hero.position, a.position) >  effRange),
+          cells: _rangeCells()
+        };
+      }
+      case 'fenino_w': {
+        const all = this._getEnemies(hero.playerIdx);
+        return {
+          heroes:           all.filter(e => this._manhattan(hero.position, e.position) <= effRange),
+          heroesOutOfRange: all.filter(e => this._manhattan(hero.position, e.position) >  effRange),
+          cells: _rangeCells()
+        };
       }
       case 'dash_to_ally': {
         const all = this._getAllies(hero.playerIdx).filter(a => a !== hero && a.isAlive);
@@ -3684,6 +3790,10 @@ class GameState {
     if (damage > 0 && target.items?.includes('plastron_du_diable_immortel') && !(target.plastronDiableTriggerTurn > 0)) {
       target.plastronDiableTriggerTurn = this.globalTurn + 2;
     }
+    // Fenino Sort 3 — dégâts sortants réduits de 30%
+    if (attacker?.feninoDebuffActive) {
+      damage = Math.floor(damage * 0.7);
+    }
     // Passif Cupidon : Amour fou — réduit les dégâts de 50% si on a attaqué le caster au tour dernier
     if (target.passive === 'cupidon_passive' && attacker && target.cupidonAttackedLastTurn.has(attacker.instanceId)) {
       damage = Math.floor(damage * 0.5);
@@ -4078,6 +4188,15 @@ class GameState {
     }
     // Glyphe de Douleur : déclenchement à l'entrée (appelé ici pour couvrir tous les déplacements)
     if (hero.isAlive) this._checkGlyph(hero);
+  }
+
+  _feninoRCheckAdjacent(hero) {
+    if (!hero.feninoRActive || !hero.position) return;
+    if (!hero.feninoRTagged) hero.feninoRTagged = new Set();
+    this._getEnemies(hero.playerIdx).forEach(e => {
+      if (!e.isAlive || !e.position) return;
+      if (this._chebyshev(hero.position, e.position) <= 1) hero.feninoRTagged.add(e.instanceId);
+    });
   }
 
   _checkPibotBattery(hero) {

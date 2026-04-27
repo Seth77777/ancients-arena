@@ -317,7 +317,8 @@
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
   <div class="patch-tabs">
-    <button class="patch-tab active" onclick="showPatch('patch-110', this)">Alpha 1.1.0</button>
+    <button class="patch-tab active" onclick="showPatch('patch-111', this)">Alpha 1.1.1</button>
+    <button class="patch-tab" onclick="showPatch('patch-110', this)">Alpha 1.1.0</button>
     <button class="patch-tab" onclick="showPatch('patch-103', this)">Alpha 1.0.3</button>
     <button class="patch-tab" onclick="showPatch('patch-102', this)">1.0.2</button>
     <button class="patch-tab" onclick="showPatch('patch-23avr', this)">23 Avril 2026</button>
@@ -328,9 +329,124 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
+<!-- PATCH ALPHA 1.1.1                                      -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="patch-111" class="patch-section active">
+<div class="patch-body">
+
+  <div class="patch-main">
+
+    <!-- CORRECTIONS DE BUGS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">⚙</span> CORRECTIONS DE BUGS</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">Ondine — PM non appliqués</div>
+          <ul>
+            <li>Le passage de PM 3 → 4 annoncé en 1.1.0 n'avait pas été appliqué en pratique. Corrigé.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Anastasia — Soin Prudent bloqué par CD minimum</div>
+          <ul>
+            <li>Avec un item de réduction de CD, le Sort 1 ne descendait jamais en dessous de 1 tour de recharge, empêchant la double utilisation prévue. Corrigé : le sort peut désormais atteindre CD 0.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Pibot — Sort 2 grisé après collecte de batterie</div>
+          <ul>
+            <li>Ramasser la batterie désactivait le bouton de Station de recharge (héritage de l'ancienne logique de téléportation). Corrigé.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Zones de soin — Cooldown ajusté</div>
+          <ul>
+            <li>Le cooldown par héros passe de <strong>2 → 4 tours</strong>.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NOUVEAU HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">✦</span> NOUVEAU HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card new">
+          <img src="assets/heroes/fenino.png" alt="Fenino">
+          <div class="hero-card-name">Fenino</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Fenino — Support</div>
+            <ul>
+              <li><span class="neu"><strong>Passif — Impulsion :</strong> chaque dash accorde +1 PM jusqu'à la fin du tour.</span></li>
+              <li><span class="neu"><strong>Sort 1 — Ton meilleur ami :</strong> dash adjacent à un allié (portée 4) et le soigne de 50 + 0,8×AP. CD 4 · 80 mana.</span></li>
+              <li><span class="neu"><strong>Sort 2 — On s'arrête :</strong> dash adjacent à un ennemi (portée 3), lui inflige 180 + 0,3×AP dégâts magiques et lui retire 4 PM. CD 5 · 110 mana.</span></li>
+              <li><span class="neu"><strong>Sort 3 — Figez vous ! :</strong> ce tour, chaque ennemi adjacent à Fenino lors d'un déplacement ou d'un dash est root et voit ses dégâts réduits de 30% à son prochain tour. CD 10 · 130 mana.</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ITEMS BUFFS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">↑</span> BUFFS — ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card buff">
+          <img src="img/items/epee_de_mana.png" alt="Épée de Mana">
+          <div class="item-card-name">Épée de Mana</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Épée de Mana</div>
+            <ul>
+              <li><span class="up">Nouveau : chaque <strong>attaque de base</strong> augmente aussi le Mana max de <strong>+40</strong> (cap partagé à +700)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/sceptre_de_mana.png" alt="Sceptre de Mana">
+          <div class="item-card-name">Sceptre de Mana</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sceptre de Mana</div>
+            <ul>
+              <li><span class="up">Stacking par sort : <strong>40 → 55</strong> Mana max (cap inchangé à +700)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/couronne_de_la_reine.png" alt="Couronne de la Reine">
+          <div class="item-card-name">Couronne de la Reine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Couronne de la Reine</div>
+            <ul>
+              <li><span class="up">Stacking par sort : <strong>40 → 55</strong> Mana max (cap inchangé à +700)</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-main -->
+
+  <div class="patch-side">
+  </div><!-- /patch-side -->
+
+</div><!-- /patch-body -->
+</div><!-- /patch-111 -->
+
+<!-- ══════════════════════════════════════════════════════ -->
 <!-- PATCH ALPHA 1.1.0                                      -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="patch-110" class="patch-section active">
+<div id="patch-110" class="patch-section">
 <div class="patch-body">
 
   <div class="patch-main">

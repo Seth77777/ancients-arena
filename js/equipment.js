@@ -504,8 +504,8 @@ const EQUIPMENT = {
 
   couronne_de_la_reine: { tier: 3, categories: ['support', 'mage'], name: 'Couronne de la Reine', icon: 'img/items/couronne_de_la_reine.png', combineCost: 200,
                           recipe: ['coeur_de_courage', 'mana_tear', 'life_crystal'],
-                          stats: { maxHP: 250, maxMana: 300, manaRegenPct: 125, healEfficiency: 15, manaOnSpell: 40, manaOnSpellMax: 700 },
-                          passive: 'Chaque sort lancé augmente votre Mana max de 40 (max +700 au total). Lorsque le cap est atteint, la Couronne se transforme en Diadème de la Reine. Vous gagnez 80 golds supplémentaires par tour hors zone à golds.' },
+                          stats: { maxHP: 250, maxMana: 300, manaRegenPct: 125, healEfficiency: 15, manaOnSpell: 55, manaOnSpellMax: 700 },
+                          passive: 'Chaque sort lancé augmente votre Mana max de 55 (max +700 au total). Lorsque le cap est atteint, la Couronne se transforme en Diadème de la Reine. Vous gagnez 80 golds supplémentaires par tour hors zone à golds.' },
 
   diademe_de_la_reine: { tier: 4, categories: ['support', 'mage'], name: 'Diadème de la Reine', icon: 'img/items/diademe_de_la_reine.png', combineCost: 0,
                          recipe: [], notBuyable: true,
@@ -514,8 +514,8 @@ const EQUIPMENT = {
 
   sceptre_de_mana: { tier: 3, notInUtil: true, categories: ['mage'], name: 'Sceptre de Mana',         icon: 'img/items/sceptre_de_mana.png',     combineCost: 450,
                      recipe: ['grimoire_magique', 'mana_tear', 'petit_grimoire'],
-                     stats: { ap: 60, cdReduction: 1, maxMana: 300, manaRegenPct: 125, manaOnSpell: 40, manaOnSpellMax: 700 },
-                     passive: 'Chaque sort lancé augmente votre Mana max de 40 (max +700 au total). Lorsque le cap est atteint, le Sceptre se transforme en Sceptre de l\'Ange.' },
+                     stats: { ap: 60, cdReduction: 1, maxMana: 300, manaRegenPct: 125, manaOnSpell: 55, manaOnSpellMax: 700 },
+                     passive: 'Chaque sort lancé augmente votre Mana max de 55 (max +700 au total). Lorsque le cap est atteint, le Sceptre se transforme en Sceptre de l\'Ange.' },
 
   sceptre_ange:    { tier: 4, categories: ['mage'], name: 'Sceptre de l\'Ange',      icon: 'img/items/sceptre_ange.png',        combineCost: 0,
                      recipe: [], notBuyable: true,
@@ -524,8 +524,8 @@ const EQUIPMENT = {
 
   epee_de_mana:    { tier: 3, notInUtil: true, categories: ['dpt'], name: 'Épée de Mana',             icon: 'img/items/epee_de_mana.png',        combineCost: 500,
                      recipe: ['mana_tear', 'marteau_sinad'],
-                     stats: { ad: 35, cdReduction: 1, maxMana: 200, manaRegenPct: 125, manaOnSpell: 40, manaOnSpellMax: 700 },
-                     passive: 'Chaque sort lancé augmente votre Mana max de 40 (max +700 au total). Lorsque le cap est atteint, l\'Épée se transforme en Épée de l\'Ange.' },
+                     stats: { ad: 35, cdReduction: 1, maxMana: 200, manaRegenPct: 125, manaOnSpell: 40, manaOnAutoAttack: 40, manaOnSpellMax: 700 },
+                     passive: 'Chaque sort lancé ou attaque de base augmente votre Mana max de 40 (max +700 au total). Lorsque le cap est atteint, l\'Épée se transforme en Épée de l\'Ange.' },
 
   epee_ange:       { tier: 4, categories: ['dpt'], name: 'Épée de l\'Ange',          icon: 'img/items/epee_ange.png',           combineCost: 0,
                      recipe: [], notBuyable: true,
