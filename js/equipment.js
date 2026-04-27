@@ -270,6 +270,11 @@ const EQUIPMENT = {
                        stats: { ad: 55, cdReduction: 1, maxHP: 350 },
                        passive: 'Fuite — Chaque attaque de base infligée à un ennemi vous octroie 1 PM supplémentaire ce tour. Brise Armure — Chaque sort ou attaque de base réduit l\'armure de la cible de 6% de son armure totale (max 30%) pendant 5 tours.' },
 
+  fleau_du_chevalier_bleu: { tier: 3, notInUtil: true, categories: ['dpt', 'bruiser'], name: 'Fléau du Chevalier Bleu', icon: 'img/items/fleau_du_chevalier_bleu.png', combineCost: 500,
+                              recipe: ['petit_arc', 'white_walker_hammer'],
+                              stats: { ad: 40, extraAutoAttacks: 1, maxHP: 450 },
+                              passive: 'Bénédiction du Chevalier Bleu — CD de votre Sort 3 −2. Lors du lancer de votre ultime, gagnez +1 PM et +2 attaques ce tour.' },
+
   tueur_de_dieux:  { tier: 3, categories: ['dpt', 'bruiser'], name: 'Tueur de Dieux',    icon: 'img/items/tueur_de_dieux.png',  combineCost: 400,
                      recipe: ['marteau_sinad', 'grande_pioche'],
                      stats: { ad: 70, extraAutoAttacks: 1 },

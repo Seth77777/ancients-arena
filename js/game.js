@@ -3153,8 +3153,13 @@ class GameState {
         let _cd = Math.max(_minCd, spell.cooldown - _effectiveCdRed);
         // Bottes de Célérité : -1 CD supplémentaire sur tous les sorts
         if (caster.items.includes('boots_of_celerity') && _cd > _minCd) _cd--;
-        // Sceptre du Malin : -1 CD ultime (index 2)
+        // Sceptre du Malin : -2 CD ultime (index 2)
         if (caster.items.includes('sceptre_du_malin')) {
+          const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
+          if (_spellIdx === 2 && _cd > _minCd) _cd = Math.max(_minCd, _cd - 2);
+        }
+        // Fléau du Chevalier Bleu : -2 CD ultime (index 2)
+        if (caster.items.includes('fleau_du_chevalier_bleu')) {
           const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
           if (_spellIdx === 2 && _cd > _minCd) _cd = Math.max(_minCd, _cd - 2);
         }
@@ -3193,6 +3198,15 @@ class GameState {
       }
       this.actionsUsed++;
       this.canBuy = false;
+      // Passif Fléau du Chevalier Bleu : ultime → +1 PM + +2 AA ce tour
+      if (caster.items.includes('fleau_du_chevalier_bleu')) {
+        const _fleauIdx = caster.spells.findIndex(s => s.id === spell.id);
+        if (_fleauIdx === 2) {
+          this.movementLeft = Math.min(caster.pm, this.movementLeft + 1);
+          this.autoAttacksAllowed += 2;
+          this.addLog(`${caster.name} — Fléau du Chevalier Bleu : +1 PM, +2 attaques ce tour`);
+        }
+      }
       // Passif Chronos : +50 PO par sort lancé
       if (caster.passive === 'chronos_passive') {
         this._giveGold(caster, 50);
