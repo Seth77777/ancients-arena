@@ -228,6 +228,11 @@ const EQUIPMENT = {
                      stats: { critChance: 25, extraAutoAttacks: 1 },
                      passive: 'Vos auto-attaques infligent 250 dégâts magiques à tous les ennemis à moins de 6 cases Manhattan de la cible (CD 3 tours).' },
 
+  anneau_divin:          { tier: 3, notInUtil: true, categories: ['dpt', 'assassin'], name: 'Anneau Divin',              icon: 'img/items/anneau_divin.png',         combineCost: 300,
+                           recipe: ['dague_destructrice', 'marteau_sinad'],
+                           stats: { ad: 55, cdReduction: 1 },
+                           passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Ultime Chasseur — Vos dégâts physiques d\'ultime sont augmentés de 15%.' },
+
   lame_du_ninja:         { tier: 3, categories: ['dpt', 'assassin'], name: 'Lame du Ninja',              icon: 'img/items/lame_du_ninja.png',        combineCost: 550,
                            recipe: ['dague_destructrice', 'grande_pioche'],
                            stats: { ad: 70 },
@@ -444,6 +449,11 @@ const EQUIPMENT = {
   masque_hante:       { tier: 2, categories: ['mage', 'bruiser'], name: 'Masque Hanté',        icon: 'img/items/masque_hante.png',       combineCost: 300,
                         recipe: ['petit_grimoire', 'life_crystal'],
                         stats: { ap: 30, maxHP: 200 } },
+
+  ceinture_propulsee: { tier: 3, notInUtil: true, categories: ['mage', 'bruiser'], name: 'Ceinture Propulsée', icon: 'img/items/ceinture_propulsee.png', combineCost: 300,
+                        recipe: ['alternateur_de_puissance', 'livre_incantations', 'life_crystal'],
+                        stats: { ap: 70, cdReduction: 1, maxHP: 300 },
+                        passive: 'Propulsion — Après un dash, toutes vos sources de dégâts (sorts et attaques de base) infligent 0,1×AP dégâts magiques supplémentaires jusqu\'à la fin du tour.' },
 
   oeil_demoniaque:    { tier: 3, notInUtil: true, categories: ['mage', 'bruiser'], name: 'Oeil Démoniaque',      icon: 'img/items/oeil_demoniaque.png',    combineCost: 350,
                         recipe: ['masque_hante', 'livre_incantations'],

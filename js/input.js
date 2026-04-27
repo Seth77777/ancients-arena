@@ -37,8 +37,12 @@ class InputHandler {
         : (this.game.currentHero?.playerIdx ?? 0);
       const winner = forfeitingPlayer === 0 ? 1 : 0;
       this.game.endGame(winner);
-      if (window.OnlineMode?.active && window.OnlineMode.isHost) {
-        window.OnlineMode.sendState(this.game.serialize());
+      if (window.OnlineMode?.active) {
+        if (window.OnlineMode.isHost) {
+          window.OnlineMode.sendState(this.game.serialize());
+        } else {
+          window.OnlineMode.sendGuestAction({ type: 'forfeit' });
+        }
       }
     });
 

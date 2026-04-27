@@ -776,6 +776,9 @@ window.addEventListener('DOMContentLoaded', () => {
       case 'pick':
         g.pickHero(action.heroId);
         break;
+      case 'forfeit':
+        g.endGame(0); // guest (joueur 1) abandonne, host (joueur 0) gagne
+        break;
     }
 
     window.OnlineMode.sendState(g.serialize());

@@ -269,17 +269,17 @@ HERO_TYPES['solo_3'] = {
   spells: [
     {
       id: 'ondine_q', name: 'Estoc',
-      description: '115 + 1 AD dégâts physiques sur un ennemi adjacent',
+      description: '100 + 1 AD dégâts physiques sur un ennemi adjacent',
       manaCost: 70, range: 1, cooldown: 2, cdMin: 1,
-      damageType: 'physical', baseDamage: 115, adRatio: 1, apRatio: 0,
+      damageType: 'physical', baseDamage: 100, adRatio: 1, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: []
     },
     {
       id: 'ondine_w', name: 'Fendre la lame',
-      description: 'Ondine se rue derrière un adversaire en ligne droite (portée 3) et inflige 40 + 0,4 AD dégâts physiques + (50 + 0,5 AD) dégâts bruts',
+      description: 'Ondine se rue derrière un adversaire en ligne droite (portée 3) et inflige 40 + 0,4 AD dégâts physiques + (20 + 0,4 AD) dégâts bruts',
       manaCost: 60, range: 3, cooldown: 4, cdMin: 1,
       damageType: 'physical', baseDamage: 40, adRatio: 0.4, apRatio: 0,
-      rawBase: 50, rawAdRatio: 0.5,
+      rawBase: 20, rawAdRatio: 0.4,
       targetType: 'dash_behind_enemy', ignoresLoS: true, zone: null, effects: []
     },
     {

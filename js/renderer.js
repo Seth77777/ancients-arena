@@ -1363,7 +1363,8 @@ class Renderer {
       case 'dash_to_enemy': {
         if (x !== tx || y !== ty) return { inZone: false, valid: false };
         const t = g.getHeroAt(tx, ty);
-        return { inZone: true, valid: inRange && !!t && t.playerIdx !== hero.playerIdx };
+        const lineOk = !sp.requiresLine || tx === hero.position.x || ty === hero.position.y;
+        return { inZone: true, valid: inRange && lineOk && !!t && t.playerIdx !== hero.playerIdx };
       }
       case 'ally_hero':
       case 'dash_to_ally': {

@@ -439,8 +439,9 @@ class GameState {
     this.spellsUsed         = {};
     hero.hornetIsReactivation = {};
     hero._titanHeartThisTurn  = new Set();
-    hero._plaqueGolemDodgedThisTurn = false;
-    hero._walkerPMUsedThisTurn      = false;
+    hero._plaqueGolemDodgedThisTurn    = false;
+    hero._walkerPMUsedThisTurn         = false;
+    hero.ceinturePropulseeThisTurn     = false;
     if ((hero._echoCooldown || 0) > 0) hero._echoCooldown--;
     this.canBuy             = true;
     this.actionMode         = null;
@@ -1446,7 +1447,7 @@ class GameState {
       const empowered     = attacker.empoweredAttack;
       const hadSpellBonus = wasEmpowered || bonusFlat > 0;
       if (wasEmpowered) attacker.empoweredAttack = null;
-      const armorPen = (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
+      const armorPen = (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0) + (attacker.items.includes('anneau_divin') ? 7 : 0);
       const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0) + (attacker.items.includes('bottes_assassin') ? 5 : 0);
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
@@ -1596,6 +1597,14 @@ class GameState {
           this.addLog(`${attacker.name} — Lame du Diable : −${diableDmg} dégâts magiques`);
         });
       }
+      // Passif Ceinture Propulsée : +0,1×AP dégâts magiques par cible si dash ce tour
+      if (attacker.ceinturePropulseeThisTurn) {
+        targets.forEach(e => {
+          if (!e.isAlive) return;
+          const _cpDmg = this._reduceDmg(Math.floor(0.1 * this._effectiveAP(attacker)), 'magical', e);
+          if (_cpDmg > 0) { this._applyDamage(e, _cpDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Ceinture Propulsée : +${_cpDmg} dégâts magiques`); }
+        });
+      }
       if (attacker.items.some(id => ['white_walker_hammer', 'holy_trinity', 'lame_de_nargoth', 'couperet_du_demon'].includes(id))
           && !attacker._walkerPMUsedThisTurn) {
         this.movementLeft = Math.min(attacker.pm, this.movementLeft + 1);
@@ -1664,7 +1673,7 @@ class GameState {
     attacker.layiaBonusNextAttack = 0;
     const wasEmpowered  = !!attacker.empoweredAttack;
     const hadSpellBonus = wasEmpowered || bonusFlat2 > 0;
-    const armorPen2 = (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0);
+    const armorPen2 = (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0) + (attacker.items.includes('anneau_divin') ? 7 : 0);
     const armorPenPct2 = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0) + (attacker.items.includes('bottes_assassin') ? 5 : 0);
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
     const _critMult2 = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) * 5 / 100 : 0);
@@ -1702,6 +1711,11 @@ class GameState {
         this.addLog(`${attacker.name} — Épée de Mana : +${aaGain} Mana max`);
         if (attacker.manaOnSpellGained >= attacker.manaOnSpellMax && attacker.items.includes('epee_de_mana'))
           this._transformItem(attacker, 'epee_de_mana', 'epee_ange');
+      }
+      // Passif Ceinture Propulsée : +0,1×AP dégâts magiques si dash ce tour
+      if (attacker.ceinturePropulseeThisTurn && targetHero.isAlive) {
+        const _cpDmg = this._reduceDmg(Math.floor(0.1 * this._effectiveAP(attacker)), 'magical', targetHero);
+        if (_cpDmg > 0) { this._applyDamage(targetHero, _cpDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Ceinture Propulsée : +${_cpDmg} dégâts magiques`); }
       }
       if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
       this.actionsUsed++;
@@ -1932,6 +1946,11 @@ class GameState {
       this.addLog(`${attacker.name} — Épée de Mana : +${aaGain} Mana max`);
       if (attacker.manaOnSpellGained >= attacker.manaOnSpellMax && attacker.items.includes('epee_de_mana'))
         this._transformItem(attacker, 'epee_de_mana', 'epee_ange');
+    }
+    // Passif Ceinture Propulsée : +0,1×AP dégâts magiques si dash ce tour
+    if (attacker.ceinturePropulseeThisTurn && targetHero.isAlive) {
+      const _cpDmg = this._reduceDmg(Math.floor(0.1 * this._effectiveAP(attacker)), 'magical', targetHero);
+      if (_cpDmg > 0) { this._applyDamage(targetHero, _cpDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Ceinture Propulsée : +${_cpDmg} dégâts magiques`); }
     }
     if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
     this.actionsUsed++;
@@ -2567,7 +2586,7 @@ class GameState {
         const frCritChance  = caster.critChance || 0;
         const frIsCrit      = frCritChance > 0 && Math.random() * 100 < frCritChance;
         const frCritMult    = (caster.items.includes('lame_d_infini') ? 2.5 : 2.0) + (caster.passive === 'faena_passive' ? Math.floor(caster.ad / 10) * 5 / 100 : 0);
-        const armorPenFr    = (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
+        const armorPenFr    = (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0) + (caster.items.includes('anneau_divin') ? 7 : 0);
         const armorPenPctFr = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0) + (caster.items.includes('bottes_assassin') ? 5 : 0);
         frHit.forEach(e => {
           const baseRaw = spell.baseDamage + spell.adRatio * caster.ad + frCritChance;
@@ -3198,6 +3217,15 @@ class GameState {
       }
       this.actionsUsed++;
       this.canBuy = false;
+      // Passif Ceinture Propulsée : dash → bonus dégâts activé pour le reste du tour
+      if (caster.items.includes('ceinture_propulsee') && !caster.ceinturePropulseeThisTurn) {
+        const _ceintureDashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy',
+          'fenino_q','fenino_w','faena_w','pibot_w','abyss_w','abyss_r'];
+        if (_ceintureDashTypes.includes(spell.targetType)) {
+          caster.ceinturePropulseeThisTurn = true;
+          this.addLog(`${caster.name} — Ceinture Propulsée : bonus +0,1×AP activé ce tour`);
+        }
+      }
       // Passif Fléau du Chevalier Bleu : ultime → +1 PM + +2 AA ce tour
       if (caster.items.includes('fleau_du_chevalier_bleu')) {
         const _fleauIdx = caster.spells.findIndex(s => s.id === spell.id);
@@ -3280,7 +3308,10 @@ class GameState {
           _outRange = [..._outRange, ..._losKo];
           _inRange  = _losOk;
         }
-        return { heroes: _inRange, heroesOutOfRange: _outRange, cells: _rangeCells() };
+        const _cells = spell.requiresLine
+          ? _rangeCells().filter(c => c.x === hero.position.x || c.y === hero.position.y)
+          : _rangeCells();
+        return { heroes: _inRange, heroesOutOfRange: _outRange, cells: _cells };
       }
       case 'ally_hero': {
         const all = this._getAllies(hero.playerIdx);
@@ -3581,7 +3612,12 @@ class GameState {
     let raw = spell.baseDamage + caster.ad * (spell.adRatio || 0) + this._effectiveAP(caster) * (spell.apRatio || 0);
     if (caster.items.includes('pistolet_magique') && (spell.adRatio || 0) > 0 && (spell.apRatio || 0) > 0)
       raw = Math.floor(raw * 1.2);
-    const armorPen    = (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0);
+    // Anneau Divin — Ultime Chasseur : +15% dégâts physiques sur le Sort 3
+    if (caster.items.includes('anneau_divin') && spell.damageType === 'physical') {
+      const _aDivIdx = caster.spells.findIndex(s => s.id === spell.id);
+      if (_aDivIdx === 2) raw = Math.floor(raw * 1.15);
+    }
+    const armorPen    = (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0) + (caster.items.includes('anneau_divin') ? 7 : 0);
     const mrPen       = (caster.items.includes('sorcerer_boots') ? 5 : 0) + (caster.items.includes('furie_magique') ? 7 : 0);
     const armorPenPct = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('revolver_d_or') ? 7 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0) + (caster.items.includes('bottes_assassin') ? 5 : 0) + (caster.items.includes('baton_des_abysses') ? 35 : 0);
     const mrPenPct    = caster.items.includes('cristal_de_vide') ? 15 : 0;
@@ -3650,6 +3686,11 @@ class GameState {
     this._applyDamage(target, dmg, caster, spell.damageType || 'physical');
     if (spell.damageType === 'physical' || spell.damageType === 'magical') {
       this._applyHemorrhage(caster, target, 1, spell.damageType);
+    }
+    // Passif Ceinture Propulsée : +0,1×AP dégâts magiques si dash effectué ce tour
+    if (caster.ceinturePropulseeThisTurn && target.isAlive) {
+      const _ceintureDmg = this._reduceDmg(Math.floor(0.1 * this._effectiveAP(caster)), 'magical', target);
+      if (_ceintureDmg > 0) { this._applyDamage(target, _ceintureDmg, caster, 'magical'); this.addLog(`${caster.name} — Ceinture Propulsée : +${_ceintureDmg} dégâts magiques`); }
     }
     // Passif Dans la chair (Frigiel) : +5% HP max cible en dégâts bruts par sort
     if (caster.passive === 'dans_la_chair' && target.isAlive) {

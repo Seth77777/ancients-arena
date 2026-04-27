@@ -337,6 +337,35 @@
 
   <div class="patch-main">
 
+    <!-- CORRECTIONS DE BUGS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">⚙</span> CORRECTIONS DE BUGS</div>
+      <div class="sys-grid">
+
+        <div class="sys-card">
+          <div class="sys-card-title">Fenino — Sort 1 &amp; Sort 2 sans effet</div>
+          <ul>
+            <li>Les sorts <em>Ton meilleur ami</em> et <em>On s'arrête</em> n'avaient aucun effet au clic : leurs types de cible n'étaient pas enregistrés dans le gestionnaire d'entrée. Corrigé.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">En ligne — Abandon du guest invisible pour l'hôte</div>
+          <ul>
+            <li>Lorsque le joueur 2 abandonnait, la partie se terminait uniquement sur son écran. L'hôte ne recevait aucune notification. Corrigé : le guest envoie désormais une action <em>forfeit</em> qui déclenche la fin de partie côté hôte et synchronise l'état.</li>
+          </ul>
+        </div>
+
+        <div class="sys-card">
+          <div class="sys-card-title">Pibot — Sort 1 portée affichée en losange</div>
+          <ul>
+            <li>La zone de portée des <em>Pinces robotiques</em> s'affichait en losange complet, alors que le sort exige une ligne droite. Corrigé : la portée et le survol sont maintenant restreints aux quatre axes cardinaux.</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
     <!-- NOUVEAUX ITEMS -->
     <div>
       <div class="section-title"><span class="section-icon new">★</span> NOUVEAUX ITEMS</div>
@@ -353,6 +382,56 @@
               <li><span class="up">+40 AD · +1 Attaque/tour · +450 HP</span></li>
               <li>Passif — <strong>Bénédiction du Chevalier Bleu :</strong> CD de votre Sort 3 −2.</li>
               <li>Passif — Lors du lancer de votre ultime, gagnez <strong>+1 PM</strong> et <strong>+2 attaques</strong> ce tour.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/anneau_divin.png" alt="Anneau Divin">
+          <div class="item-card-name">Anneau Divin</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Anneau Divin (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Dague Destructrice + Marteau de Sinad + 300g</li>
+              <li><span class="up">+55 AD · −1 CD</span></li>
+              <li>Passif — Ignore <strong>7%</strong> de l'armure adverse (peut devenir négative).</li>
+              <li>Passif — <strong>Ultime Chasseur :</strong> vos dégâts physiques d'ultime sont augmentés de <strong>15%</strong>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="item-card new">
+          <img src="img/items/ceinture_propulsee.png" alt="Ceinture Propulsée">
+          <div class="item-card-name">Ceinture Propulsée</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Ceinture Propulsée (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Alternateur de Puissance + Livre d'Incantations + Cristal de Vie + 300g</li>
+              <li><span class="up">+70 AP · −1 CD · +300 HP</span></li>
+              <li>Passif — <strong>Propulsion :</strong> après un dash, toutes vos sources de dégâts infligent <strong>+0,1×AP</strong> dégâts magiques jusqu'à la fin du tour.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NERFS HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">↓</span> NERFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/ondine.png" alt="Ondine">
+          <div class="hero-card-name">Ondine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Ondine</div>
+            <ul>
+              <li><span class="down">Estoc — Dégâts de base : <strong>115 → 100</strong></span></li>
+              <li><span class="down">Estoc — Ratio AD : <strong>1,1 → 1</strong></span></li>
+              <li><span class="down">Fendre la lame — Dégâts bruts : <strong>50+0,5 AD → 20+0,4 AD</strong></span></li>
             </ul>
           </div>
         </div>
