@@ -1093,6 +1093,70 @@ HERO_TYPES['support_6'] = {
   ]
 };
 
+HERO_TYPES['mage_6'] = {
+  id: 'mage_6', name: 'Egnamita', role: 'MAGE', roleId: 'mage', roleOrder: 3,
+  colorFill: '#154360', colorStroke: '#2980b9',
+  portrait: 'assets/heroes/egnamita.png',
+  passive: 'egnamita_passive',
+  maxHP: 2000, maxMana: 680, hpRegen: 40, manaRegen: 35,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
+  spells: [
+    {
+      id: 'egnamita_q', name: 'Souillure',
+      description: 'Zone carrée 3×3 en ligne droite (portée 6). Inflige 135 + 0,6 AP dégâts magiques aux ennemis touchés.',
+      manaCost: 130, range: 6, cooldown: 3, cdMin: 1,
+      damageType: 'magical', baseDamage: 135, adRatio: 0, apRatio: 0.6,
+      targetType: 'zone', lineOnly: true, zone: { size: 1 }, effects: []
+    },
+    {
+      id: 'egnamita_w', name: 'Instinct Brûlant',
+      description: 'Zone (1-3-5-3-1, portée 5). Inflige 50 + 0,6 AP dégâts magiques + DOT de 20 + 0,2 AP dégâts magiques par tour pendant 3 tours.',
+      manaCost: 120, range: 5, cooldown: 4, cdMin: 1,
+      damageType: 'magical', baseDamage: 50, adRatio: 0, apRatio: 0.6,
+      targetType: 'egnamita_w', zone: { size: 2 }, effects: []
+    },
+    {
+      id: 'egnamita_r', name: 'Activation Insensée',
+      description: 'Inflige 80 + 0,6 AP dégâts magiques à tous les ennemis affectés par un DOT et leur inflige Hémorragie.',
+      manaCost: 120, range: 0, cooldown: 9, cdMin: 1,
+      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.6,
+      targetType: 'no_target', egnamitaR: true, zone: null, effects: []
+    }
+  ]
+};
+
+HERO_TYPES['mage_7'] = {
+  id: 'mage_7', name: 'Velna', role: 'MAGE', roleId: 'mage', roleOrder: 3,
+  colorFill: '#154360', colorStroke: '#2980b9',
+  portrait: 'assets/heroes/velna.png',
+  passive: 'velna_passive',
+  maxHP: 2000, maxMana: 680, hpRegen: 40, manaRegen: 35,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
+  spells: [
+    {
+      id: 'velna_q', name: 'Saut lumineux',
+      description: 'Dash de 1–2 cases en ligne droite puis envoie une zone 1-3-1 à 7 cases dans la direction du dash. Inflige 70 + 0,8 AP dégâts magiques. Rend 30 mana par ennemi touché.',
+      manaCost: 110, range: 2, cooldown: 4, cdMin: 1,
+      damageType: 'magical', baseDamage: 70, adRatio: 0, apRatio: 0.8,
+      targetType: 'velna_q', lineOnly: true, zone: null, effects: []
+    },
+    {
+      id: 'velna_w', name: 'Fuseau de lumière',
+      description: 'Zone perpendiculaire à la direction du lancer (portée 6, 3 cases perpendiculaires). Inflige 80 + 0,9 AP dégâts magiques et rend muet les ennemis touchés.',
+      manaCost: 100, range: 6, cooldown: 4, cdMin: 1,
+      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.9,
+      targetType: 'velna_w', zone: null, effects: [{ type: 'mute', turns: 1 }]
+    },
+    {
+      id: 'velna_r', name: 'Rayon Lumineux',
+      description: 'Lance un rayon en ligne droite traversant toute la carte. Inflige 120 + 1,2 AP dégâts magiques à tous les ennemis sur la ligne, en ignorant les obstacles.',
+      manaCost: 150, range: 0, cooldown: 10, cdMin: 1,
+      damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 1.2,
+      targetType: 'velna_r', ignoresLoS: true, zone: null, effects: []
+    }
+  ]
+};
+
 const ROLE_ORDER = ['solo', 'roam', 'mage', 'dpt', 'support'];
 
 // ============================================================

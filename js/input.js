@@ -259,7 +259,7 @@ class InputHandler {
       const cellTargetTypes = ['cell','zone','diamond_zone','stealth_dash','trap',
         'line_zone','place_glyph','cone_zone','bomb_zone',
         'hate_wall','lame_eau','abyss_w','faena_w','faena_r','pibot_r',
-        'noyala_q','noyala_r'];
+        'noyala_q','noyala_r','egnamita_w','velna_q','velna_w','velna_r'];
 
       let done = false;
 

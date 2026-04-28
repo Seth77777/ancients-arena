@@ -1385,7 +1385,45 @@ class Renderer {
         );
         return { inZone: true, valid: inRange && hit };
       }
-      case 'diamond_zone': {
+      case 'velna_q': {
+        // Case de dash valide : en ligne, 1-2 cases, libre
+        if (x !== tx || y !== ty) return { inZone: false, valid: false };
+        const vqdx = tx - hero.position.x, vqdy = ty - hero.position.y;
+        const isCardinal = (vqdx === 0) !== (vqdy === 0);
+        const vqDist = Math.abs(vqdx) + Math.abs(vqdy);
+        const free = !isWall(tx, ty) && !g.getHeroAt(tx, ty);
+        return { inZone: true, valid: isCardinal && vqDist >= 1 && vqDist <= 2 && free };
+      }
+      case 'velna_w': {
+        // Même logique que hate_wall
+        const hwdx = tx - hero.position.x, hwdy = ty - hero.position.y;
+        if ((hwdx !== 0 && hwdy !== 0) || (hwdx === 0 && hwdy === 0)) return { inZone: false, valid: false };
+        if (Math.abs(hwdx) + Math.abs(hwdy) !== sp.range) return { inZone: false, valid: false };
+        const perpDx = hwdy !== 0 ? 1 : 0, perpDy = hwdx !== 0 ? 1 : 0;
+        for (let off = -1; off <= 1; off++) {
+          const wx = tx + perpDx * off, wy = ty + perpDy * off;
+          if (x === wx && y === wy) {
+            const hasEnemy = g._getEnemies(hero.playerIdx).some(e => e.position && e.position.x === wx && e.position.y === wy);
+            return { inZone: true, valid: !isWall(tx, ty) && hasEnemy };
+          }
+        }
+        return { inZone: false, valid: false };
+      }
+      case 'velna_r': {
+        // Toutes les cases sur la ligne orthogonale
+        const rdx = tx - hero.position.x, rdy = ty - hero.position.y;
+        if ((rdx !== 0 && rdy !== 0) || (rdx === 0 && rdy === 0)) return { inZone: false, valid: false };
+        const rudx = Math.sign(rdx), rudy = Math.sign(rdy);
+        // La case survolée doit être sur la même ligne que tx,ty depuis hero
+        if (rudx !== 0 && y !== hero.position.y) return { inZone: false, valid: false };
+        if (rudy !== 0 && x !== hero.position.x) return { inZone: false, valid: false };
+        const hasEnemy = g._getEnemies(hero.playerIdx).some(e =>
+          e.position && (rudx !== 0 ? e.position.y === hero.position.y : e.position.x === hero.position.x)
+        );
+        return { inZone: true, valid: hasEnemy };
+      }
+      case 'diamond_zone':
+      case 'egnamita_w': {
         const sz = sp.zone?.size ?? 2;
         if (Math.abs(x - tx) + Math.abs(y - ty) > sz) return { inZone: false, valid: false };
         const hit = g._getEnemies(hero.playerIdx).some(e =>

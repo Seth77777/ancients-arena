@@ -29,7 +29,9 @@ const PASSIVE_LABELS = {
   salena_passive:     'Lame Magique — Chaque attaque de base de Salena inflige 0,3×AP dégâts magiques supplémentaires à la cible.',
   cupidon_passive:    'Amour fou — Si un adversaire contre qui vous avez envoyé une attaque de base au dernier tour vous attaque (sorts + AA), vous ne recevez que 50% des dégâts à la place (applique débuffs).',
   quackshot_passive:  'Marque du Chasseur — Chaque attaque de base ajoute une charge à l\'ennemi (cumulable). Changer de cible retire les charges de l\'ennemi précédent.',
-  hornet_passive:     'Suture — Si Hornet n\'utilise aucun PM pendant son tour, elle se soigne de 80 + 1×AD HP, retire son hémorragie et gagne +3 PM au prochain tour.'
+  hornet_passive:     'Suture — Si Hornet n\'utilise aucun PM pendant son tour, elle se soigne de 80 + 1×AD HP, retire son hémorragie et gagne +3 PM au prochain tour.',
+  egnamita_passive:   'Antimagie — 35% des dégâts magiques qu\'Egnamita inflige sont convertis en bouclier antimagie permanent (absorbe uniquement les dégâts magiques).',
+  velna_passive:      'Lumière filante — Lorsque Velna effectue un dash, son prochain sort inflige 10% de dégâts magiques supplémentaires.'
 };
 
 const TARGET_LABELS = {
@@ -63,7 +65,11 @@ const TARGET_LABELS = {
   pibot_w:            'Téléportation sur la batterie active (portée 5, sans ligne de vue)',
   pibot_r:            'Zone 1-3-1 en ligne droite orthogonale (portée 5)',
   noyala_q:           'Invoque un loup sur une case adjacente libre',
-  noyala_r:           'Échange de position avec un loup'
+  noyala_r:           'Échange de position avec un loup',
+  egnamita_w:         'Zone en losange (1-3-5-3-1, portée 5)',
+  velna_q:            'Dash 1–2 cases en ligne droite + zone 1-3-1 à 7 cases dans la direction du dash',
+  velna_w:            'Zone perpendiculaire au lancer (3 cases, portée 6 en ligne droite)',
+  velna_r:            'Rayon en ligne droite sur toute la carte (ignore les obstacles)'
 };
 
 const DMG_LABELS = {

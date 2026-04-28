@@ -442,6 +442,7 @@ class GameState {
     hero._plaqueGolemDodgedThisTurn    = false;
     hero._walkerPMUsedThisTurn         = false;
     hero.ceinturePropulseeThisTurn     = false;
+    if (hero.passive !== 'velna_passive') hero.velnaLumiereActive = false;
     if ((hero._echoCooldown || 0) > 0) hero._echoCooldown--;
     this.canBuy             = true;
     this.actionMode         = null;
@@ -2012,7 +2013,7 @@ class GameState {
     if (caster.mutedThisTurn || (caster.statusEffects || []).some(e => e.type === 'mute')) {
       this.addLog(`${caster.name} est muet — sorts bloqués !`); return false;
     }
-    const _dashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy','swap_enemy','swap_ally','faena_w','pibot_w','fenino_q','fenino_w'];
+    const _dashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy','swap_enemy','swap_ally','faena_w','pibot_w','fenino_q','fenino_w','velna_q'];
     if ((caster.rootTurns || 0) > 0 && _dashTypes.includes(spell.targetType)) {
       this.addLog(`${caster.name} est immobilisé — dash bloqué !`); return false;
     }
@@ -2689,6 +2690,22 @@ class GameState {
         break;
       }
       case 'no_target': {
+        // Egnamita — Activation Insensée : frappe tous les ennemis affectés par un DOT
+        if (spell.egnamitaR) {
+          const _erHit = this._getEnemies(caster.playerIdx).filter(e => e.isAlive && (e.dots || []).length > 0);
+          if (!_erHit.length) { this.addLog('Aucun ennemi affecté par un DOT !'); success = false; break; }
+          _erHit.forEach(e => {
+            const dmg = this._calcSpellDmg(caster, spell, e);
+            this._applySpellDamage(caster, spell, e, dmg);
+            this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+            if (e.isAlive) {
+              this._applyHemorrhage(caster, e);
+              this.addLog(`${e.name} — Hémorragie !`);
+            }
+          });
+          this._checkGameOver();
+          break;
+        }
         // Grolith — Éboulement : tous les ennemis adjacents à un mur
         if (spell.grolihtEboulement) {
           const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
@@ -2874,6 +2891,118 @@ class GameState {
         this.addLog(`${caster.name} → ${spell.name} → ${enemy.name}: −${dmgW} HP`);
         this._applySpellEffects(spell, [enemy]);
         if (caster.passive === 'electro_passive') { caster.ap += 5; this.addLog(`${caster.name} — Passif : +5 AP`); }
+        break;
+      }
+      case 'velna_q': {
+        const { x: vqx, y: vqy } = target;
+        const vqdx = vqx - caster.position.x, vqdy = vqy - caster.position.y;
+        if ((vqdx !== 0 && vqdy !== 0) || (vqdx === 0 && vqdy === 0)) {
+          this.addLog('Direction orthogonale requise !'); success = false; break;
+        }
+        const vqstep = Math.abs(vqdx) + Math.abs(vqdy);
+        if (vqstep < 1 || vqstep > 2) { this.addLog('Portée 1–2 cases !'); success = false; break; }
+        if (isWall(vqx, vqy) || this.getHeroAt(vqx, vqy)) { this.addLog('Case bloquée !'); success = false; break; }
+        const udx = Math.sign(vqdx), udy = Math.sign(vqdy);
+        caster.position = { x: vqx, y: vqy };
+        this._checkTrap(caster);
+        this._feninoRCheckAdjacent(caster);
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        this.addLog(`${caster.name} → ${spell.name} : dash en (${vqx},${vqy})`);
+        // Zone 1-3-1 à 7 cases dans la direction du dash
+        const zcx = vqx + udx * 7, zcy = vqy + udy * 7;
+        const vqZone = this._diamondCells(zcx, zcy, 1).filter(c =>
+          c.x >= 0 && c.x < MAP_SIZE && c.y >= 0 && c.y < MAP_SIZE && !isWall(c.x, c.y)
+        );
+        const vqHit = this._getEnemies(caster.playerIdx).filter(e =>
+          e.position && vqZone.some(c => c.x === e.position.x && c.y === e.position.y)
+        );
+        if (vqHit.length) {
+          vqHit.forEach(e => {
+            const dmg = this._calcSpellDmg(caster, spell, e);
+            this._applySpellDamage(caster, spell, e, dmg);
+            this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+          });
+          const manaRefund = vqHit.length * 30;
+          caster.currentMana = Math.min(caster.maxMana, caster.currentMana + manaRefund);
+          this.addLog(`${caster.name} — Saut lumineux : +${manaRefund} mana`);
+        } else {
+          this.addLog(`${caster.name} — Saut lumineux : aucune cible dans la zone`);
+        }
+        this._checkGameOver();
+        break;
+      }
+      case 'velna_w': {
+        const { x: vwx, y: vwy } = target;
+        const vwdx = vwx - caster.position.x, vwdy = vwy - caster.position.y;
+        if ((vwdx !== 0 && vwdy !== 0) || (vwdx === 0 && vwdy === 0)) {
+          this.addLog('Direction orthogonale requise !'); success = false; break;
+        }
+        if (Math.abs(vwdx) + Math.abs(vwdy) !== spell.range) {
+          this.addLog(`Portée exacte ${spell.range} requise !`); success = false; break;
+        }
+        const vperpDx = vwdy !== 0 ? 1 : 0, vperpDy = vwdx !== 0 ? 1 : 0;
+        const vwCells = [];
+        for (let off = -1; off <= 1; off++) {
+          const cx = vwx + vperpDx * off, cy = vwy + vperpDy * off;
+          if (cx >= 0 && cx < MAP_SIZE && cy >= 0 && cy < MAP_SIZE && !isWall(cx, cy))
+            vwCells.push({ x: cx, y: cy });
+        }
+        const vwHit = this._getEnemies(caster.playerIdx).filter(e =>
+          e.position && vwCells.some(c => c.x === e.position.x && c.y === e.position.y)
+        );
+        if (!vwHit.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
+        vwHit.forEach(e => {
+          const dmg = this._calcSpellDmg(caster, spell, e);
+          this._applySpellDamage(caster, spell, e, dmg);
+          this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+        });
+        this._applySpellEffects(spell, vwHit);
+        this._checkGameOver();
+        break;
+      }
+      case 'velna_r': {
+        const { x: vrx, y: vry } = target;
+        const vrdx = vrx - caster.position.x, vrdy = vry - caster.position.y;
+        if ((vrdx !== 0 && vrdy !== 0) || (vrdx === 0 && vrdy === 0)) {
+          this.addLog('Direction orthogonale requise !'); success = false; break;
+        }
+        const vrudx = Math.sign(vrdx), vrudy = Math.sign(vrdy);
+        const vrHit = [];
+        for (let step = 1; step < MAP_SIZE; step++) {
+          const cx = caster.position.x + vrudx * step, cy = caster.position.y + vrudy * step;
+          if (cx < 0 || cx >= MAP_SIZE || cy < 0 || cy >= MAP_SIZE) break;
+          const e = this.getHeroAt(cx, cy);
+          if (e && e.playerIdx !== caster.playerIdx) vrHit.push(e);
+        }
+        if (!vrHit.length) { this.addLog('Aucune cible sur la ligne !'); success = false; break; }
+        vrHit.forEach(e => {
+          const dmg = this._calcSpellDmg(caster, spell, e);
+          this._applySpellDamage(caster, spell, e, dmg);
+          this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+        });
+        this._checkGameOver();
+        break;
+      }
+      case 'egnamita_w': {
+        const { x: ewx, y: ewy } = target;
+        if (!this._hasLineOfSight(caster.position, { x: ewx, y: ewy })) {
+          this.addLog('Ligne de vue bloquée !'); success = false; break;
+        }
+        const ewHit = this._getEnemies(caster.playerIdx).filter(e =>
+          e.position && Math.abs(e.position.x - ewx) + Math.abs(e.position.y - ewy) <= 2
+        );
+        if (!ewHit.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
+        const ewDotDmg = Math.floor(20 + 0.2 * this._effectiveAP(caster));
+        ewHit.forEach(e => {
+          const dmg = this._calcSpellDmg(caster, spell, e);
+          this._applySpellDamage(caster, spell, e, dmg);
+          this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
+          if (e.isAlive) {
+            e.dots = (e.dots || []);
+            e.dots.push({ dmgPerTurn: ewDotDmg, type: 'magical', turns: 3, caster, label: 'Instinct Brûlant' });
+            this.addLog(`${e.name} — DOT : −${ewDotDmg}/tour (3 tours)`);
+          }
+        });
         break;
       }
       case 'fenino_q': {
@@ -3217,10 +3346,20 @@ class GameState {
       }
       this.actionsUsed++;
       this.canBuy = false;
+      // Passif Lumière filante (Velna) : dash → active le bonus ; sort non-dash → consomme le bonus
+      if (caster.passive === 'velna_passive') {
+        const _velnaDashTypes = ['velna_q'];
+        if (_velnaDashTypes.includes(spell.targetType)) {
+          caster.velnaLumiereActive = true;
+          this.addLog(`${caster.name} — Lumière filante : prochain sort +10% dégâts magiques`);
+        } else if (caster.velnaLumiereActive) {
+          caster.velnaLumiereActive = false;
+        }
+      }
       // Passif Ceinture Propulsée : dash → bonus dégâts activé pour le reste du tour
       if (caster.items.includes('ceinture_propulsee') && !caster.ceinturePropulseeThisTurn) {
         const _ceintureDashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy',
-          'fenino_q','fenino_w','faena_w','pibot_w','abyss_w','abyss_r'];
+          'fenino_q','fenino_w','faena_w','pibot_w','abyss_w','abyss_r','velna_q'];
         if (_ceintureDashTypes.includes(spell.targetType)) {
           caster.ceinturePropulseeThisTurn = true;
           this.addLog(`${caster.name} — Ceinture Propulsée : bonus +0,1×AP activé ce tour`);
@@ -3322,8 +3461,53 @@ class GameState {
         };
       }
       case 'cell':
-      case 'zone':
-        return { heroes: [], heroesOutOfRange: [], cells: spell.ignoresLoS ? _rangeCells() : _rangeCells().filter(c => this._hasLineOfSight(hero.position, c)) };
+      case 'zone': {
+        let _zc = spell.ignoresLoS ? _rangeCells() : _rangeCells().filter(c => this._hasLineOfSight(hero.position, c));
+        if (spell.lineOnly) _zc = _zc.filter(c => c.x === hero.position.x || c.y === hero.position.y);
+        return { heroes: [], heroesOutOfRange: [], cells: _zc };
+      }
+      case 'egnamita_w':
+        return { heroes: [], heroesOutOfRange: [], cells: _rangeCells().filter(c => this._hasLineOfSight(hero.position, c)) };
+      case 'velna_q': {
+        const cells = [];
+        const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        dirs.forEach(({dx, dy}) => {
+          for (let step = 1; step <= 2; step++) {
+            const x = hero.position.x + dx * step, y = hero.position.y + dy * step;
+            if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) break;
+            if (isWall(x, y) || this.getHeroAt(x, y)) break;
+            cells.push({ x, y });
+          }
+        });
+        return { heroes: [], heroesOutOfRange: [], cells };
+      }
+      case 'velna_w': {
+        const vwCells = [];
+        const dirs4 = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        dirs4.forEach(({dx, dy}) => {
+          const tx = hero.position.x + dx * spell.range, ty = hero.position.y + dy * spell.range;
+          if (tx < 0 || tx >= MAP_SIZE || ty < 0 || ty >= MAP_SIZE) return;
+          const perpDx = dy !== 0 ? 1 : 0, perpDy = dx !== 0 ? 1 : 0;
+          for (let off = -1; off <= 1; off++) {
+            const cx = tx + perpDx * off, cy = ty + perpDy * off;
+            if (cx >= 0 && cx < MAP_SIZE && cy >= 0 && cy < MAP_SIZE && !isWall(cx, cy))
+              vwCells.push({ x: cx, y: cy });
+          }
+        });
+        return { heroes: [], heroesOutOfRange: [], cells: vwCells };
+      }
+      case 'velna_r': {
+        const vrCells = [];
+        const dirs4r = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        dirs4r.forEach(({dx, dy}) => {
+          for (let step = 1; step < MAP_SIZE; step++) {
+            const x = hero.position.x + dx * step, y = hero.position.y + dy * step;
+            if (x < 0 || x >= MAP_SIZE || y < 0 || y >= MAP_SIZE) break;
+            vrCells.push({ x, y });
+          }
+        });
+        return { heroes: [], heroesOutOfRange: [], cells: vrCells };
+      }
       case 'dash_to_enemy': {
         const all = this._getEnemies(hero.playerIdx);
         let _dtInRange  = all.filter(e => this._manhattan(hero.position, e.position) <= effRange);
@@ -3612,6 +3796,9 @@ class GameState {
     let raw = spell.baseDamage + caster.ad * (spell.adRatio || 0) + this._effectiveAP(caster) * (spell.apRatio || 0);
     if (caster.items.includes('pistolet_magique') && (spell.adRatio || 0) > 0 && (spell.apRatio || 0) > 0)
       raw = Math.floor(raw * 1.2);
+    // Passif Lumière filante (Velna) : +10% dégâts magiques si dash effectué avant ce sort
+    if (caster.passive === 'velna_passive' && caster.velnaLumiereActive && spell.damageType === 'magical')
+      raw = Math.floor(raw * 1.1);
     // Anneau Divin — Ultime Chasseur : +15% dégâts physiques sur le Sort 3
     if (caster.items.includes('anneau_divin') && spell.damageType === 'physical') {
       const _aDivIdx = caster.spells.findIndex(s => s.id === spell.id);
@@ -3909,7 +4096,13 @@ class GameState {
         damage         -= absorbed;
       }
     }
-    // Bouclier magique (Cape Antimagie) : absorbe uniquement les dégâts magiques
+    // Passif Antimagie (Egnamita) : bouclier antimagie — absorbe uniquement les dégâts magiques entrants
+    if (dmgType === 'magical' && target.passive === 'egnamita_passive' && (target.magicShield || 0) > 0 && damage > 0) {
+      const _msAbs = Math.min(target.magicShield, damage);
+      target.magicShield -= _msAbs;
+      damage -= _msAbs;
+      if (_msAbs > 0) this.addLog(`${target.name} — Bouclier Antimagie : absorbe ${_msAbs}`);
+    }
     if (attacker && target.playerIdx !== attacker.playerIdx && damage > 0) {
       attacker.dealtDamageLastTurn = true;
       Stats.addDamage(attacker.id, damage, dmgType);
@@ -3955,6 +4148,14 @@ class GameState {
     }
     if (damage > 0) target.tookDmgThisGlobalTurn = true;
     target.currentHP -= damage;
+    // Passif Antimagie (Egnamita) : 35% des dégâts magiques infligés → bouclier antimagie
+    if (dmgType === 'magical' && damage > 0 && attacker?.passive === 'egnamita_passive' && attacker?.playerIdx !== target?.playerIdx) {
+      const _msGain = Math.floor(damage * 0.35);
+      if (_msGain > 0) {
+        attacker.magicShield = (attacker.magicShield || 0) + _msGain;
+        this.addLog(`${attacker.name} — Antimagie : +${_msGain} bouclier antimagie`);
+      }
+    }
     // Passif Catalyseur Noir / Bâton d'Ancienneté : X% des dégâts pré-boucliers → mana
     if (_preResDmg > 0 && attacker && attacker.playerIdx !== target.playerIdx && target.items) {
       const _catPct = target.items.includes('baton_anciennete') ? 0.30 : target.items.includes('catalyseur_noir') ? 0.20 : 0;
