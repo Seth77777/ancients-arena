@@ -337,7 +337,7 @@ HERO_TYPES['mage_1'] = {
   colorFill: '#154360', colorStroke: '#2980b9',
   portrait: 'assets/heroes/electro.png',
   passive: 'electro_passive',
-  maxHP: 2000, maxMana: 680, hpRegen: 40, manaRegen: 20,
+  maxHP: 2000, maxMana: 560, hpRegen: 40, manaRegen: 20,
   ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
   spells: [
     {
@@ -585,7 +585,7 @@ HERO_TYPES['mage_4'] = {
     },
     {
       id: 'chronos_r', name: 'Rollback',
-      description: 'Retourne à sa position de début de tour (case adjacente si occupée). Inflige 120 + 1,1×AP dégâts magiques aux ennemis à 3 cases ou moins du point de réapparition.',
+      description: 'Retourne à sa position de début de tour (case adjacente si occupée). Inflige 120 + 1,1×AP dégâts magiques aux ennemis à 3 cases ou moins du point de réapparition. Se soigne de 120 + 1,1×AP.',
       manaCost: 170, range: 0, cooldown: 10,
       damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 1.1,
       targetType: 'no_target', rollback: true, zone: null, effects: []
@@ -951,14 +951,14 @@ HERO_TYPES['support_5'] = {
 HERO_TYPES['roam_4'] = {
   id: 'roam_4', name: 'Noyala', role: 'ROAM', roleId: 'roam', roleOrder: 2,
   portrait: 'assets/heroes/noyala.png', passive: 'noyala_passive',
-  maxHP: 2150, maxMana: 200, hpRegen: 35, manaRegen: 20,
-  ad: 40, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 5,
+  maxHP: 2150, maxMana: 350, hpRegen: 35, manaRegen: 30,
+  ad: 40, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 3,
   spells: [
     {
       id: 'noyala_q', name: 'Invocation de Loups',
-      description: 'Invoque un loup (100 PV, PM = Noyala) sur une case adjacente. Les loups collectent les zones ROAM. Quand un loup arrive adjacent à un ennemi, il meurt et lui inflige 50 + 0,7×AD dégâts physiques.',
-      manaCost: 80, range: 1, cooldown: 6,
-      damageType: 'physical', baseDamage: 50, adRatio: 0.7, apRatio: 0,
+      description: 'Invoque un loup (100 PV, PM = Noyala) sur une case adjacente. Les loups collectent les zones ROAM. Quand un loup arrive adjacent à un ennemi, il meurt et lui inflige 50 + 1×AD dégâts physiques.',
+      manaCost: 80, range: 1, cooldown: 4,
+      damageType: 'physical', baseDamage: 50, adRatio: 1.0, apRatio: 0,
       targetType: 'noyala_q', effects: []
     },
     {
@@ -971,7 +971,7 @@ HERO_TYPES['roam_4'] = {
     {
       id: 'noyala_r', name: 'Loup et Moi',
       description: 'Échange la position de Noyala avec un de ses loups. Si elle finit son tour adjacent à un ennemi, celui-ci subit 130 + 1,1×AD dégâts physiques.',
-      manaCost: 110, range: 999, cooldown: 10,
+      manaCost: 110, range: 999, cooldown: 8,
       damageType: 'physical', baseDamage: 130, adRatio: 1.1, apRatio: 0,
       targetType: 'noyala_r', effects: []
     }
@@ -1103,9 +1103,9 @@ HERO_TYPES['mage_6'] = {
   spells: [
     {
       id: 'egnamita_q', name: 'Souillure',
-      description: 'Zone carrée 3×3 en ligne droite (portée 6). Inflige 135 + 0,6 AP dégâts magiques aux ennemis touchés.',
-      manaCost: 130, range: 6, cooldown: 3, cdMin: 1,
-      damageType: 'magical', baseDamage: 135, adRatio: 0, apRatio: 0.6,
+      description: 'Zone carrée 3×3 en ligne droite (portée 6). Inflige 100 + 0,6 AP dégâts magiques aux ennemis touchés.',
+      manaCost: 130, range: 6, cooldown: 4, cdMin: 1,
+      damageType: 'magical', baseDamage: 100, adRatio: 0, apRatio: 0.6,
       targetType: 'zone', lineOnly: true, zone: { size: 1 }, effects: []
     },
     {
@@ -1130,21 +1130,21 @@ HERO_TYPES['mage_7'] = {
   colorFill: '#154360', colorStroke: '#2980b9',
   portrait: 'assets/heroes/velna.png',
   passive: 'velna_passive',
-  maxHP: 2000, maxMana: 680, hpRegen: 40, manaRegen: 35,
-  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 4,
+  maxHP: 2000, maxMana: 480, hpRegen: 40, manaRegen: 35,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 5, po: 4,
   spells: [
     {
       id: 'velna_q', name: 'Saut lumineux',
-      description: 'Dash de 1–2 cases en ligne droite puis envoie une zone 1-3-1 à 7 cases dans la direction du dash. Inflige 70 + 0,8 AP dégâts magiques. Rend 30 mana par ennemi touché.',
+      description: 'Dash de 1–2 cases en ligne droite. Inflige 20 + 0,8 AP dégâts magiques aux ennemis à 1–5 cases puis 80 + 1 AP en zone 1-3-1 aux cases 6–8 dans la direction du dash. Rend 30 mana par ennemi touché.',
       manaCost: 110, range: 2, cooldown: 4, cdMin: 1,
-      damageType: 'magical', baseDamage: 70, adRatio: 0, apRatio: 0.8,
+      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 1.0,
       targetType: 'velna_q', lineOnly: true, zone: null, effects: []
     },
     {
       id: 'velna_w', name: 'Fuseau de lumière',
-      description: 'Zone perpendiculaire à la direction du lancer (portée 6, 3 cases perpendiculaires). Inflige 80 + 0,9 AP dégâts magiques et rend muet les ennemis touchés.',
+      description: 'Zone perpendiculaire à la direction du lancer (portée 6, 3 cases perpendiculaires). Inflige 80 + 0,75 AP dégâts magiques et rend muet les ennemis touchés.',
       manaCost: 100, range: 6, cooldown: 4, cdMin: 1,
-      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.9,
+      damageType: 'magical', baseDamage: 80, adRatio: 0, apRatio: 0.75,
       targetType: 'velna_w', zone: null, effects: [{ type: 'mute', turns: 1 }]
     },
     {
@@ -1153,6 +1153,38 @@ HERO_TYPES['mage_7'] = {
       manaCost: 150, range: 0, cooldown: 10, cdMin: 1,
       damageType: 'magical', baseDamage: 120, adRatio: 0, apRatio: 1.2,
       targetType: 'velna_r', ignoresLoS: true, zone: null, effects: []
+    }
+  ]
+};
+
+HERO_TYPES['solo_6'] = {
+  id: 'solo_6', name: 'Sinys', role: 'Solo', roleId: 'solo', roleOrder: 1,
+  colorFill: '#922b21', colorStroke: '#e74c3c',
+  portrait: 'assets/heroes/sinys.png',
+  passive: 'sinys_passive',
+  maxHP: 2900, maxMana: 0, hpRegen: 60, manaRegen: 0,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
+  spells: [
+    {
+      id: 'sinys_q', name: 'Découpe enragée',
+      description: 'Renforce la prochaine attaque de base (déclenche Lame Bleue) : +50 + 0,3 AD + 40% Rage dégâts physiques. Soigne Sinys de 25% des dégâts bonus infligés.',
+      manaCost: 0, range: 0, cooldown: 3, cdMin: 1,
+      damageType: 'physical', baseDamage: 50, adRatio: 0.3, apRatio: 0,
+      targetType: 'no_target', sinysQ: true, zone: null, effects: []
+    },
+    {
+      id: 'sinys_w', name: 'Rage protectrice',
+      description: 'Gagne un bouclier de 70 + 0,6 AD + 30% Rage pendant 4 tours.',
+      manaCost: 0, range: 0, cooldown: 4, cdMin: 1,
+      damageType: null, baseDamage: 70, adRatio: 0.6, apRatio: 0,
+      targetType: 'no_target', sinysW: true, zone: null, effects: []
+    },
+    {
+      id: 'sinys_r', name: 'Rage ultime',
+      description: 'Gagne +2 PM ce tour. En fin de tour, inflige 120 + 0,8 AD + 100% Rage dégâts physiques aux ennemis à ≤5 cases.',
+      manaCost: 0, range: 0, cooldown: 9, cdMin: 1,
+      damageType: 'physical', baseDamage: 120, adRatio: 0.8, apRatio: 0,
+      targetType: 'no_target', sinysR: true, zone: null, effects: []
     }
   ]
 };
@@ -1200,7 +1232,7 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     maxHP:       t.maxHP,
     currentHP:   t.maxHP,
     maxMana:     t.maxMana,
-    currentMana: t.maxMana,
+    currentMana: t.passive === 'sinys_passive' ? 0 : t.maxMana,
     hpRegen:     t.hpRegen,
     manaRegen:   t.manaRegen,
     ad:          t.ad,

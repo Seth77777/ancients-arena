@@ -413,6 +413,23 @@ class InputHandler {
     if (!spell || spell.targetType === 'self' || spell.targetType === 'no_target' || spell.targetType === 'pm_sacrifice') return;
     if (spell.targetType === 'push_enemy' && g.pushTarget) return;
     if (spell.targetType === 'wind_glyph' && g.windGlyphTarget) return;
+
+    // Zone preview — Velna Saut lumineux : affiche la zone 1-3-1 à 7 cases dans la direction du dash
+    if (spell.targetType === 'velna_q' && cell) {
+      const hero = g.currentHero;
+      const dx = cell.x - hero.position.x, dy = cell.y - hero.position.y;
+      const isCardinal = (dx === 0) !== (dy === 0);
+      const dist = Math.abs(dx) + Math.abs(dy);
+      const free = !isWall(cell.x, cell.y) && !g.getHeroAt(cell.x, cell.y);
+      if (isCardinal && dist >= 1 && dist <= 2 && free) {
+        const zcx = cell.x + Math.sign(dx) * 7, zcy = cell.y + Math.sign(dy) * 7;
+        r.highlightSplashCells = g._diamondCells(zcx, zcy, 1)
+          .filter(c => c.x >= 0 && c.x < MAP_SIZE && c.y >= 0 && c.y < MAP_SIZE);
+      } else {
+        r.highlightSplashCells = [];
+      }
+    }
+
     if (!cell) { r.zoneSpellTarget = null; r.render(); return; }
     r.zoneSpellTarget = cell;
     r.render();

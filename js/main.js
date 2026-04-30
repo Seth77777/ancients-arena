@@ -20,7 +20,7 @@ const PASSIVE_LABELS = {
   gros_calibre:       'Gros Calibre — Les attaques de base de Stank infligent les mêmes dégâts physiques à tous les ennemis dans un rayon de 4 cases autour de la cible.',
   sharagoth_passive:  'Plus forts ensemble — Au début de son tour, Sharagoth gagne un bouclier de 10% de ses HP max par allié présent à moins de 10 cases (Manhattan), pendant 2 tours.',
   vaillance:          'Vaillance — Le premier débuff appliqué à Ondine chaque tour est automatiquement annulé.',
-  abyss_passive:      'Équilibre des abysses — Les attaques de base d\'Abyss infligent 40% de dégâts physiques, 40% de dégâts magiques et 20% de dégâts bruts.',
+  abyss_passive:      'Abysses mixtes — Abyss ne peut effectuer qu\'une attaque de base par tour. Elle inflige 0,9×AD dégâts physiques + 0,9×AP dégâts magiques + 0,1×AD + 0,1×AP dégâts bruts.',
   faena_passive:      'Coups critiques mortels — Chaque tranche de 10 AD donne +5% de dégâts critiques (base 350%). S\'applique aux attaques de base et aux Flèches de douleur.',
   pibot_passive:      'Batterie — Au début de chaque tour de Pibot, une case ⚡ apparaît à 5 cases ou moins. Passer dessus récupère 50% de la mana manquante.',
   gabriel_passive:    'Pas Léger — Au début du tour de chaque allié à moins de 7 cases de Gabriel, cet allié gagne +1 PM.',
@@ -31,7 +31,8 @@ const PASSIVE_LABELS = {
   quackshot_passive:  'Marque du Chasseur — Chaque attaque de base ajoute une charge à l\'ennemi (cumulable). Changer de cible retire les charges de l\'ennemi précédent.',
   hornet_passive:     'Suture — Si Hornet n\'utilise aucun PM pendant son tour, elle se soigne de 80 + 1×AD HP, retire son hémorragie et gagne +3 PM au prochain tour.',
   egnamita_passive:   'Antimagie — 35% des dégâts magiques qu\'Egnamita inflige sont convertis en bouclier antimagie permanent (absorbe uniquement les dégâts magiques).',
-  velna_passive:      'Lumière filante — Lorsque Velna effectue un dash, son prochain sort inflige 10% de dégâts magiques supplémentaires.'
+  velna_passive:      'Lumière filante — Lorsque Velna effectue un dash, son prochain sort inflige 10% de dégâts magiques supplémentaires.',
+  sinys_passive:      'Points de rage — Les sorts de Sinys ne coûtent pas de mana. Chaque dégât encaissé est stocké comme Rage (barre de mana). La Rage est dépensée et utilisée comme bonus par ses sorts.'
 };
 
 const TARGET_LABELS = {

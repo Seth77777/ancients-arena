@@ -436,6 +436,13 @@ class GameState {
     }
     this.autoAttacksUsed    = 0;
     this.autoAttacksAllowed = 1 + (hero.extraAutoAttacks || 0);
+    if (hero.passive === 'abyss_passive') this.autoAttacksAllowed = 1;
+    // Pouvoir des Titans (Hydre de Poséidon) : mise à jour AD = 3% HP max actuel
+    if (hero.items.includes('hydre_de_poseidon')) {
+      hero.ad -= (hero.titanPowerAD || 0);
+      hero.titanPowerAD = Math.floor(hero.maxHP * 0.03);
+      hero.ad += hero.titanPowerAD;
+    }
     this.spellsUsed         = {};
     hero.hornetIsReactivation = {};
     hero._titanHeartThisTurn  = new Set();
@@ -824,6 +831,22 @@ class GameState {
     }
     if (hero) { hero.feninoRActive = false; hero.feninoRTagged = null; }
 
+    // Sinys — Rage ultime : explosion en fin de tour
+    if (hero && hero.isAlive && hero.sinysRActive && hero.sinysRDmgData) {
+      const _sd = hero.sinysRDmgData;
+      const _sRawBase = Math.floor(_sd.base + hero.ad * _sd.adRatio + _sd.rage);
+      this._getEnemies(hero.playerIdx).filter(e =>
+        e.isAlive && e.position && this._manhattan(hero.position, e.position) <= 5
+      ).forEach(e => {
+        const _sDmg = this._reduceDmg(_sRawBase, 'physical', e);
+        this._applyDamage(e, _sDmg, hero, 'physical');
+        this.addLog(`${hero.name} — Rage ultime : −${_sDmg} dégâts physiques (${e.name})`);
+      });
+      hero.sinysRActive  = false;
+      hero.sinysRDmgData = null;
+      this._checkGameOver();
+    }
+
     // Nettoyer le debuff Fenino en fin de tour du héros affecté
     if (hero && hero.feninoDebuffActive) hero.feninoDebuffActive = false;
 
@@ -1005,7 +1028,8 @@ class GameState {
           hero.dots = hero.dots.filter(d => d.turns > 0);
         }
         const _manaRegenMult = _healEffMult * (1 + (hero.manaRegenPct || 0) / 100);
-        hero.currentMana = Math.min(hero.maxMana, hero.currentMana + Math.floor(hero.manaRegen * _manaRegenMult));
+        if (hero.passive !== 'sinys_passive')
+          hero.currentMana = Math.min(hero.maxMana, hero.currentMana + Math.floor(hero.manaRegen * _manaRegenMult));
         hero.spells.forEach(sp => { if (hero.cooldowns[sp.id] > 0) hero.cooldowns[sp.id]--; });
       });
     });
@@ -1207,6 +1231,11 @@ class GameState {
 
     if (item.instant?.currentHP)
       hero.currentHP = Math.min(hero.maxHP, hero.currentHP + item.instant.currentHP);
+    // Pouvoir des Titans (Hydre de Poséidon) : bonus AD initial = 3% HP max
+    if (itemId === 'hydre_de_poseidon') {
+      hero.titanPowerAD = Math.floor(hero.maxHP * 0.03);
+      hero.ad += hero.titanPowerAD;
+    }
 
     if (!item.consumable) {
       hero.items.push(itemId);
@@ -1233,6 +1262,10 @@ class GameState {
       hero.ap            -= hero._coeurMondeStacks * 10;
       hero.healEfficiency = Math.max(0, (hero.healEfficiency || 0) - hero._coeurMondeStacks * 2);
       hero._coeurMondeStacks = 0;
+    }
+    if (itemId === 'hydre_de_poseidon' && (hero.titanPowerAD || 0) > 0) {
+      hero.ad -= hero.titanPowerAD;
+      hero.titanPowerAD = 0;
     }
     hero.items.splice(idx, 1);
     Object.entries(item.stats).forEach(([stat, val]) => {
@@ -1454,15 +1487,16 @@ class GameState {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
         const _critMult = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) * 5 / 100 : 0);
         const rawBase = Math.floor((attacker.ad * 0.25 + bonusFlat) * (isCrit ? _critMult : 1));
-        // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
+        // Passif Abysses mixtes : 0,9×AD phys + 0,9×AP mag + 0,1×AD bruts + 0,1×AP bruts
         if (attacker.passive === 'abyss_passive') {
-          const physDmg = this._reduceDmg(Math.floor(rawBase * 0.4), 'physical', e, armorPen, 0, armorPenPct);
-          const magDmg  = this._reduceDmg(Math.floor(rawBase * 0.4), 'magical',  e, 0, 0);
-          const rawDmg  = Math.floor(rawBase * 0.2);
+          const _abAP   = this._effectiveAP(attacker);
+          const physDmg = this._reduceDmg(Math.floor(0.9 * attacker.ad), 'physical', e, armorPen, 0, armorPenPct);
+          const magDmg  = this._reduceDmg(Math.floor(0.9 * _abAP), 'magical', e);
+          const rawDmg  = Math.floor(0.1 * attacker.ad + 0.1 * _abAP);
           this._applyDamage(e, physDmg, attacker, 'physical');
           if (e.isAlive) this._applyDamage(e, magDmg, attacker, 'magical');
-          if (e.isAlive) this._applyDamage(e, rawDmg, attacker, 'raw');
-          this.addLog(`${attacker.name} → ${e.name}: −${physDmg} phys −${magDmg} mag −${rawDmg} bruts (Abysses)${isCrit ? ' CRITIQUE' : ''}`);
+          if (e.isAlive && rawDmg > 0) this._applyDamage(e, rawDmg, attacker, 'raw');
+          this.addLog(`${attacker.name} → ${e.name}: −${physDmg} phys −${magDmg} mag −${rawDmg} bruts (Abysses)`);
           this._applyHemorrhage(attacker, e);
           return;
         }
@@ -1585,7 +1619,7 @@ class GameState {
       if (!targets.length) this.addLog(`${attacker.name} — Aucune cible à portée`);
       // Dague du Soldat : bouclier +25 par cible touchée (toutes distances)
       if (attacker.items.includes('soldier_dagger') && targets.length > 0) {
-        attacker.daggerShield = (attacker.daggerShield || 0) + 25 * targets.length;
+        attacker.daggerShield = (attacker.daggerShield || 0) + 40 * targets.length;
         this.addLog(`${attacker.name} — Passif Dague : bouclier +${25 * targets.length}`);
       }
       // Passif Lame du Diable : 7% HP max en dégâts magiques sur chaque cible
@@ -1662,6 +1696,16 @@ class GameState {
         if (attacker.manaOnSpellGained >= attacker.manaOnSpellMax && attacker.items.includes('epee_de_mana'))
           this._transformItem(attacker, 'epee_de_mana', 'epee_ange');
       }
+      // Passif Soif de vie (Hydre de Poséidon) : 1ère AA → 4% HP max bruts zone Manhattan ≤4
+      if (this.autoAttacksUsed === 0 && attacker.items.includes('hydre_de_poseidon')) {
+        const _hydreDmgL = Math.floor(attacker.maxHP * 0.04);
+        if (_hydreDmgL > 0) this._getEnemies(attacker.playerIdx).filter(e =>
+          e.isAlive && e.position && this._manhattan(targetHero.position, e.position) <= 4
+        ).forEach(e => {
+          this._applyDamage(e, _hydreDmgL, attacker, 'raw');
+          this.addLog(`${attacker.name} — Hydre de Poséidon : −${_hydreDmgL} dégâts bruts (${e.name})`);
+        });
+      }
       if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
       this.actionsUsed++;
       this.canBuy = false;
@@ -1679,12 +1723,13 @@ class GameState {
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
     const _critMult2 = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) * 5 / 100 : 0);
     const rawBase2 = Math.floor((attacker.ad * 0.25 + bonusFlat2) * (isCrit2 ? _critMult2 : 1));
-    // Passif Équilibre des abysses : 40% phys, 40% mag, 20% bruts
+    // Passif Abysses mixtes : 0,9×AD phys + 0,9×AP mag + 0,1×AD bruts + 0,1×AP bruts
     if (attacker.passive === 'abyss_passive') {
-      const physDmg2 = this._reduceDmg(Math.floor(rawBase2 * 0.4), 'physical', targetHero, armorPen2, 0, armorPenPct2);
-      const magDmg2  = this._reduceDmg(Math.floor(rawBase2 * 0.4), 'magical',  targetHero, 0, 0);
-      const rawDmg2  = Math.floor(rawBase2 * 0.2);
-      this.addLog(`${attacker.name} attaque ${targetHero.name} — ${physDmg2} phys + ${magDmg2} mag + ${rawDmg2} bruts (Abysses)${isCrit2 ? ' CRITIQUE' : ''}`);
+      const _abAP2  = this._effectiveAP(attacker);
+      const physDmg2 = this._reduceDmg(Math.floor(0.9 * attacker.ad), 'physical', targetHero, armorPen2, 0, armorPenPct2);
+      const magDmg2  = this._reduceDmg(Math.floor(0.9 * _abAP2), 'magical', targetHero);
+      const rawDmg2  = Math.floor(0.1 * attacker.ad + 0.1 * _abAP2);
+      this.addLog(`${attacker.name} attaque ${targetHero.name} — ${physDmg2} phys + ${magDmg2} mag + ${rawDmg2} bruts (Abysses)`);
       this._applyDamage(targetHero, physDmg2, attacker, 'physical');
       if (targetHero.isAlive) this._applyDamage(targetHero, magDmg2, attacker, 'magical');
       if (targetHero.isAlive) this._applyDamage(targetHero, rawDmg2, attacker, 'raw');
@@ -1718,6 +1763,16 @@ class GameState {
         const _cpDmg = this._reduceDmg(Math.floor(0.1 * this._effectiveAP(attacker)), 'magical', targetHero);
         if (_cpDmg > 0) { this._applyDamage(targetHero, _cpDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Ceinture Propulsée : +${_cpDmg} dégâts magiques`); }
       }
+      // Passif Soif de vie (Hydre de Poséidon) : 1ère AA → 4% HP max bruts zone Manhattan ≤4
+      if (this.autoAttacksUsed === 0 && attacker.items.includes('hydre_de_poseidon')) {
+        const _hydreDmgA = Math.floor(attacker.maxHP * 0.04);
+        if (_hydreDmgA > 0) this._getEnemies(attacker.playerIdx).filter(e =>
+          e.isAlive && e.position && this._manhattan(targetHero.position, e.position) <= 4
+        ).forEach(e => {
+          this._applyDamage(e, _hydreDmgA, attacker, 'raw');
+          this.addLog(`${attacker.name} — Hydre de Poséidon : −${_hydreDmgA} dégâts bruts (${e.name})`);
+        });
+      }
       if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
       this.actionsUsed++;
       this.canBuy = false;
@@ -1738,10 +1793,16 @@ class GameState {
         empMagicalDmg2 = this._reduceDmg(rawEmp2, 'magical', targetHero, 0, 0);
       } else {
         const bonus = this._reduceDmg(
-          Math.floor(attacker.ad * (emp2.adRatio || 0) + this._effectiveAP(attacker) * (emp2.apRatio || 0)),
+          Math.floor(attacker.ad * (emp2.adRatio || 0) + this._effectiveAP(attacker) * (emp2.apRatio || 0) + (emp2.baseDamage || 0) + (emp2.sinysRageDmg || 0)),
           'physical', targetHero, armorPen2, 0, armorPenPct2
         );
         dmg += bonus;
+        // Sinys — Découpe enragée : soin 25% des dégâts bonus
+        if (emp2.sinysHeal && bonus > 0) {
+          const _sHeal = Math.floor(bonus * 0.25);
+          attacker.currentHP = Math.min(attacker.maxHP, attacker.currentHP + _sHeal);
+          this.addLog(`${attacker.name} — Découpe enragée : +${_sHeal} HP`);
+        }
       }
       attacker.empoweredAttack = null;
     }
@@ -1860,7 +1921,7 @@ class GameState {
     }
     // Passif Dague du Soldat : bouclier +25 par attaque de base (toutes distances)
     if (attacker.items.includes('soldier_dagger')) {
-      attacker.daggerShield = (attacker.daggerShield || 0) + 25;
+      attacker.daggerShield = (attacker.daggerShield || 0) + 40;
       this.addLog(`${attacker.name} — Passif Dague : bouclier +25`);
     }
     const doubleOnHit = attacker.items.includes('epee_double_feu');
@@ -1952,6 +2013,16 @@ class GameState {
     if (attacker.ceinturePropulseeThisTurn && targetHero.isAlive) {
       const _cpDmg = this._reduceDmg(Math.floor(0.1 * this._effectiveAP(attacker)), 'magical', targetHero);
       if (_cpDmg > 0) { this._applyDamage(targetHero, _cpDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Ceinture Propulsée : +${_cpDmg} dégâts magiques`); }
+    }
+    // Passif Soif de vie (Hydre de Poséidon) : 1ère AA → 4% HP max bruts zone Manhattan ≤4
+    if (this.autoAttacksUsed === 0 && attacker.items.includes('hydre_de_poseidon')) {
+      const _hydreDmgN = Math.floor(attacker.maxHP * 0.04);
+      if (_hydreDmgN > 0) this._getEnemies(attacker.playerIdx).filter(e =>
+        e.isAlive && e.position && this._manhattan(targetHero.position, e.position) <= 4
+      ).forEach(e => {
+        this._applyDamage(e, _hydreDmgN, attacker, 'raw');
+        this.addLog(`${attacker.name} — Hydre de Poséidon : −${_hydreDmgN} dégâts bruts (${e.name})`);
+      });
     }
     if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
     this.actionsUsed++;
@@ -2690,6 +2761,44 @@ class GameState {
         break;
       }
       case 'no_target': {
+        // Sinys — Découpe enragée : renforce la prochaine AA
+        if (spell.sinysQ) {
+          const _sRage = Math.floor(caster.currentMana * 0.40);
+          caster.currentMana -= _sRage;
+          caster.empoweredAttack = { damageType: 'physical', baseDamage: spell.baseDamage, adRatio: spell.adRatio, apRatio: 0, sinysRageDmg: _sRage, sinysHeal: true };
+          this.addLog(`${caster.name} → ${spell.name} : prochaine AA renforcée (+${spell.baseDamage + Math.floor(caster.ad * spell.adRatio) + _sRage} brut estimé)`);
+          break;
+        }
+        // Sinys — Rage protectrice : bouclier 70+0,6AD+30%Rage
+        if (spell.sinysW) {
+          const _sRageW = Math.floor(caster.currentMana * 0.30);
+          caster.currentMana -= _sRageW;
+          const _shieldVal = Math.floor(spell.baseDamage + caster.ad * spell.adRatio + _sRageW);
+          caster.shield = Math.max(caster.shield || 0, _shieldVal);
+          caster.shieldTurnsLeft = 4;
+          this.addLog(`${caster.name} → ${spell.name} : bouclier +${_shieldVal} (4 tours)`);
+          // Dégâts physiques égaux au bouclier aux ennemis adjacents
+          if (_shieldVal > 0 && caster.position) {
+            this._getEnemies(caster.playerIdx).filter(e =>
+              e.isAlive && e.position && this._chebyshev(caster.position, e.position) <= 1
+            ).forEach(e => {
+              const _wDmg = this._reduceDmg(_shieldVal, 'physical', e);
+              this._applyDamage(e, _wDmg, caster, 'physical');
+              this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${_wDmg} dégâts physiques`);
+            });
+            this._checkGameOver();
+          }
+          break;
+        }
+        // Sinys — Rage ultime : +2PM + explosion en fin de tour
+        if (spell.sinysR) {
+          this.movementLeft = Math.min(caster.pm, this.movementLeft + 2);
+          caster.sinysRDmgData = { base: spell.baseDamage, adRatio: spell.adRatio, rage: caster.currentMana };
+          caster.currentMana = 0;
+          caster.sinysRActive = true;
+          this.addLog(`${caster.name} → ${spell.name} : +2 PM, explosion en fin de tour`);
+          break;
+        }
         // Egnamita — Activation Insensée : frappe tous les ennemis affectés par un DOT
         if (spell.egnamitaR) {
           const _erHit = this._getEnemies(caster.playerIdx).filter(e => e.isAlive && (e.dots || []).length > 0);
@@ -2800,6 +2909,10 @@ class GameState {
               this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${rdmg} HP`);
             });
           }
+          // Rollback — soin de 120 + 1,1×AP
+          const _rbHeal = Math.floor(120 + 1.1 * this._effectiveAP(caster));
+          caster.currentHP = Math.min(caster.maxHP, caster.currentHP + _rbHeal);
+          this.addLog(`${caster.name} → ${spell.name} : +${_rbHeal} HP`);
           break;
         }
         // Layia — Vision : +PO d'attaque ce tour
@@ -2908,6 +3021,25 @@ class GameState {
         this._feninoRCheckAdjacent(caster);
         if (caster.roleId === 'roam') this._checkBrownCollection(caster);
         this.addLog(`${caster.name} → ${spell.name} : dash en (${vqx},${vqy})`);
+        // Dégâts 20+0,8×AP aux ennemis à 1–5 cases dans la direction du dash
+        const _vqLineDmgAP = this._effectiveAP(caster);
+        let _vqLineHit = 0;
+        for (let _s = 1; _s <= 5; _s++) {
+          const lx = vqx + udx * _s, ly = vqy + udy * _s;
+          if (lx < 0 || lx >= MAP_SIZE || ly < 0 || ly >= MAP_SIZE) break;
+          const le = this.getHeroAt(lx, ly);
+          if (le && le.playerIdx !== caster.playerIdx && le.isAlive) {
+            const _lineDmg = this._reduceDmg(Math.floor(20 + 0.8 * _vqLineDmgAP), 'magical', le);
+            this._applyDamage(le, _lineDmg, caster, 'magical');
+            this.addLog(`${caster.name} → ${spell.name} → ${le.name}: −${_lineDmg} HP (ligne)`);
+            _vqLineHit++;
+          }
+        }
+        if (_vqLineHit > 0) {
+          const _lineMana = _vqLineHit * 30;
+          caster.currentMana = Math.min(caster.maxMana, caster.currentMana + _lineMana);
+          this.addLog(`${caster.name} — Saut lumineux : +${_lineMana} mana (ligne)`);
+        }
         // Zone 1-3-1 à 7 cases dans la direction du dash
         const zcx = vqx + udx * 7, zcy = vqy + udy * 7;
         const vqZone = this._diamondCells(zcx, zcy, 1).filter(c =>
@@ -3177,6 +3309,27 @@ class GameState {
           this.glyphs.push({ type: 'ultimate', centerX: gx, centerY: gy, cells: glyphCells,
             turnsLeft: -1, playerIdx: caster.playerIdx, ownerHero: caster });
           this.addLog(`${caster.name} → ${spell.name} posée`);
+          // Attirer les ennemis à ≤6 cases (manhattan) vers le glyphe ultime
+          const _ultInGlyph = e => glyphCells.some(c => c.x === e.position.x && c.y === e.position.y);
+          this._getEnemies(caster.playerIdx).filter(e =>
+            e.isAlive && e.position && this._manhattan({ x: gx, y: gy }, e.position) <= 6 && !_ultInGlyph(e)
+          ).forEach(e => {
+            // Avancer vers le centre case par case jusqu'à entrer dans le glyphe
+            for (let _step = 0; _step < 6; _step++) {
+              const dx = gx - e.position.x, dy = gy - e.position.y;
+              if (dx === 0 && dy === 0) break;
+              const mdx = Math.abs(dx) >= Math.abs(dy) ? Math.sign(dx) : 0;
+              const mdy = mdx === 0 ? Math.sign(dy) : 0;
+              const nx = e.position.x + mdx, ny = e.position.y + mdy;
+              if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE || isWall(nx, ny) || this.getHeroAt(nx, ny)) break;
+              e.position = { x: nx, y: ny };
+              if (_ultInGlyph(e)) {
+                this.addLog(`${e.name} — Glyphe Ultime : attiré en (${nx},${ny})`);
+                this._checkTrap(e);
+                break;
+              }
+            }
+          });
         }
         break;
       }
@@ -4075,7 +4228,7 @@ class GameState {
     }
     // Passif Combattant Anti-Mage : réduction des dégâts magiques de 0,1×AD
     if (dmgType === 'magical' && target.items?.includes('combattant_antimage')) {
-      damage = Math.max(0, damage - Math.floor(0.1 * target.ad));
+      damage = Math.max(0, damage - Math.floor(0.2 * target.ad));
     }
     if (target.daggerShield > 0) {
       const absorbed   = Math.min(target.daggerShield, damage);
@@ -4148,6 +4301,9 @@ class GameState {
     }
     if (damage > 0) target.tookDmgThisGlobalTurn = true;
     target.currentHP -= damage;
+    // Passif Points de rage (Sinys) : les dégâts encaissés alimentent la rage (sans cap)
+    if (damage > 0 && target.passive === 'sinys_passive')
+      target.currentMana = (target.currentMana || 0) + damage;
     // Passif Antimagie (Egnamita) : 35% des dégâts magiques infligés → bouclier antimagie
     if (dmgType === 'magical' && damage > 0 && attacker?.passive === 'egnamita_passive' && attacker?.playerIdx !== target?.playerIdx) {
       const _msGain = Math.floor(damage * 0.35);

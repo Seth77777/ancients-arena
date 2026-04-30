@@ -317,7 +317,8 @@
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
   <div class="patch-tabs">
-    <button class="patch-tab active" onclick="showPatch('patch-112', this)">Alpha 1.1.2</button>
+    <button class="patch-tab active" onclick="showPatch('patch-113', this)">Alpha 1.1.3</button>
+    <button class="patch-tab" onclick="showPatch('patch-112', this)">Alpha 1.1.2</button>
     <button class="patch-tab" onclick="showPatch('patch-111', this)">Alpha 1.1.1</button>
     <button class="patch-tab" onclick="showPatch('patch-110', this)">Alpha 1.1.0</button>
     <button class="patch-tab" onclick="showPatch('patch-103', this)">Alpha 1.0.3</button>
@@ -330,9 +331,387 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
+<!-- PATCH ALPHA 1.1.3                                      -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="patch-113" class="patch-section active">
+<div class="patch-body">
+
+  <div class="patch-main">
+
+    <!-- NOUVEAU HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">✦</span> NOUVEAU HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card new">
+          <img src="assets/heroes/sinys.png" alt="Sinys">
+          <div class="hero-card-name">Sinys</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sinys — Solo</div>
+            <ul>
+              <li><span class="neu"><strong>Passif — Points de rage :</strong> les sorts ne coûtent pas de mana. Chaque dégât encaissé est stocké comme Rage et dépensé par ses sorts.</span></li>
+              <li><span class="neu"><strong>Sort 1 — Découpe enragée :</strong> renforce la prochaine AA (déclenche Lame Bleue) : +50 + 0,3 AD + 40% Rage dégâts physiques. Soin 25% des dégâts bonus. CD 3.</span></li>
+              <li><span class="neu"><strong>Sort 2 — Rage protectrice :</strong> bouclier 70 + 0,6 AD + 30% Rage (4 tours). Inflige ces mêmes dégâts physiques aux ennemis adjacents. CD 4.</span></li>
+              <li><span class="neu"><strong>Sort 3 — Rage ultime :</strong> +2 PM ce tour. En fin de tour : 120 + 0,8 AD + 100% Rage dégâts physiques aux ennemis à ≤5 cases. CD 9.</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NOUVEL ITEM -->
+    <div>
+      <div class="section-title"><span class="section-icon new">★</span> NOUVEL ITEM</div>
+      <div class="items-grid">
+
+        <div class="item-card new">
+          <img src="img/items/hydre_de_poseidon.png" alt="Hydre de Poséidon">
+          <div class="item-card-name">Hydre de Poséidon</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Hydre de Poséidon (T3)</div>
+            <div class="divider"></div>
+            <ul>
+              <li>Recette : Lame Noire + Ceinture de Vie + 400g</li>
+              <li><span class="up">+40 AD · +400 HP</span></li>
+              <li>Passif — <strong>Soif de vie :</strong> 1ère AA du tour → 4% HP max en dégâts bruts dans une zone Manhattan ≤4.</li>
+              <li>Passif — <strong>Pouvoir des Titans :</strong> 3% de vos HP max converti en AD (mis à jour chaque tour).</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- REWORK -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">↔</span> REWORK — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/abyss.png" alt="Abyss">
+          <div class="hero-card-name">Abyss</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Abyss — Passif refondu</div>
+            <ul>
+              <li><span class="adj">Ancien : <em>Équilibre des abysses</em> — 40% phys, 40% mag, 20% bruts.</span></li>
+              <li><span class="neu">Nouveau : <strong>Abysses mixtes</strong> — 1 attaque de base maximum par tour. Inflige 0,9×AD dégâts physiques + 0,9×AP dégâts magiques + 0,1×(AD+AP) dégâts bruts.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card adj">
+          <img src="assets/heroes/shallah.png" alt="Shallah">
+          <div class="hero-card-name">Shallah</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Shallah — Sort 3 refondu</div>
+            <ul>
+              <li><span class="neu">Nouveau : à la pose du Glyphe Ultime, les ennemis à ≤6 cases (Manhattan) non présents dans le glyphe sont attirés vers son centre (déclenche les pièges/glyphes à l'arrivée).</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BUFFS HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">↑</span> BUFFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/chronos.png" alt="Chronos">
+          <div class="hero-card-name">Chronos</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Chronos</div>
+            <ul>
+              <li><span class="up">Rollback — nouveau : se soigne de <strong>120 + 1,1×AP</strong> au retour.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/noyala.png" alt="Noyala">
+          <div class="hero-card-name">Noyala</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Noyala</div>
+            <ul>
+              <li><span class="up">Mana de base : <strong>200 → 350</strong></span></li>
+              <li><span class="up">Régén mana : <strong>20 → 30</strong>/tour</span></li>
+              <li><span class="down">PO de base : <strong>5 → 3</strong></span></li>
+              <li><span class="up">Invocation de Loups — CD : <strong>6 → 4</strong></span></li>
+              <li><span class="up">Invocation de Loups — Dégâts loups : <strong>50+0,7 AD → 50+1 AD</strong></span></li>
+              <li><span class="up">Loup et Moi — CD : <strong>10 → 8</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card buff">
+          <img src="assets/heroes/velna.png" alt="Velna">
+          <div class="hero-card-name">Velna</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Velna</div>
+            <ul>
+              <li><span class="up">PM de base : <strong>4 → 5</strong></span></li>
+              <li><span class="down">Mana de base : <strong>680 → 480</strong></span></li>
+              <li><span class="up">Saut lumineux — nouveau : inflige <strong>20 + 0,8×AP</strong> dégâts magiques aux ennemis à 1–5 cases dans la direction du dash.</span></li>
+              <li><span class="up">Saut lumineux — zone 6–8 : <strong>70+0,8AP → 80+1AP</strong></span></li>
+              <li><span class="down">Fuseau de lumière — AP ratio : <strong>0,9 → 0,75</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NERFS HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">↓</span> NERFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/egnamita.png" alt="Egnamita">
+          <div class="hero-card-name">Egnamita</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Egnamita</div>
+            <ul>
+              <li><span class="down">Souillure — Dégâts de base : <strong>135 → 100</strong></span></li>
+              <li><span class="down">Souillure — CD : <strong>3 → 4</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/electro.png" alt="Electro">
+          <div class="hero-card-name">Electro</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Electro</div>
+            <ul>
+              <li><span class="down">Mana de base : <strong>680 → 560</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BUFFS ITEMS -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">↑</span> BUFFS — ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card buff">
+          <img src="img/items/soldier_dagger.png" alt="Dague du Soldat">
+          <div class="item-card-name">Dague du Soldat</div>
+          <div class="tooltip"><div class="tooltip-name">Dague du Soldat</div><ul>
+            <li><span class="up">Bouclier par AA : <strong>25 → 40</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/magic_ring.png" alt="Anneau Magique">
+          <div class="item-card-name">Anneau Magique</div>
+          <div class="tooltip"><div class="tooltip-name">Anneau Magique</div><ul>
+            <li><span class="up">AP : <strong>20 → 30</strong></span></li>
+            <li><span class="up">Régén HP : <strong>10 → 20</strong>/tour</span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/mana_tear.png" alt="Larme de Mana">
+          <div class="item-card-name">Larme de Mana</div>
+          <div class="tooltip"><div class="tooltip-name">Larme de Mana</div><ul>
+            <li><span class="up">Stacking par sort : <strong>15 → 25</strong> Mana max</span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/reinforced_boots.png" alt="Bottes Renforcées">
+          <div class="item-card-name">Bottes Renforcées</div>
+          <div class="tooltip"><div class="tooltip-name">Bottes Renforcées</div><ul>
+            <li><span class="up">Armure plate → <strong>12% Armure</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/anti_spell_boots.png" alt="Bottes Anti-Sort">
+          <div class="item-card-name">Bottes Anti-Sort</div>
+          <div class="tooltip"><div class="tooltip-name">Bottes Anti-Sort</div><ul>
+            <li><span class="up">RM plate → <strong>12% RM</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/boots_of_celerity.png" alt="Bottes de Célérité">
+          <div class="item-card-name">Bottes de Célérité</div>
+          <div class="tooltip"><div class="tooltip-name">Bottes de Célérité</div><ul>
+            <li><span class="up">Régén HP & Mana : <strong>50% → 75%</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/speed_boots.png" alt="Bottes de Grande Vitesse">
+          <div class="item-card-name">Bottes Gde Vitesse</div>
+          <div class="tooltip"><div class="tooltip-name">Bottes de Grande Vitesse</div><ul>
+            <li><span class="up">Régén HP & Mana : <strong>50% → 75%</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/protection_divine.png" alt="Protection Divine">
+          <div class="item-card-name">Protection Divine</div>
+          <div class="tooltip"><div class="tooltip-name">Protection Divine</div><ul>
+            <li><span class="up">HP max : <strong>230 → 350</strong></span></li>
+            <li><span class="up">Efficacité Soins : <strong>10% → 15%</strong></span></li>
+            <li><span class="down">Coût de forge : <strong>0 → 200g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/plaque_du_golem.png" alt="Plaque du Golem">
+          <div class="item-card-name">Plaque du Golem</div>
+          <div class="tooltip"><div class="tooltip-name">Plaque du Golem</div><ul>
+            <li><span class="up">HP max : <strong>350 → 400</strong></span></li>
+            <li><span class="down">Coût de forge : <strong>0 → 250g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/marteau_divin.png" alt="Marteau Divin">
+          <div class="item-card-name">Marteau Divin</div>
+          <div class="tooltip"><div class="tooltip-name">Marteau Divin</div><ul>
+            <li><span class="up">AD : <strong>35 → 40</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="img/items/combattant_antimage.png" alt="Combattant Anti-Mage">
+          <div class="item-card-name">Anti-Mage</div>
+          <div class="tooltip"><div class="tooltip-name">Combattant Anti-Mage</div><ul>
+            <li><span class="up">Passif : réduction dégâts magiques <strong>0,1 → 0,2×AD</strong></span></li>
+            <li><span class="up">Coût de forge : <strong>500 → 250g</strong></span></li>
+          </ul></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AJUSTEMENTS COÛTS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">↔</span> AJUSTEMENTS — COÛTS DE FORGE</div>
+      <div class="items-grid">
+
+        <div class="item-card adj">
+          <img src="img/items/plastron_du_diable_immortel.png" alt="Plastron du Diable Immortel">
+          <div class="item-card-name">Plastron Diable</div>
+          <div class="tooltip"><div class="tooltip-name">Plastron du Diable Immortel</div><ul>
+            <li><span class="adj">Coût de forge : <strong>0 → 200g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/armure_de_stalnoth.png" alt="Armure de Stal'noth">
+          <div class="item-card-name">Armure Stal'noth</div>
+          <div class="tooltip"><div class="tooltip-name">Armure de Stal'noth</div><ul>
+            <li><span class="adj">Coût de forge : <strong>600 → 400g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/pistolet_magique.png" alt="Pistolet Magique">
+          <div class="item-card-name">Pistolet Magique</div>
+          <div class="tooltip"><div class="tooltip-name">Pistolet Magique</div><ul>
+            <li><span class="adj">Coût de forge : <strong>400 → 300g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/lame_d_infini.png" alt="Lame d'Infini">
+          <div class="item-card-name">Lame d'Infini</div>
+          <div class="tooltip"><div class="tooltip-name">Lame d'Infini</div><ul>
+            <li><span class="adj">Coût de forge : <strong>400 → 200g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/lame_electrique.png" alt="Lame Électrique">
+          <div class="item-card-name">Lame Électrique</div>
+          <div class="tooltip"><div class="tooltip-name">Lame Électrique</div><ul>
+            <li><span class="adj">Coût de forge : <strong>600 → 250g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/danse_des_morts.png" alt="Danse des Morts">
+          <div class="item-card-name">Danse des Morts</div>
+          <div class="tooltip"><div class="tooltip-name">Danse des Morts</div><ul>
+            <li><span class="adj">Coût de forge : <strong>500 → 300g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/chapeau_de_dieu.png" alt="Chapeau de Dieu">
+          <div class="item-card-name">Chapeau de Dieu</div>
+          <div class="tooltip"><div class="tooltip-name">Chapeau de Dieu</div><ul>
+            <li><span class="adj">Coût de forge : <strong>0 → 150g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/focus_lointain.png" alt="Focus Lointain">
+          <div class="item-card-name">Focus Lointain</div>
+          <div class="tooltip"><div class="tooltip-name">Focus Lointain</div><ul>
+            <li><span class="adj">Coût de forge : <strong>450 → 350g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/poignard_de_dieu.png" alt="Poignard de Dieu">
+          <div class="item-card-name">Poignard de Dieu</div>
+          <div class="tooltip"><div class="tooltip-name">Poignard de Dieu</div><ul>
+            <li><span class="adj">Coût de forge : <strong>350 → 300g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/holy_trinity.png" alt="Trinité Sacrée">
+          <div class="item-card-name">Trinité Sacrée</div>
+          <div class="tooltip"><div class="tooltip-name">Trinité Sacrée</div><ul>
+            <li><span class="adj">Coût de forge : <strong>350 → 300g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/magic_sword.png" alt="Épée Magique">
+          <div class="item-card-name">Épée Magique</div>
+          <div class="tooltip"><div class="tooltip-name">Épée Magique</div><ul>
+            <li><span class="adj">Coût de forge : <strong>500 → 350g</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/livre_des_morts_vivants.png" alt="Livre des Morts-Vivants">
+          <div class="item-card-name">Livre des Morts</div>
+          <div class="tooltip"><div class="tooltip-name">Livre des Morts-Vivants</div><ul>
+            <li><span class="adj">Coût de forge : <strong>550 → 300g</strong></span></li>
+          </ul></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-main -->
+
+  <div class="patch-side">
+  </div><!-- /patch-side -->
+
+</div><!-- /patch-body -->
+</div><!-- /patch-113 -->
+
+<!-- ══════════════════════════════════════════════════════ -->
 <!-- PATCH ALPHA 1.1.2                                      -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="patch-112" class="patch-section active">
+<div id="patch-112" class="patch-section">
 <div class="patch-body">
 
   <div class="patch-main">
