@@ -4310,9 +4310,9 @@ class GameState {
     }
     if (damage > 0) target.tookDmgThisGlobalTurn = true;
     target.currentHP -= damage;
-    // Passif Points de rage (Sinys) : les dégâts encaissés alimentent la rage (sans cap)
+    // Passif Points de rage (Sinys) : 50% des dégâts encaissés alimentent la rage (sans cap)
     if (damage > 0 && target.passive === 'sinys_passive')
-      target.currentMana = (target.currentMana || 0) + damage;
+      target.currentMana = (target.currentMana || 0) + Math.floor(damage * 0.5);
     // Passif Antimagie (Egnamita) : 35% des dégâts magiques infligés → bouclier antimagie
     if (dmgType === 'magical' && damage > 0 && attacker?.passive === 'egnamita_passive' && attacker?.playerIdx !== target?.playerIdx) {
       const _msGain = Math.floor(damage * 0.35);

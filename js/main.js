@@ -32,7 +32,7 @@ const PASSIVE_LABELS = {
   hornet_passive:     'Suture — Si Hornet n\'utilise aucun PM pendant son tour, elle se soigne de 80 + 1×AD HP, retire son hémorragie et gagne +3 PM au prochain tour.',
   egnamita_passive:   'Antimagie — 35% des dégâts magiques qu\'Egnamita inflige sont convertis en bouclier antimagie permanent (absorbe uniquement les dégâts magiques).',
   velna_passive:      'Lumière filante — Lorsque Velna effectue un dash, son prochain sort inflige 10% de dégâts magiques supplémentaires.',
-  sinys_passive:      'Points de rage — Les sorts de Sinys ne coûtent pas de mana. Chaque dégât encaissé est stocké comme Rage (barre de mana). La Rage est dépensée et utilisée comme bonus par ses sorts. Sinys perd 10% de sa rage actuelle à chaque début de tour.'
+  sinys_passive:      'Points de rage — Les sorts de Sinys ne coûtent pas de mana. 50% des dégâts encaissés sont stockés comme Rage (barre de mana). La Rage est dépensée et utilisée comme bonus par ses sorts. Sinys perd 10% de sa rage actuelle à chaque début de tour.'
 };
 
 const TARGET_LABELS = {
