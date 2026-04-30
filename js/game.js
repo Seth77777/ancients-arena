@@ -610,6 +610,15 @@ class GameState {
     // Salena — reset Découpage
     if (hero.passive === 'salena_passive') hero.decoupageActive = false;
 
+    // Sinys — décroissance de rage : perd 10% de sa rage actuelle en début de tour
+    if (hero.passive === 'sinys_passive' && hero.currentMana > 0) {
+      const _rageLoss = Math.floor(hero.currentMana * 0.10);
+      if (_rageLoss > 0) {
+        hero.currentMana = Math.max(0, hero.currentMana - _rageLoss);
+        this.addLog(`${hero.name} — Décroissance de rage : −${_rageLoss} rage`);
+      }
+    }
+
     // Passif Noyala — Chasse : +1 PM si adjacent à un mur
     if (hero.passive === 'noyala_passive' && hero.position) {
       const _wallDirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
