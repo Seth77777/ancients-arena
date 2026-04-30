@@ -1702,6 +1702,7 @@ body {
 /* ── Scoreboard ── */
 #gameover-scoreboard { width: 100%; }
 .scoreboard { display: flex; flex-wrap: wrap; gap: 24px; width: 100%; }
+.scoreboard-turns { width: 100%; text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 4px; }
 .scoreboard-team {
   flex: 1;
   background: #161b22;

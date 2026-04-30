@@ -142,7 +142,10 @@ function renderScoreboard(matchResult) {
         ${rows}
       </div>`;
   }).join('');
-  return `<div class="scoreboard">${teams}</div>`;
+  const turnsLine = matchResult.turns != null
+    ? `<div class="scoreboard-turns">Durée : ${matchResult.turns} tour${matchResult.turns > 1 ? 's' : ''}</div>`
+    : '';
+  return `<div class="scoreboard">${turnsLine}${teams}</div>`;
 }
 
 // ============================================================
@@ -688,20 +691,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (game.phase === 'gameover') {
       const matchResult = {
+        date: new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         turns: game.globalTurn,
-        teams: game.players.map((p, pi) => ({
+        winner: game.winner,
+        players: game.players.map((p, pi) => ({
           label: `Joueur ${pi + 1}`,
           won: game.winner === pi,
           heroes: p.heroes.map(h => ({
             name: h.name, portrait: h.portrait, colorFill: h.colorFill,
             kills: h.kills || 0, deaths: h.deaths || 0, assists: h.assists || 0,
             totalGold: h.totalGoldEarned || h.gold,
-            damageDealt: Stats.getCurDamage(h.id),
-            healingDone: Stats.getCurHeals(h.id),
+            damageDealt: 0,
+            healingDone: 0,
             items: [...(h.items || [])]
           }))
         }))
       };
+      MatchHistory.save(matchResult);
       showScreen('gameover-screen');
       renderer.showGameOver(game.winner, matchResult);
       return;
@@ -790,10 +796,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     window.OnlineMode.sendState(g.serialize());
 
-    if (g.phase === 'gameover') {
-      renderer.showGameOver(g.winner, null);
-      return;
-    }
+    if (g.phase === 'gameover') return;
     // Transition draft → jeu côté hôte
     if (g.phase === 'playing' && document.getElementById('draft-screen').classList.contains('active')) {
       showScreen('game-screen');
