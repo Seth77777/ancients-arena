@@ -1287,17 +1287,20 @@ class GameState {
 
   // Consomme les composants récursivement (sous-composants si l'intermédiaire est absent)
   _consumeComponents(hero, recipe) {
+    const _isSinys = hero.passive === 'sinys_passive';
+    const _MANA_STATS = new Set(['maxMana', 'manaRegen', 'manaRegenPct', 'manaOnSpell', 'manaOnSpellMax']);
     for (const cId of recipe) {
       const idx = hero.items.indexOf(cId);
       if (idx !== -1) {
         hero.items.splice(idx, 1);
         Object.entries(EQUIPMENT[cId].stats).forEach(([stat, val]) => {
+          if (_isSinys && _MANA_STATS.has(stat)) return;
           hero[stat] -= val;
           if (stat === 'pm') this.movementLeft = Math.max(0, this.movementLeft - val);
           if (stat === 'extraAutoAttacks') this.autoAttacksAllowed = Math.max(1, this.autoAttacksAllowed - val);
         });
         hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP);
-        hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
+        if (!_isSinys) hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
       } else {
         this._consumeComponents(hero, EQUIPMENT[cId].recipe);
       }
