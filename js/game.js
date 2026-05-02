@@ -451,8 +451,8 @@ class GameState {
         hero._r4TurnsNoDmg = (hero._r4TurnsNoDmg || 0) + 1;
         if (hero._r4TurnsNoDmg >= 2) {
           const s = hero._r4Stacks;
-          hero.ad -= s * 8;
-          hero.ap -= s * 8;
+          hero.ad -= s * 4;
+          hero.ap -= s * 4;
           if (hero._r4LifestealActive) { hero.lifeSteal -= 15; hero._r4LifestealActive = false; }
           hero._r4Stacks    = 0;
           hero._r4TurnsNoDmg = 0;
@@ -1349,7 +1349,10 @@ class GameState {
 
     hero.gold -= cost;
 
+    const _isSinys = hero.passive === 'sinys_passive';
+    const _MANA_STATS = new Set(['maxMana', 'manaRegen', 'manaRegenPct', 'manaOnSpell', 'manaOnSpellMax']);
     Object.entries(item.stats).forEach(([stat, val]) => {
+      if (_isSinys && _MANA_STATS.has(stat)) return;
       hero[stat] += val;
       if (stat === 'maxHP')           hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP   + val);
       if (stat === 'maxMana')         hero.currentMana = Math.min(hero.maxMana, hero.currentMana + val);
@@ -1396,12 +1399,15 @@ class GameState {
       hero.titanPowerAD = 0;
     }
     hero.items.splice(idx, 1);
+    const _isSinysSell = hero.passive === 'sinys_passive';
+    const _MANA_STATS_SELL = new Set(['maxMana', 'manaRegen', 'manaRegenPct', 'manaOnSpell', 'manaOnSpellMax']);
     Object.entries(item.stats).forEach(([stat, val]) => {
+      if (_isSinysSell && _MANA_STATS_SELL.has(stat)) return;
       hero[stat] -= val;
       if (stat === 'pm') this.movementLeft = Math.max(0, this.movementLeft - val);
     });
-    hero.currentHP   = Math.min(hero.maxHP,   hero.currentHP);
-    hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
+    hero.currentHP = Math.min(hero.maxHP, hero.currentHP);
+    if (!_isSinysSell) hero.currentMana = Math.min(hero.maxMana, hero.currentMana);
     const refund = Math.floor(item.totalCost * 0.8);
     hero.gold += refund;
     this.addLog(`${hero.name} vend ${item.name} → +${refund}g`);
@@ -2004,16 +2010,15 @@ class GameState {
     if (attacker.items.includes('lame_electrique') && targetHero.position) {
       this._applyLameElectrique(attacker, targetHero);
     }
-    // Passif Gros Calibre (Stank) : splash aux ennemis adjacents à la cible (mêmes dégâts + on-hits)
+    // Passif Gros Calibre (Stank) : splash 50% aux ennemis adjacents à la cible
     const _onHitPassesSplash = attacker.items.includes('epee_double_feu') ? 2 : 1;
     if (attacker.passive === 'gros_calibre' && targetHero.position) {
       this._getEnemies(attacker.playerIdx)
         .filter(e => e !== targetHero && e.isAlive && e.position && this._chebyshev(targetHero.position, e.position) <= 4)
         .forEach(e => {
-          const splashDmg = this._reduceDmg(rawBase2, 'physical', e, armorPen2, 0, armorPenPct2);
+          const splashDmg = this._reduceDmg(Math.floor(rawBase2 * 0.5), 'physical', e, armorPen2, 0, armorPenPct2);
           this._applyDamage(e, splashDmg, attacker);
-          this.addLog(`${attacker.name} — Passif : Gros Calibre → ${e.name}: −${splashDmg} HP (splash)`);
-          // On-hits (hors attaques améliorées)
+          this.addLog(`${attacker.name} — Passif : Gros Calibre → ${e.name}: −${splashDmg} HP (splash 50%)`);
           if (attacker.items.includes('arc_perforant_anges') && e.isAlive) {
             const _apaPct = Math.min(30, Math.max(0, (e.maxHP - 1000) / 3000 * 30)) / 100;
             if (_apaPct > 0) {
@@ -2022,22 +2027,22 @@ class GameState {
             }
           }
           if (attacker.items.includes('epee_ange') && e.isAlive) {
-            const _manaSplash = this._reduceDmg(Math.floor(attacker.maxMana * 0.05), 'physical', e, armorPen2);
+            const _manaSplash = this._reduceDmg(Math.floor(attacker.maxMana * 0.05 * 0.5), 'physical', e, armorPen2);
             if (_manaSplash > 0) { this._applyDamage(e, _manaSplash, attacker, 'physical'); this.addLog(`${attacker.name} — Mana Renforçant : −${_manaSplash} HP (splash)`); }
           }
           for (let _h = 0; _h < _onHitPassesSplash; _h++) {
             if (!attacker.items.includes('lame_du_diable') || !e.isAlive) break;
             const _diableSplashPct = attacker.po <= 1 ? 0.08 : 0.06;
-            const _diableSplash = this._reduceDmg(Math.floor(e.currentHP * _diableSplashPct), 'magical', e);
+            const _diableSplash = this._reduceDmg(Math.floor(e.currentHP * _diableSplashPct * 0.5), 'magical', e);
             this._applyDamage(e, _diableSplash, attacker, 'magical');
             this.addLog(`${attacker.name} — Lame du Diable : −${_diableSplash} dégâts magiques (splash)`);
           }
           for (let _h = 0; _h < _onHitPassesSplash; _h++) {
             if (!attacker.items.includes('poignard_de_dieu') || !e.isAlive) break;
-            const _pdgSplash = this._reduceDmg(Math.floor(0.35 * this._effectiveAP(attacker)), 'magical', e);
+            const _pdgSplash = this._reduceDmg(Math.floor(0.35 * this._effectiveAP(attacker) * 0.5), 'magical', e);
             if (_pdgSplash > 0) { this._applyDamage(e, _pdgSplash, attacker, 'magical'); this.addLog(`${attacker.name} — Poignard de Dieu : −${_pdgSplash} dégâts magiques (splash)`); }
           }
-          const _tdRawSplash = attacker.items.includes('tueur_de_dieux') ? Math.floor(rawBase2 * 0.30) : 0;
+          const _tdRawSplash = attacker.items.includes('tueur_de_dieux') ? Math.floor(rawBase2 * 0.30 * 0.5) : 0;
           for (let _h = 0; _h < _onHitPassesSplash; _h++) {
             if (_tdRawSplash <= 0 || !e.isAlive) break;
             this._applyDamage(e, _tdRawSplash, attacker, 'raw');
@@ -2720,7 +2725,7 @@ class GameState {
         }
         // Rune 8 — Assistant Magique : bouclier bonus sur l'allié soigné
         if (caster.runeId === 'assistant_magique' && !(caster.runeCd > 0) && ally !== caster) {
-          const _r8Shield = Math.floor(100 + 0.3 * this._effectiveAP(caster));
+          const _r8Shield = Math.floor((100 + 0.3 * this._effectiveAP(caster)) * (1 + (ally.healEfficiency || 0) / 100));
           ally.shield = (ally.shield || 0) + _r8Shield;
           ally.shieldTurnsLeft = Math.max(ally.shieldTurnsLeft || 0, 3);
           Stats.addShield(caster.id, _r8Shield);
@@ -2737,11 +2742,12 @@ class GameState {
           this.addLog(`${caster.name} → ${spell.name}: prochaine attaque renforcée`);
         } else {
           const _echoShieldBonus = this._consumeEchoCharges(caster);
-          const shield = Math.floor(
+          const _shieldBase = Math.floor(
             (spell.shieldAmount || 0) +
             caster.ad * (spell.adShieldRatio || 0) +
             this._effectiveAP(caster) * (spell.apShieldRatio || 0)
           ) + _echoShieldBonus;
+          const shield = Math.floor(_shieldBase * (1 + (caster.healEfficiency || 0) / 100));
           caster.shield += shield;
           if (spell.shieldTurns) caster.shieldTurnsLeft = spell.shieldTurns;
           Stats.addShield(caster.id, shield);
@@ -2911,7 +2917,7 @@ class GameState {
           this._applySpellDamage(caster, spell, e, dmg);
           this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${dmg} HP`);
         });
-        const shieldVal = Math.floor(this._effectiveAP(caster));
+        const shieldVal = Math.floor(this._effectiveAP(caster) * (1 + (caster.healEfficiency || 0) / 100));
         if (shieldVal > 0) {
           caster.shield = Math.max(caster.shield || 0, shieldVal);
           caster.shieldTurnsLeft = 2;
@@ -2989,7 +2995,7 @@ class GameState {
         if (spell.sinysW) {
           const _sRageW = Math.floor(caster.currentMana * 0.30);
           caster.currentMana -= _sRageW;
-          const _shieldVal = Math.floor(spell.baseDamage + caster.ad * spell.adRatio + _sRageW);
+          const _shieldVal = Math.floor((spell.baseDamage + caster.ad * spell.adRatio + _sRageW) * (1 + (caster.healEfficiency || 0) / 100));
           caster.shield = Math.max(caster.shield || 0, _shieldVal);
           caster.shieldTurnsLeft = 4;
           this.addLog(`${caster.name} → ${spell.name} : bouclier +${_shieldVal} (4 tours)`);
@@ -3462,12 +3468,27 @@ class GameState {
           if (!alliesInZone.length && !enemiesInZone.length) { this.addLog('Aucune cible dans la zone !'); success = false; break; }
           if (alliesInZone.length) {
             const _echoShieldBonus2 = this._consumeEchoCharges(caster);
-            const shieldVal = Math.floor((spell.shieldBase || 0) + this._effectiveAP(caster) * (spell.shieldAPRatio || 0)) + _echoShieldBonus2;
+            const _shieldBase2 = Math.floor((spell.shieldBase || 0) + this._effectiveAP(caster) * (spell.shieldAPRatio || 0)) + _echoShieldBonus2;
             alliesInZone.forEach(a => {
+              const shieldVal = Math.floor(_shieldBase2 * (1 + (a.healEfficiency || 0) / 100));
               a.shield = Math.max(a.shield, shieldVal);
               a.shieldTurnsLeft = spell.shieldTurns || 3;
               this.addLog(`${caster.name} → ${spell.name} → ${a.name}: bouclier +${shieldVal} (${spell.shieldTurns || 3} tours)${_echoShieldBonus2 > 0 ? ` (+${_echoShieldBonus2} Écho)` : ''}`);
             });
+            // Rune 8 — Assistant Magique : se déclenche si au moins un allié (hors caster) est bouclié
+            if (caster.runeId === 'assistant_magique' && !(caster.runeCd > 0)) {
+              const _r8Targets = alliesInZone.filter(a => a !== caster);
+              if (_r8Targets.length > 0) {
+                _r8Targets.forEach(a => {
+                  const _r8Shield = Math.floor((100 + 0.3 * this._effectiveAP(caster)) * (1 + (a.healEfficiency || 0) / 100));
+                  a.shield = (a.shield || 0) + _r8Shield;
+                  a.shieldTurnsLeft = Math.max(a.shieldTurnsLeft || 0, 3);
+                  Stats.addShield(caster.id, _r8Shield);
+                  this.addLog(`${caster.name} — Assistant Magique : ${a.name} +${_r8Shield} bouclier (3 tours)`);
+                });
+                caster.runeCd = 5;
+              }
+            }
           }
         }
         const hit = this._getEnemies(caster.playerIdx).filter(e =>
@@ -3484,16 +3505,31 @@ class GameState {
           this.addLog(`${caster.name} → ${spell.name} (${hit.map(e => e.name).join(', ')})`);
         }
         if (hit.length || spell.allyShield) this._applySpellEffects(spell, hit);
-        // Gabriel — Parole Divine : centre fait root, autres cases font -2PM
+        // Gabriel — Parole Divine : centre = root, autres cases = slow -2 PM
         if (spell.id === 'gabriel_w') {
           hit.forEach(e => {
             const dist = Math.abs(e.position.x - x) + Math.abs(e.position.y - y);
+            if (!e.debuffContributors) e.debuffContributors = {};
+            e.debuffContributors[caster.id] = this.globalTurn;
             if (dist === 0) {
-              // Centre : root appliqué via _applySpellEffects
+              e.rootTurns = Math.max(e.rootTurns || 0, 1);
+              this.addLog(`${e.name} — Parole Divine : immobilisé (1 tour)`);
+              if (caster.runeId === 'retour_de_baton' && !(caster.runeCd > 0)) {
+                caster.armor += 20; caster.mr += 20;
+                caster._r13Active = true; caster._r13TurnsLeft = 2; caster.runeCd = 5;
+                this.addLog(`${caster.name} — Retour de Bâton : +20% Armure +20% RM (2 tours)`);
+              }
             } else {
-              // Autres cases : retirer 2 PM
-              e.movementLeft = Math.max(0, (e.movementLeft || 0) - 2);
-              this.addLog(`${e.name} — Parole Divine : −2 PM`);
+              e.statusEffects = e.statusEffects || [];
+              const _slowEff = { type: 'slow', pmReduction: 2, turns: 1 };
+              if (caster.runeId === 'triangle_glacial') _slowEff.turns = 2;
+              e.statusEffects.push(_slowEff);
+              this.addLog(`${e.name} — Parole Divine : −2 PM au prochain tour`);
+              if (caster.runeId === 'retour_de_baton' && !(caster.runeCd > 0)) {
+                caster.armor += 20; caster.mr += 20;
+                caster._r13Active = true; caster._r13TurnsLeft = 2; caster.runeCd = 5;
+                this.addLog(`${caster.name} — Retour de Bâton : +20% Armure +20% RM (2 tours)`);
+              }
             }
           });
         }
@@ -3663,13 +3699,11 @@ class GameState {
       if (_skjerReset) delete caster._skjerPassiveFired;
       // CD 0 = pas de rechargement ; sinon réduction normale
       if (!_skjerReset && spell.cooldown > 0) {
-        const _hasStun = spell.effects?.some(e => e.type === 'stun');
-        const _minCd   = spell.cdMin ?? (_hasStun ? 2 : 1);
+        const _hasStunOrRoot = spell.effects?.some(e => e.type === 'stun' || e.type === 'root');
+        const _minCd   = spell.cdMin ?? (_hasStunOrRoot ? 2 : 1);
         const _livreCount = caster.items.filter(id => id === 'livre_incantations').length;
         const _effectiveCdRed = (caster.cdReduction || 0) - Math.max(0, _livreCount - 1);
         let _cd = Math.max(_minCd, spell.cooldown - _effectiveCdRed);
-        // Bottes de Célérité : -1 CD supplémentaire sur tous les sorts
-        if (caster.items.includes('boots_of_celerity') && _cd > _minCd) _cd--;
         // Sceptre du Malin : -2 CD ultime (index 2)
         if (caster.items.includes('sceptre_du_malin')) {
           const _spellIdx = caster.spells.findIndex(s => s.id === spell.id);
@@ -4324,7 +4358,7 @@ class GameState {
       if (caster.runeId === 'decharge' && !(caster.runeCd > 0)) {
         caster._r5SpellHits[target.instanceId] = (caster._r5SpellHits[target.instanceId] || 0) + 1;
         if (caster._r5SpellHits[target.instanceId] >= 2) {
-          const _r5Raw = Math.floor(60 + 0.4 * caster.ad + 0.4 * this._effectiveAP(caster));
+          const _r5Raw = Math.floor(60 + 0.15 * caster.ad + 0.4 * this._effectiveAP(caster));
           const _r5Dmg = this._reduceDmg(_r5Raw, 'magical', target);
           if (_r5Dmg > 0) { this._applyDamage(target, _r5Dmg, caster, 'magical'); this.addLog(`${caster.name} — Décharge : −${_r5Dmg} dégâts magiques`); }
           caster._r5SpellHits[target.instanceId] = 0;
@@ -4377,8 +4411,9 @@ class GameState {
     const bounceAmt = Math.floor(amount * 0.40);
     if (bounceAmt <= 0) return;
     if (isShield) {
-      bounce.shield = (bounce.shield || 0) + bounceAmt;
-      this.addLog(`${caster.name} — Sanctuaire de Lune : ${bounce.name} reçoit un bouclier +${bounceAmt}`);
+      const _bounceShield = Math.floor(bounceAmt * (1 + (bounce.healEfficiency || 0) / 100));
+      bounce.shield = (bounce.shield || 0) + _bounceShield;
+      this.addLog(`${caster.name} — Sanctuaire de Lune : ${bounce.name} reçoit un bouclier +${_bounceShield}`);
     } else {
       const healFactor = bounce.hemorrhageTurns > 0 ? 0.5 : 1;
       const effectiveHeal = Math.floor(bounceAmt * healFactor * (1 + (bounce.healEfficiency || 0) / 100));
@@ -4527,13 +4562,13 @@ class GameState {
       if (attacker.runeId === 'le_conquerant') {
         if ((attacker._r4Stacks || 0) < 6) {
           attacker._r4Stacks = (attacker._r4Stacks || 0) + 1;
-          attacker.ad += 8; attacker.ap += 8;
+          attacker.ad += 4; attacker.ap += 4;
           if (attacker._r4Stacks === 6 && !attacker._r4LifestealActive) {
             attacker._r4LifestealActive = true;
             attacker.lifeSteal += 15;
             this.addLog(`${attacker.name} — Le Conquérant : max stacks ! +15% vol de vie`);
           } else {
-            this.addLog(`${attacker.name} — Le Conquérant : ${attacker._r4Stacks}/6 stacks (+8 AD +8 AP)`);
+            this.addLog(`${attacker.name} — Le Conquérant : ${attacker._r4Stacks}/6 stacks (+4 AD +4 AP)`);
           }
         }
       }

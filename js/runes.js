@@ -20,11 +20,11 @@ const RUNES = {
   },
   le_conquerant: {
     id: 'le_conquerant', name: 'Le Conquérant', icon: '🏆', img: 'assets/runes/le_conquerant.png',
-    desc: 'Chaque sort ou AA : +8 AD +8 AP (max 6 stacks). Au 6e stack, +15% vol de vie. Expire après 2 tours sans infliger de dégâts.'
+    desc: 'Chaque sort ou AA : +4 AD +4 AP (max 6 stacks). Au 6e stack, +15% vol de vie. Expire après 2 tours sans infliger de dégâts.'
   },
   decharge: {
     id: 'decharge', name: 'Décharge', icon: '🌩', img: 'assets/runes/decharge.png',
-    desc: 'Toucher un ennemi avec 2 sorts dans le même tour : 60+0,4×AD+0,4×AP dégâts magiques bonus. (CD 4 tours)'
+    desc: 'Toucher un ennemi avec 2 sorts dans le même tour : 60+0,15×AD+0,4×AP dégâts magiques bonus. (CD 4 tours)'
   },
   collecteur_dames: {
     id: 'collecteur_dames', name: "Collecteur d'Âme", icon: '💀', img: 'assets/runes/collecteur_dames.png',

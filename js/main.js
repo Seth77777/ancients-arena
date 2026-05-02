@@ -17,7 +17,7 @@ const PASSIVE_LABELS = {
   anastasia_passive: 'Soins Intéressés — Chaque fois qu\'Anastasia soigne un héros (allié ou elle-même), elle gagne 50 PO. Elle peut soigner des cibles à pleine vie.',
   fenino_passive:    'Impulsion — Lorsque Fenino effectue un dash (Sort 1 ou Sort 2), il gagne +1 PM jusqu\'à la fin de son tour.',
   dans_la_chair:      'Dans la chair — Chaque sort de Frigiel inflige 5% des HP max de la cible en dégâts bruts supplémentaires.',
-  gros_calibre:       'Gros Calibre — Les attaques de base de Stank infligent les mêmes dégâts physiques à tous les ennemis dans un rayon de 4 cases autour de la cible.',
+  gros_calibre:       'Gros Calibre — Les attaques de base de Stank infligent 50% des dégâts physiques (AA et effets à l\'impact) à tous les ennemis dans un rayon de 4 cases autour de la cible.',
   sharagoth_passive:  'Plus forts ensemble — Au début de son tour, Sharagoth gagne un bouclier de 10% de ses HP max par allié présent à moins de 10 cases (Manhattan), pendant 2 tours.',
   vaillance:          'Vaillance — Le premier débuff appliqué à Ondine chaque tour est automatiquement annulé.',
   abyss_passive:      'Abysses mixtes — Abyss ne peut effectuer qu\'une attaque de base par tour. Elle inflige 0,9×AD dégâts physiques + 0,9×AP dégâts magiques + 0,1×AD + 0,1×AP dégâts bruts.',

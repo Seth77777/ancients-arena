@@ -28,7 +28,7 @@ const ROLE_BASES = {
       {
         id: 'solo_recall', name: 'Rappel',
         description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-        manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
+        manaCost: 0, range: 99, cooldown: 7, cdMin: 7,
         damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
         targetType: 'solo_recall', zone: null, effects: []
       }
@@ -209,7 +209,7 @@ HERO_TYPES['solo_1'] = {
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
+      manaCost: 0, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -251,7 +251,7 @@ HERO_TYPES['solo_2'] = {
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
+      manaCost: 0, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -292,7 +292,7 @@ HERO_TYPES['solo_3'] = {
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
+      manaCost: 0, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -932,10 +932,10 @@ HERO_TYPES['support_5'] = {
     {
       id: 'gabriel_w', name: 'Parole Divine',
       description: 'Zone 1-3-1 : centre immobilise (root), autres cases retirent 2 PM. Inflige 70 + 0,7×AP dégâts magiques aux ennemis.',
-      manaCost: 80, range: 6, cooldown: 4,
+      manaCost: 80, range: 6, cooldown: 4, cdMin: 2,
       damageType: 'magical', baseDamage: 70, adRatio: 0, apRatio: 0.7,
       targetType: 'diamond_zone', zone: { shape: 'diamond', size: 1 },
-      effects: [{ type: 'root', turns: 1 }]
+      effects: []
     },
     {
       id: 'gabriel_r', name: 'Destinée',
@@ -1013,7 +1013,7 @@ HERO_TYPES['solo_4'] = {
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
+      manaCost: 0, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -1051,7 +1051,7 @@ HERO_TYPES['solo_5'] = {
     {
       id: 'solo_recall', name: 'Rappel',
       description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
-      manaCost: 80, range: 99, cooldown: 7, cdMin: 7,
+      manaCost: 0, range: 99, cooldown: 7, cdMin: 7,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       targetType: 'solo_recall', zone: null, effects: [],
       icon: 'img/spells/solo_recall.png'
@@ -1215,7 +1215,7 @@ Object.values(HERO_TYPES).forEach(t => {
 function createHeroInstance(typeId, playerIdx, slotIdx, runeId = null) {
   const t = HERO_TYPES[typeId];
   const _rc = ROLE_COLORS[t.roleId] || ROLE_COLORS.mage;
-  return {
+  const hero = {
     // Identity
     id:          typeId,
     instanceId:  `p${playerIdx}_${typeId}`,
@@ -1381,4 +1381,15 @@ function createHeroInstance(typeId, playerIdx, slotIdx, runeId = null) {
     // Rune 16 — Première Touche
     _r16Active: false    // 7% bonus actif ce tour
   };
+
+  // Tout héros Solo reçoit automatiquement solo_recall s'il ne l'a pas déjà
+  if (t.roleId === 'solo' && !hero.spells.some(s => s.id === 'solo_recall')) {
+    const _recall = (ROLE_BASES.solo.spells || []).find(s => s.id === 'solo_recall');
+    if (_recall) {
+      hero.spells.push({ ..._recall, manaCost: 0 });
+      hero.cooldowns['solo_recall'] = _recall.initialCooldown ?? 0;
+    }
+  }
+
+  return hero;
 }
