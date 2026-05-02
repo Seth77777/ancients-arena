@@ -1926,6 +1926,29 @@ body {
   flex-shrink: 0;
 }
 
+/* Runes — Infos Générales */
+.rune-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+.rune-info-card {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+.ri-icon       { width: 48px; height: 48px; object-fit: contain; }
+.ri-icon-emoji { font-size: 2rem; line-height: 1; }
+.ri-name       { font-weight: bold; font-size: 0.85rem; color: #f0f6fc; }
+.ri-desc       { font-size: 0.72rem; color: #8b949e; line-height: 1.4; }
+
 .st-rune-cell { display: flex; align-items: center; gap: 8px; }
 .st-rune-icon { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
 

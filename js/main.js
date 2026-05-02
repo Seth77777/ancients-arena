@@ -555,6 +555,21 @@ function _renderItemStatsSection() {
     </table>`;
 }
 
+function _renderRunesInfoSection() {
+  const cards = (typeof RUNE_LIST !== 'undefined' ? RUNE_LIST : []).map(rune => {
+    const iconHtml = rune.img
+      ? `<img src="${rune.img}" class="ri-icon" alt="${rune.name}" onerror="this.outerHTML='<span class=ri-icon-emoji>${rune.icon}</span>'">`
+      : `<span class="ri-icon-emoji">${rune.icon}</span>`;
+    return `
+      <div class="rune-info-card">
+        ${iconHtml}
+        <div class="ri-name">${rune.name}</div>
+        <div class="ri-desc">${rune.desc}</div>
+      </div>`;
+  }).join('');
+  return `<div class="rune-info-grid">${cards}</div>`;
+}
+
 function renderInfoScreen(tab) {
   const body = document.getElementById('heroes-body');
   if (tab === 'items') {
@@ -565,6 +580,8 @@ function renderInfoScreen(tab) {
       _infoItemsCat = btn.dataset.cat;
       renderInfoScreen('items');
     });
+  } else if (tab === 'runes') {
+    body.innerHTML = _renderRunesInfoSection();
   } else {
     body.innerHTML = _renderHeroesSection();
   }
