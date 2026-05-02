@@ -50,7 +50,7 @@ const EQUIPMENT = {
   sorcerer_boots:  { tier: 2, categories: [], name: 'Bottes du Sorcier',        icon: 'img/items/sorcerer_boots.png', combineCost: 800, recipe: ['simple_boots'],
                      isBoots: true,
                      stats: { pm: 2, ap: 25, manaRegenPct: 75 },
-                     passive: 'Ignore 5% de la résistance magique adverse (peut devenir négative). Augmente votre régénération de mana de 75%.' },
+                     passive: 'Ignore 3% de la résistance magique adverse (peut devenir négative). Augmente votre régénération de mana de 75%.' },
 
   boots_of_celerity: { tier: 2, categories: [], name: 'Bottes de Célérité',      icon: 'img/items/boots_of_celerity.png', combineCost: 800, recipe: ['simple_boots'],
                        isBoots: true,
@@ -70,7 +70,7 @@ const EQUIPMENT = {
   bottes_assassin:  { tier: 2, categories: ['assassin'], name: 'Bottes Assassines', icon: 'img/items/bottes_assassin.png', combineCost: 800, recipe: ['simple_boots'],
                       isBoots: true,
                       stats: { pm: 2, ad: 35 },
-                      passive: 'Ignore 5% de l\'armure adverse (peut devenir négative).' },
+                      passive: 'Ignore 3% de l\'armure adverse (peut devenir négative).' },
 
   linked_names:    { tier: 1, categories: [], name: 'Nos Noms Sont Liés',    icon: 'img/items/linked_names.png',    combineCost: 300, recipe: [], isStarter: true,
                      stats: { hpRegenPct: 25, manaRegenPct: 25, healEfficiency: 10, goldSharePct: 20 },
@@ -86,7 +86,7 @@ const EQUIPMENT = {
 
   dague_destructrice: { tier: 2, categories: [], name: 'Dague Destructrice',    icon: 'img/items/dague_destructrice.png', combineCost: 500, recipe: ['short_sword'],
                         stats: { ad: 25 },
-                        passive: 'Ignore 5% de l\'armure adverse (peut devenir négative).' },
+                        passive: 'Ignore 2,8% de l\'armure adverse (peut devenir négative).' },
 
   arc_percant:          { tier: 2, categories: [], name: 'Arc Perçant',           icon: 'img/items/arc_percant.png',          combineCost: 750, recipe: ['short_sword'],
                           stats: { ad: 25 },
@@ -216,7 +216,7 @@ const EQUIPMENT = {
   revolver_d_or:   { tier: 3, categories: ['dpt', 'assassin'], name: 'Révolver d\'Or',       icon: 'img/items/revolver_d_or.png',   combineCost: 400,
                      recipe: ['grande_pioche', 'dague_destructrice', 'small_crit_cape'],
                      stats: { ad: 55, critChance: 25 },
-                     passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Collecte — Vous gagnez des golds équivalents à 35% des dégâts infligés. Exécution — Si une attaque ou un sort laisse un ennemi à 5% de ses HP max ou moins, il meurt.' },
+                     passive: 'Ignore 4,5% de l\'armure adverse (peut devenir négative). Collecte — Vous gagnez des golds équivalents à 35% des dégâts infligés. Exécution — Si une attaque ou un sort laisse un ennemi à 5% de ses HP max ou moins, il meurt.' },
 
   lame_d_infini:   { tier: 3, categories: ['dpt'], name: "Lame d'Infini",        icon: 'img/items/lame_d_infini.png',   combineCost: 200,
                      recipe: ['grande_pioche', 'grosse_lame', 'small_crit_cape'],
@@ -231,17 +231,17 @@ const EQUIPMENT = {
   anneau_divin:          { tier: 3, notInUtil: true, categories: ['dpt', 'assassin'], name: 'Anneau Divin',              icon: 'img/items/anneau_divin.png',         combineCost: 300,
                            recipe: ['dague_destructrice', 'marteau_sinad'],
                            stats: { ad: 55, cdReduction: 1 },
-                           passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Ultime Chasseur — Vos dégâts physiques d\'ultime sont augmentés de 15%.' },
+                           passive: 'Ignore 4,5% de l\'armure adverse (peut devenir négative). Ultime Chasseur — Vos dégâts physiques d\'ultime sont augmentés de 15%.' },
 
   lame_du_ninja:         { tier: 3, categories: ['dpt', 'assassin'], name: 'Lame du Ninja',              icon: 'img/items/lame_du_ninja.png',        combineCost: 550,
                            recipe: ['dague_destructrice', 'grande_pioche'],
                            stats: { ad: 70 },
-                           passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Si vous n\'avez pas infligé de dégâts à un héros ennemi lors de votre précédent tour, vous gagnez 1 PM pour ce tour.' },
+                           passive: 'Ignore 4,5% de l\'armure adverse (peut devenir négative). Si vous n\'avez pas infligé de dégâts à un héros ennemi lors de votre précédent tour, vous gagnez 1 PM pour ce tour.' },
 
   lame_tueuse_boucliers: { tier: 3, categories: ['dpt'], name: 'Lame Tueuse de Boucliers', icon: 'img/items/lame_tueuse_boucliers.png', combineCost: 600,
                            recipe: ['dague_destructrice', 'grande_pioche'],
                            stats: { ad: 60 },
-                           passive: 'Ignore 7% de l\'armure adverse (peut devenir négative). Lorsque vous attaquez une cible qui a un bouclier, les dégâts infligés sont doublés contre le bouclier (normaux contre les HP).' },
+                           passive: 'Ignore 4,5% de l\'armure adverse (peut devenir négative). Lorsque vous attaquez une cible qui a un bouclier, les dégâts infligés sont doublés contre le bouclier (normaux contre les HP).' },
 
   canon_de_feu:    { tier: 3, categories: ['dpt'], name: 'Canon de Feu',          icon: 'img/items/canon_de_feu.png',    combineCost: 500,
                      recipe: ['epees_croisees', 'petit_arc'],
@@ -393,7 +393,7 @@ const EQUIPMENT = {
   cristal_de_vide: { tier: 2, categories: ['mage'], name: 'Cristal de Vide',          icon: 'img/items/cristal_de_vide.png',  combineCost: 700,
                      recipe: ['petit_grimoire'],
                      stats: { ap: 25 },
-                     passive: 'Vos dégâts magiques ignorent 15% de la résistance magique adverse (peut devenir négative).' },
+                     passive: 'Vos dégâts magiques ignorent 15% de la résistance magique adverse (ne peut pas devenir négative).' },
 
   baton_des_abysses: { tier: 3, categories: ['mage'], name: 'Bâton des Abysses',      icon: 'img/items/baton_des_abysses.png', combineCost: 350,
                        recipe: ['cristal_de_vide', 'baton_magique'],
@@ -557,7 +557,7 @@ const EQUIPMENT = {
   lame_de_nargoth:     { tier: 3, notInUtil: true, categories: ['assassin'], name: 'Lame de Nargoth',          icon: 'img/items/lame_de_nargoth.png',     combineCost: 300,
                          recipe: ['black_blade', 'white_walker_hammer'],
                          stats: { ad: 80, cdReduction: 1, maxHP: 250 },
-                         passive: 'Ignore 7% d\'armure adverse. Vigilance Sombre : si la cible a moins de 15% d\'armure, vos dégâts sont augmentés de 10%. Chaque attaque de base infligée à un ennemi vous octroie 1 PM ce tour.' },
+                         passive: 'Ignore 4,5% d\'armure adverse (peut devenir négative). Vigilance Sombre : si la cible a moins de 15% d\'armure, vos dégâts sont augmentés de 10%. Chaque attaque de base infligée à un ennemi vous octroie 1 PM ce tour.' },
 
   // ─── TIER 3 — Mage ──────────────────────────────────────────
 

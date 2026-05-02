@@ -1609,8 +1609,8 @@ class GameState {
       const empowered     = attacker.empoweredAttack;
       const hadSpellBonus = wasEmpowered || bonusFlat > 0;
       if (wasEmpowered) attacker.empoweredAttack = null;
-      const armorPen = (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0) + (attacker.items.includes('anneau_divin') ? 7 : 0);
-      const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0) + (attacker.items.includes('bottes_assassin') ? 5 : 0);
+      const armorPen = (attacker.items.includes('dague_destructrice') ? 2.8 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 4.5 : 0) + (attacker.items.includes('lame_du_ninja') ? 4.5 : 0) + (attacker.items.includes('anneau_divin') ? 4.5 : 0);
+      const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 4.5 : 0) + (attacker.items.includes('lame_de_nargoth') ? 4.5 : 0) + (attacker.items.includes('bottes_assassin') ? 3 : 0);
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
         const _critMult = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) * 5 / 100 : 0);
@@ -1878,8 +1878,8 @@ class GameState {
     attacker.layiaBonusNextAttack = 0;
     const wasEmpowered  = !!attacker.empoweredAttack;
     const hadSpellBonus = wasEmpowered || bonusFlat2 > 0;
-    const armorPen2 = (attacker.items.includes('dague_destructrice') ? 5 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (attacker.items.includes('lame_du_ninja') ? 7 : 0) + (attacker.items.includes('anneau_divin') ? 7 : 0);
-    const armorPenPct2 = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 7 : 0) + (attacker.items.includes('lame_de_nargoth') ? 7 : 0) + (attacker.items.includes('bottes_assassin') ? 5 : 0);
+    const armorPen2 = (attacker.items.includes('dague_destructrice') ? 2.8 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 4.5 : 0) + (attacker.items.includes('lame_du_ninja') ? 4.5 : 0) + (attacker.items.includes('anneau_divin') ? 4.5 : 0);
+    const armorPenPct2 = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 4.5 : 0) + (attacker.items.includes('lame_de_nargoth') ? 4.5 : 0) + (attacker.items.includes('bottes_assassin') ? 3 : 0);
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
     const _critMult2 = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) * 5 / 100 : 0);
     const rawBase2 = Math.floor((attacker.ad * 0.25 + bonusFlat2) * (isCrit2 ? _critMult2 : 1));
@@ -4173,11 +4173,20 @@ class GameState {
       const _aDivIdx = caster.spells.findIndex(s => s.id === spell.id);
       if (_aDivIdx === 2) raw = Math.floor(raw * 1.15);
     }
-    const armorPen    = (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0) + (caster.items.includes('anneau_divin') ? 7 : 0);
-    const mrPen       = (caster.items.includes('sorcerer_boots') ? 5 : 0) + (caster.items.includes('furie_magique') ? 7 : 0);
-    const armorPenPct = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('revolver_d_or') ? 7 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0) + (caster.items.includes('bottes_assassin') ? 5 : 0) + (caster.items.includes('baton_des_abysses') ? 35 : 0);
-    const mrPenPct    = caster.items.includes('cristal_de_vide') ? 15 : 0;
-    let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct, mrPenPct);
+    const armorPen    = (caster.items.includes('dague_destructrice') ? 2.8 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 4.5 : 0) + (caster.items.includes('lame_du_ninja') ? 4.5 : 0) + (caster.items.includes('anneau_divin') ? 4.5 : 0);
+    const mrPen       = (caster.items.includes('sorcerer_boots') ? 3 : 0) + (caster.items.includes('furie_magique') ? 7 : 0);
+    const armorPenPct = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('revolver_d_or') ? 4.5 : 0) + (caster.items.includes('lame_de_nargoth') ? 4.5 : 0) + (caster.items.includes('bottes_assassin') ? 3 : 0);
+    const _hasBaton   = caster.items.includes('baton_des_abysses');
+    const _hasCristal = caster.items.includes('cristal_de_vide');
+    const mrPenPct    = _hasBaton ? 35 : (_hasCristal ? 15 : 0);
+    const capMRAtZero = _hasCristal && !_hasBaton;
+    let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct, mrPenPct, capMRAtZero);
+    // Bâton des Abysses : si la RM effective passe négative, bonus plafonné à ×1,35
+    if (_hasBaton && spell.damageType === 'magical') {
+      const mrShredMult = (target.statusEffects || []).filter(e => e.type === 'mr_shred').reduce((m, e) => m * (1 - e.pct / 100), 1);
+      const _batonEffMR = Math.min(80, Math.floor(target.mr * (1 + (target.mrPct || 0) / 100) * mrShredMult * (1 - 35 / 100)) - mrPen);
+      if (_batonEffMR < 0) dmg = Math.floor(raw * 1.35);
+    }
     if (armorPen > 0 && target.armor - armorPen < 15) dmg = Math.floor(dmg * 1.1);
     return dmg;
   }
@@ -4186,7 +4195,7 @@ class GameState {
     return hero.items.includes('chapeau_de_dieu') ? Math.floor(hero.ap * 1.4) : hero.ap;
   }
 
-  _reduceDmg(raw, dmgType, target, armorPen = 0, mrPen = 0, armorPenPct = 0, mrPenPct = 0) {
+  _reduceDmg(raw, dmgType, target, armorPen = 0, mrPen = 0, armorPenPct = 0, mrPenPct = 0, capMRAtZero = false) {
     if (dmgType === 'physical') {
       const effectiveArmor = Math.min(80, Math.floor(target.armor * (1 + (target.armorPct || 0) / 100) * (1 - armorPenPct / 100)) - armorPen);
       let dmg;
@@ -4202,7 +4211,8 @@ class GameState {
       const mrShredMult = (target.statusEffects || [])
         .filter(e => e.type === 'mr_shred')
         .reduce((m, e) => m * (1 - e.pct / 100), 1);
-      const effectiveMR = Math.min(80, Math.floor(target.mr * (1 + (target.mrPct || 0) / 100) * mrShredMult * (1 - mrPenPct / 100)) - mrPen);
+      const rawEffMR = Math.min(80, Math.floor(target.mr * (1 + (target.mrPct || 0) / 100) * mrShredMult * (1 - mrPenPct / 100)) - mrPen);
+      const effectiveMR = capMRAtZero ? Math.max(0, rawEffMR) : rawEffMR;
       if (effectiveMR >= 0) {
         return Math.max(0, Math.floor(raw * (1 - effectiveMR / 100)));
       } else {

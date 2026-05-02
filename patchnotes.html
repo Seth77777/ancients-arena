@@ -317,7 +317,8 @@
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
   <div class="patch-tabs">
-    <button class="patch-tab active" onclick="showPatch('patch-120', this)">Alpha 1.2.0</button>
+    <button class="patch-tab active" onclick="showPatch('patch-121', this)">Alpha 1.2.1</button>
+    <button class="patch-tab" onclick="showPatch('patch-120', this)">Alpha 1.2.0</button>
     <button class="patch-tab" onclick="showPatch('patch-112', this)">Alpha 1.1.2</button>
     <button class="patch-tab" onclick="showPatch('patch-111', this)">Alpha 1.1.1</button>
     <button class="patch-tab" onclick="showPatch('patch-110', this)">Alpha 1.1.0</button>
@@ -331,9 +332,116 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════ -->
+<!-- PATCH ALPHA 1.2.1                                      -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="patch-121" class="patch-section active">
+<div class="patch-body">
+  <div class="patch-main">
+
+    <!-- NERFS ITEMS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">↓</span> NERFS — ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card nerf">
+          <img src="img/items/sorcerer_boots.png" alt="Bottes du Sorcier">
+          <div class="item-card-name">Bottes du Sorcier</div>
+          <div class="tooltip"><div class="tooltip-name">Bottes du Sorcier</div><ul>
+            <li><span class="down">Pénétration RM (flat) : <strong>5 → 3</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/bottes_assassin.png" alt="Bottes Assassines">
+          <div class="item-card-name">Bottes Assassines</div>
+          <div class="tooltip"><div class="tooltip-name">Bottes Assassines</div><ul>
+            <li><span class="down">Pénétration armure (%) : <strong>5% → 3%</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/dague_destructrice.png" alt="Dague Destructrice">
+          <div class="item-card-name">Dague Destructrice</div>
+          <div class="tooltip"><div class="tooltip-name">Dague Destructrice</div><ul>
+            <li><span class="down">Pénétration armure (flat) : <strong>5 → 2,8</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/anneau_divin.png" alt="Anneau Divin">
+          <div class="item-card-name">Anneau Divin</div>
+          <div class="tooltip"><div class="tooltip-name">Anneau Divin</div><ul>
+            <li><span class="down">Pénétration armure (flat) : <strong>7 → 4,5</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/lame_du_ninja.png" alt="Lame du Ninja">
+          <div class="item-card-name">Lame du Ninja</div>
+          <div class="tooltip"><div class="tooltip-name">Lame du Ninja</div><ul>
+            <li><span class="down">Pénétration armure (flat) : <strong>7 → 4,5</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/lame_tueuse_boucliers.png" alt="Lame Tueuse de Boucliers">
+          <div class="item-card-name">Lame Tueuse</div>
+          <div class="tooltip"><div class="tooltip-name">Lame Tueuse de Boucliers</div><ul>
+            <li><span class="down">Pénétration armure (flat) : <strong>7 → 4,5</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/revolver_d_or.png" alt="Révolver d'Or">
+          <div class="item-card-name">Révolver d'Or</div>
+          <div class="tooltip"><div class="tooltip-name">Révolver d'Or</div><ul>
+            <li><span class="down">Pénétration armure (%) : <strong>7% → 4,5%</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card nerf">
+          <img src="img/items/lame_de_nargoth.png" alt="Lame de Nargoth">
+          <div class="item-card-name">Lame de Nargoth</div>
+          <div class="tooltip"><div class="tooltip-name">Lame de Nargoth</div><ul>
+            <li><span class="down">Pénétration armure (%) : <strong>7% → 4,5%</strong></span></li>
+          </ul></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CHANGEMENTS ITEMS -->
+    <div>
+      <div class="section-title"><span class="section-icon adj">↔</span> CHANGEMENTS — ITEMS</div>
+      <div class="items-grid">
+
+        <div class="item-card adj">
+          <img src="img/items/cristal_de_vide.png" alt="Cristal de Vide">
+          <div class="item-card-name">Cristal de Vide</div>
+          <div class="tooltip"><div class="tooltip-name">Cristal de Vide</div><ul>
+            <li><span class="adj">La pénétration RM ne peut plus rendre la RM adverse négative (plafonnée à 0%).</span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="img/items/baton_des_abysses.png" alt="Bâton des Abysses">
+          <div class="item-card-name">Bâton des Abysses</div>
+          <div class="tooltip"><div class="tooltip-name">Bâton des Abysses</div><ul>
+            <li><span class="fix">Correction : la pénétration de 35% était appliquée sur l'armure au lieu de la RM.</span></li>
+            <li><span class="adj">Lorsque la RM effective passe en dessous de 0%, le bonus de dégâts est plafonné à ×1,35.</span></li>
+          </ul></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-main -->
+</div><!-- /patch-body -->
+</div><!-- /patch-121 -->
+
 <!-- PATCH ALPHA 1.2.0                                      -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="patch-120" class="patch-section active">
+<div id="patch-120" class="patch-section">
 <div class="patch-body">
 
   <div class="patch-main">
