@@ -356,7 +356,9 @@ function _renderItemsSection(cat) {
 
 function renderStatsScreen(tab) {
   const body = document.getElementById('stats-body');
-  body.innerHTML = tab === 'items' ? _renderItemStatsSection() : _renderHeroStatsSection();
+  if (tab === 'items')  body.innerHTML = _renderItemStatsSection();
+  else if (tab === 'runes') body.innerHTML = _renderRuneStatsSection();
+  else                  body.innerHTML = _renderHeroStatsSection();
   document.querySelectorAll('.stats-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
@@ -468,6 +470,45 @@ function _renderHeroStatsSection() {
           <th>Boucliers moy.</th>
           <th>K / D / A moy.</th>
           <th>KDA ratio</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function _renderRuneStatsSection() {
+  const data       = Stats.getData();
+  const totalGames = Stats.getTotalGames();
+  const runes      = typeof RUNE_LIST !== 'undefined' ? RUNE_LIST : [];
+
+  const rows = runes.map(rune => {
+    const s      = (data.runes || {})[rune.id] || {};
+    const picks  = s.picks || 0;
+    const wins   = s.wins  || 0;
+    const wr     = picks > 0 ? Math.round(wins / picks * 100) : '—';
+    const pickPct= totalGames > 0 ? Math.round(picks / totalGames * 100) : '—';
+
+    const iconHtml = rune.img
+      ? `<img src="${rune.img}" class="st-rune-icon" alt="${rune.name}" onerror="this.outerHTML='<span>${rune.icon}</span>'">`
+      : `<span>${rune.icon}</span>`;
+
+    return `
+      <tr>
+        <td class="st-rune-cell">${iconHtml}<span>${rune.name}</span></td>
+        <td>${picks}</td>
+        <td class="st-wr">${typeof wr === 'number' ? wr + '%' : wr}</td>
+        <td>${typeof pickPct === 'number' ? pickPct + '%' : pickPct}</td>
+      </tr>`;
+  }).join('');
+
+  return `
+    <table class="stats-table">
+      <thead>
+        <tr>
+          <th>Rune</th>
+          <th>Picks</th>
+          <th>WR %</th>
+          <th>Pick %</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -787,7 +828,7 @@ window.addEventListener('DOMContentLoaded', () => {
         g.banHero(action.heroId);
         break;
       case 'pick':
-        g.pickHero(action.heroId);
+        g.pickHeroWithRune(action.heroId, action.runeId || null);
         break;
       case 'forfeit':
         g.endGame(0); // guest (joueur 1) abandonne, host (joueur 0) gagne

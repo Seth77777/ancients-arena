@@ -14,10 +14,11 @@ const Stats = (() => {
     shields:           {},        // heroId → total shields given
     items:             {},        // heroId → Set of itemIds bought
     kda:               {},        // heroId → { k, d, a }
+    runes:             [],        // [{ runeId, playerIdx }]
   };
 
   // Persistent data
-  let _data = { heroes: {}, items: {} };
+  let _data = { heroes: {}, items: {}, runes: {} };
 
   function _heroEntry(id) {
     if (!_data.heroes[id])
@@ -36,6 +37,12 @@ const Stats = (() => {
     return _data.items[id];
   }
 
+  function _runeEntry(id) {
+    if (!_data.runes) _data.runes = {};
+    if (!_data.runes[id]) _data.runes[id] = { picks: 0, wins: 0 };
+    return _data.runes[id];
+  }
+
   return {
     load() {
       try {
@@ -43,7 +50,8 @@ const Stats = (() => {
         if (raw) _data = JSON.parse(raw);
         if (!_data.heroes) _data.heroes = {};
         if (!_data.items)  _data.items  = {};
-      } catch(e) { _data = { heroes: {}, items: {} }; }
+        if (!_data.runes)  _data.runes  = {};
+      } catch(e) { _data = { heroes: {}, items: {}, runes: {} }; }
     },
 
     save() {
@@ -51,12 +59,12 @@ const Stats = (() => {
     },
 
     reset() {
-      _data = { heroes: {}, items: {} };
+      _data = { heroes: {}, items: {}, runes: {} };
       this.save();
     },
 
     resetGame() {
-      _cur = { bans: new Set(), picks: {}, damage: {}, heals: {}, shields: {}, items: {}, kda: {} };
+      _cur = { bans: new Set(), picks: {}, damage: {}, heals: {}, shields: {}, items: {}, kda: {}, runes: [] };
     },
 
     // ── In-game event hooks ───────────────────────────────────
@@ -96,6 +104,11 @@ const Stats = (() => {
       _cur.kda[heroId] = { k, d, a };
     },
 
+    recordRunePick(runeId, playerIdx) {
+      if (!runeId) return;
+      _cur.runes.push({ runeId, playerIdx });
+    },
+
     // ── End of game ───────────────────────────────────────────
 
     recordGameEnd(winnerIdx, players) {
@@ -113,6 +126,14 @@ const Stats = (() => {
         if (_cur.heals[heroId])   h.heals   += _cur.heals[heroId];
         if (_cur.shields[heroId]) h.shields += _cur.shields[heroId];
         if (_cur.kda[heroId])     { h.kills += _cur.kda[heroId].k; h.deaths += _cur.kda[heroId].d; h.assists += _cur.kda[heroId].a; }
+      });
+
+      // Runes
+      (_cur.runes || []).forEach(({ runeId, playerIdx }) => {
+        const won = winnerIdx !== null && winnerIdx === playerIdx;
+        const e = _runeEntry(runeId);
+        e.picks++;
+        if (won) e.wins++;
       });
 
       // Items

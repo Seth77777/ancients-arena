@@ -119,6 +119,8 @@ class Renderer {
       slot.className = 'draft-slot pick-slot';
       if (myPicks[i]) {
         const t = HERO_TYPES[myPicks[i]];
+        const _runeId  = d.runeSelections?.[myPicks[i]];
+        const _runeDef = _runeId && typeof RUNES !== 'undefined' ? RUNES[_runeId] : null;
         slot.style.borderColor = color;
         slot.style.padding     = '0';
         slot.style.position    = 'relative';
@@ -132,7 +134,10 @@ class Renderer {
         slot.innerHTML = `
           <div style="position:absolute;inset:0;background:rgba(0,0,0,0.38);"></div>
           <div style="position:relative;z-index:1;padding:0 6px;font-weight:bold;font-size:0.72rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.name}</div>
-          <small style="position:relative;z-index:1;padding:0 6px;font-size:0.65rem;color:rgba(255,255,255,0.65);">${t.role}</small>`;
+          <small style="position:relative;z-index:1;padding:0 6px;font-size:0.65rem;color:rgba(255,255,255,0.65);">${t.role}</small>
+          ${_runeDef ? (_runeDef.img
+            ? `<img src="${_runeDef.img}" class="pick-slot-rune" title="${_runeDef.name}" style="width:16px;height:16px;object-fit:contain;" onerror="this.outerHTML='<span class=pick-slot-rune title=${_runeDef.name}>${_runeDef.icon}</span>'">`
+            : `<span class="pick-slot-rune" title="${_runeDef.name}">${_runeDef.icon}</span>`) : ''}`;
       }
       el.appendChild(slot);
     }
@@ -645,12 +650,15 @@ class Renderer {
           ${portraitHtml}
           <div class="hli-info">
             <div class="hli-header">
-              <span class="hli-name" style="color:${hero.colorStroke}">${hero.name}</span>
+              <span class="hli-name-group">
+                <span class="hli-name" style="color:${hero.colorStroke}">${hero.name}</span>
+                ${(() => { const _rd = hero.runeId && typeof RUNES !== 'undefined' ? RUNES[hero.runeId] : null; return _rd ? (_rd.img ? `<img src="${_rd.img}" class="hli-rune-icon" title="${_rd.name}" onerror="this.outerHTML='<span class=hli-rune-icon-emoji title=${_rd.name}>${_rd.icon}</span>'">` : `<span class="hli-rune-icon-emoji" title="${_rd.name}">${_rd.icon}</span>`) : ''; })()}
+              </span>
               <span class="hli-gold">💰${hero.gold}g</span>
             </div>
             <div class="hli-role">${hero.role}</div>
             <div class="hli-bar" title="${[`${hero.currentHP}/${hero.maxHP} HP`, hero.shield > 0 ? `Bouclier : ${hero.shield}` : '', (hero.magicShield||0) > 0 ? `Bouclier magique : ${hero.magicShield}` : ''].filter(Boolean).join(' · ')}">${shieldPct > 0 ? `<div class="shield-fill" style="width:${shieldPct}%"></div>` : ''}${magicShieldPct > 0 ? `<div class="magic-shield-fill" style="width:${magicShieldPct}%;right:${shieldPct}%"></div>` : ''}<div class="hli-fill hp-fill" style="width:${hpPct}%"></div></div>
-            <div class="hli-bar" title="${hero.currentMana}/${hero.maxMana} MP"><div class="hli-fill mana-fill" style="width:${manaPct}%"></div></div>
+            <div class="hli-bar" title="${hero.passive === 'sinys_passive' ? 'Rage' : 'MP'} : ${hero.currentMana}/${hero.maxMana}"><div class="hli-fill ${hero.passive === 'sinys_passive' ? 'rage-fill' : 'mana-fill'}" style="width:${manaPct}%"></div></div>
             ${!hero.isAlive ? '<div class="hli-dead">ÉLIMINÉ</div>' : this._buildStatusBadges(hero)}
           </div>
         </div>
@@ -968,7 +976,9 @@ class Renderer {
     const hpPct   = (hero.currentHP   / hero.maxHP   * 100).toFixed(1);
     const manaPct = (hero.currentMana / hero.maxMana * 100).toFixed(1);
     document.getElementById('shop-bar-hp').style.width   = hpPct   + '%';
-    document.getElementById('shop-bar-mana').style.width = manaPct + '%';
+    const _manaBar = document.getElementById('shop-bar-mana');
+    _manaBar.style.width = manaPct + '%';
+    _manaBar.className = 'shop-bar-fill ' + (hero.passive === 'sinys_passive' ? 'shop-rage-fill' : 'shop-mana-fill');
     document.getElementById('shop-bar-hp-num').textContent   = `${hero.currentHP}/${hero.maxHP}`;
     document.getElementById('shop-bar-mana-num').textContent = `${hero.currentMana}/${hero.maxMana}`;
 

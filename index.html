@@ -245,6 +245,7 @@
         <div id="stats-tabs">
           <button class="stats-tab active" data-tab="heroes">🧙 Héros</button>
           <button class="stats-tab" data-tab="items">🛡 Items</button>
+          <button class="stats-tab" data-tab="runes">✨ Runes</button>
         </div>
         <button id="stats-reset-btn" class="action-btn stats-reset-btn">🗑 Réinitialiser</button>
       </div>
@@ -397,8 +398,20 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════
+       MODAL SÉLECTION DE RUNE (draft pick)
+  ════════════════════════════════════════════ -->
+  <div id="rune-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;">
+    <div id="rune-modal">
+      <div id="rune-modal-title">Choisissez une rune pour <span id="rune-modal-hero-name"></span></div>
+      <div id="rune-modal-grid"></div>
+      <button id="rune-modal-confirm" class="action-btn" disabled>Confirmer</button>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/stats.js"></script>
+  <script src="js/runes.js"></script>
   <script src="js/heroes.js"></script>
   <script src="js/equipment.js"></script>
   <script src="js/editor.js"></script>

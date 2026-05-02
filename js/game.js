@@ -177,13 +177,17 @@ class GameState {
 
     // Draft state
     this.draft = {
-      phase:        'ban',   // 'ban' | 'pick'
-      banned:       new Set(),
-      picks:        [[], []],
-      banIdx:       0,
-      pickRound:    0,
-      pickInRound:  0
+      phase:          'ban',   // 'ban' | 'pick'
+      banned:         new Set(),
+      picks:          [[], []],
+      banIdx:         0,
+      pickRound:      0,
+      pickInRound:    0,
+      runeSelections: {}       // { typeId: runeId }
     };
+
+    // Per-turn damage tracking (used by rune Gardien)
+    this._turnDmgReceived = {};
 
     // Brown spots — generated in startGame() after heroes are placed
     this.brownSpots = [];
@@ -297,14 +301,22 @@ class GameState {
   }
 
   pickHero(typeId) {
+    return this.pickHeroWithRune(typeId, null);
+  }
+
+  pickHeroWithRune(typeId, runeId) {
     const d = this.draft;
     if (d.phase !== 'pick') return false;
     if (this._isUnavailable(typeId)) return false;
 
+    if (runeId) d.runeSelections[typeId] = runeId;
+
     const seq  = PICK_SEQUENCE[d.pickRound];
     d.picks[seq.p].push(typeId);
     Stats.recordPick(typeId, seq.p);
-    this.addLog(`Joueur ${seq.p + 1} choisit ${HERO_TYPES[typeId].name}`);
+    if (runeId) Stats.recordRunePick(runeId, seq.p);
+    const runeName = runeId && typeof RUNES !== 'undefined' && RUNES[runeId] ? ` [${RUNES[runeId].name}]` : '';
+    this.addLog(`Joueur ${seq.p + 1} choisit ${HERO_TYPES[typeId].name}${runeName}`);
 
     d.pickInRound++;
     if (d.pickInRound >= seq.n) {
@@ -313,7 +325,6 @@ class GameState {
     }
 
     if (d.pickRound >= PICK_SEQUENCE.length) {
-      // Draft complete → start game
       this.startGame(d.picks[0], d.picks[1]);
     }
     return true;
@@ -330,8 +341,8 @@ class GameState {
     const s1 = sortByRole(p1Types);
     const s2 = sortByRole(p2Types);
 
-    this.players[0].heroes = s1.map((t, i) => createHeroInstance(t, 0, i));
-    this.players[1].heroes = s2.map((t, i) => createHeroInstance(t, 1, i));
+    this.players[0].heroes = s1.map((t, i) => createHeroInstance(t, 0, i, this.draft.runeSelections[t] || null));
+    this.players[1].heroes = s2.map((t, i) => createHeroInstance(t, 1, i, this.draft.runeSelections[t] || null));
 
     // Place heroes at corner spawn positions and save spawn for solo_recall
     this.players[0].heroes.forEach((h, i) => { h.position = { ...SPAWN_POSITIONS[0][i] }; h.spawnPosition = { ...SPAWN_POSITIONS[0][i] }; });
@@ -423,6 +434,70 @@ class GameState {
         }
       });
     }
+
+    // ── Réinitialisations par tour (runes) ──────────────────
+    this._turnDmgReceived = {};
+    hero._r1AaHits    = {};
+    hero._r5SpellHits = {};
+    hero._r7Active    = {};
+    hero._r10DmgToTarget = {};
+    hero._r12FirstAaDone = false;
+    hero._r16Active   = false;
+    hero._r2AaThisTurn = false;
+
+    // Rune 4 — Le Conquérant : decay si pas de dégâts au tour précédent
+    if (hero.runeId === 'le_conquerant' && (hero._r4Stacks || 0) > 0) {
+      if (!hero.dealtDamageLastTurn) {
+        hero._r4TurnsNoDmg = (hero._r4TurnsNoDmg || 0) + 1;
+        if (hero._r4TurnsNoDmg >= 2) {
+          const s = hero._r4Stacks;
+          hero.ad -= s * 8;
+          hero.ap -= s * 8;
+          if (hero._r4LifestealActive) { hero.lifeSteal -= 15; hero._r4LifestealActive = false; }
+          hero._r4Stacks    = 0;
+          hero._r4TurnsNoDmg = 0;
+          this.addLog(`${hero.name} — Le Conquérant : stacks perdus (2 tours sans dégâts)`);
+        }
+      } else {
+        hero._r4TurnsNoDmg = 0;
+      }
+    }
+
+    // Rune 13 — Retour de Bâton : décrémenter la durée du bonus
+    if (hero.runeId === 'retour_de_baton' && hero._r13Active) {
+      hero._r13TurnsLeft--;
+      if (hero._r13TurnsLeft <= 0) {
+        hero._r13Active = false;
+        hero.armor   -= 20;
+        hero.mr      -= 20;
+        this.addLog(`${hero.name} — Retour de Bâton : bonus expiré`);
+        // Explosion : 4% HP max dégâts magiques aux ennemis à ≤4 cases
+        if (hero.position) {
+          const _rbEnemies = this._getEnemies(hero.playerIdx).filter(e =>
+            e.isAlive && e.position && this._manhattan(hero.position, e.position) <= 4
+          );
+          _rbEnemies.forEach(e => {
+            const _rbRaw = Math.floor(hero.maxHP * 0.04);
+            const _rbDmg = this._reduceDmg(_rbRaw, 'magical', e);
+            if (_rbDmg > 0) {
+              this._applyDamage(e, _rbDmg, hero, 'magical');
+              this.addLog(`${hero.name} — Retour de Bâton : −${_rbDmg} dégâts magiques (${e.name})`);
+            }
+          });
+          this._checkGameOver();
+        }
+      }
+    }
+
+    // Rune 14 — Gardien : décrémenter la réduction de dégâts des alliés protégés
+    this._getAllies(hero.playerIdx).forEach(ally => {
+      if ((ally._guardianReductionTurns || 0) > 0) {
+        ally._guardianReductionTurns--;
+        if (ally._guardianReductionTurns === 0) {
+          this.addLog(`${ally.name} — protection Gardien expirée`);
+        }
+      }
+    });
 
     this.currentHero        = hero;
     this.actionsUsed        = 0;
@@ -965,6 +1040,43 @@ class GameState {
       this.addLog(`${hero.name} — Passif Suture : +3 PM au prochain tour`);
     }
 
+    // Rune 2 — Vitesse Létale : tracking des tours consécutifs avec AA
+    if (hero && hero.runeId === 'vitesse_letale') {
+      if (hero._r2AaThisTurn) {
+        hero._r2ConsecTurns = (hero._r2ConsecTurns || 0) + 1;
+        if (hero._r2ConsecTurns >= 3 && !hero._r2Active) {
+          hero._r2Active = true;
+          hero.extraAutoAttacks = (hero.extraAutoAttacks || 0) + 1;
+          this.addLog(`${hero.name} — Vitesse Létale : +1 attaque/tour activé !`);
+        }
+      } else {
+        hero._r2ConsecTurns = 0;
+        if (hero._r2Active) {
+          hero._r2Active = false;
+          hero.extraAutoAttacks = Math.max(0, (hero.extraAutoAttacks || 0) - 1);
+          this.addLog(`${hero.name} — Vitesse Létale : bonus perdu (tour sans AA)`);
+        }
+      }
+    }
+
+    // Rune 9 — Comète : vérifier si une comète cible ce héros à sa position finale
+    if (hero && hero.isAlive && hero.position) {
+      this._getEnemies(hero.playerIdx).forEach(enemy => {
+        if (!enemy._r9Pending || enemy._r9Pending.targetId !== hero.instanceId) return;
+        const pending = enemy._r9Pending;
+        enemy._r9Pending = null;
+        if (hero.position.x === pending.x && hero.position.y === pending.y) {
+          const _cometRaw = Math.floor(80 + this._effectiveAP(enemy) * 0.6);
+          const _cometDmg = this._reduceDmg(_cometRaw, 'magical', hero);
+          if (_cometDmg > 0) {
+            this._applyDamage(hero, _cometDmg, enemy, 'magical');
+            this.addLog(`${enemy.name} — Comète : −${_cometDmg} dégâts magiques sur ${hero.name}`);
+          }
+        }
+      });
+      this._checkGameOver();
+    }
+
     this.currentHero  = null;
     this._advance();
   }
@@ -1025,6 +1137,11 @@ class GameState {
         hero.tookDmgThisGlobalTurn = false;
         // Tick DOTs (Nuisance noire, etc.)
         if (hero.dots && hero.dots.length) {
+          // Rune 11 — Toucher Sombre : étendre la durée au plus long DOT de la cible
+          const _maxOtherDot = Math.max(0, ...hero.dots.filter(d => d.label !== 'Toucher Sombre').map(d => d.turns));
+          hero.dots.forEach(dot => {
+            if (dot.label === 'Toucher Sombre' && _maxOtherDot > dot.turns) dot.turns = _maxOtherDot;
+          });
           hero.dots.forEach(dot => {
             if (!hero.isAlive) return;
             const dotType = dot.type || 'magical';
@@ -1040,6 +1157,8 @@ class GameState {
         if (hero.passive !== 'sinys_passive')
           hero.currentMana = Math.min(hero.maxMana, hero.currentMana + Math.floor(hero.manaRegen * _manaRegenMult));
         hero.spells.forEach(sp => { if (hero.cooldowns[sp.id] > 0) hero.cooldowns[sp.id]--; });
+        // Rune CD — non réductible par cdReduction
+        if ((hero.runeCd || 0) > 0) hero.runeCd--;
       });
     });
 
@@ -1715,6 +1834,38 @@ class GameState {
           this.addLog(`${attacker.name} — Hydre de Poséidon : −${_hydreDmgL} dégâts bruts (${e.name})`);
         });
       }
+      // ── Hooks Runes (Layia) ──────────────────────────────
+      if (attacker.runeId) {
+        attacker._r2AaThisTurn = true;
+        if (targetHero.isAlive) {
+          if (attacker.runeId === 'attaque_rapide' && !(attacker.runeCd > 0)) {
+            attacker._r1AaHits[targetHero.instanceId] = (attacker._r1AaHits[targetHero.instanceId] || 0) + 1;
+            if (attacker._r1AaHits[targetHero.instanceId] >= 3) {
+              const _r1RawL = Math.floor(0.2 * attacker.ad + 0.2 * this._effectiveAP(attacker));
+              if (_r1RawL > 0) { this._applyDamage(targetHero, _r1RawL, attacker, 'raw'); this.addLog(`${attacker.name} — Attaque Rapide : −${_r1RawL} dégâts bruts`); }
+              attacker._r1AaHits[targetHero.instanceId] = 0; attacker.runeCd = 3;
+            }
+          }
+          if (attacker.runeId === 'pied_leger' && !(attacker.runeCd > 0)) {
+            const _r3HL = Math.floor((100 + 0.4 * attacker.ad + 0.4 * this._effectiveAP(attacker)) * (attacker.hemorrhageTurns > 0 ? 0.5 : 1) * (1 + (attacker.healEfficiency || 0) / 100));
+            attacker.currentHP = Math.min(attacker.maxHP, attacker.currentHP + _r3HL);
+            this.movementLeft += 1; this.addLog(`${attacker.name} — Pied Léger : +${_r3HL} HP, +1 PM`); attacker.runeCd = 4;
+          }
+          if (attacker.runeId === 'epees_en_cercle') {
+            if (attacker._r7Active[targetHero.instanceId]) { this._applyDamage(targetHero, 20, attacker, 'raw'); this.addLog(`${attacker.name} — Épées en Cercle : −20 dégâts bruts`); }
+            if (!(attacker.runeCd > 0) && !attacker._r7Active[targetHero.instanceId]) { attacker._r7Active[targetHero.instanceId] = true; attacker.runeCd = 4; }
+          }
+          if (attacker.runeId === 'poing_de_destinee' && !attacker._r12FirstAaDone) {
+            attacker._r12FirstAaDone = true;
+            const _r12DmgL = Math.floor(attacker.maxHP * 0.02);
+            this._applyDamage(targetHero, _r12DmgL, attacker, 'physical');
+            attacker.currentHP = Math.min(attacker.maxHP, attacker.currentHP + _r12DmgL);
+            const _r12GL = attacker.po <= 1 ? 50 : 20;
+            attacker.maxHP += _r12GL; attacker.currentHP += _r12GL;
+            this.addLog(`${attacker.name} — Poing de Destinée : −${_r12DmgL} HP phys, +${_r12DmgL} HP, +${_r12GL} HP max`);
+          }
+        }
+      }
       if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
       this.actionsUsed++;
       this.canBuy = false;
@@ -1782,6 +1933,7 @@ class GameState {
           this.addLog(`${attacker.name} — Hydre de Poséidon : −${_hydreDmgA} dégâts bruts (${e.name})`);
         });
       }
+      if (attacker.runeId) attacker._r2AaThisTurn = true;
       if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
       this.actionsUsed++;
       this.canBuy = false;
@@ -2032,6 +2184,52 @@ class GameState {
         this._applyDamage(e, _hydreDmgN, attacker, 'raw');
         this.addLog(`${attacker.name} — Hydre de Poséidon : −${_hydreDmgN} dégâts bruts (${e.name})`);
       });
+    }
+    // ── Hooks Runes (auto-attaque — cible unique) ──────────
+    if (attacker.runeId) {
+      attacker._r2AaThisTurn = true;
+      const _rTgt = targetHero;
+      if (_rTgt && _rTgt.isAlive) {
+        // Rune 1 — Attaque Rapide
+        if (attacker.runeId === 'attaque_rapide' && !(attacker.runeCd > 0)) {
+          attacker._r1AaHits[_rTgt.instanceId] = (attacker._r1AaHits[_rTgt.instanceId] || 0) + 1;
+          if (attacker._r1AaHits[_rTgt.instanceId] >= 3) {
+            const _r1Raw = Math.floor(0.2 * attacker.ad + 0.2 * this._effectiveAP(attacker));
+            if (_r1Raw > 0) { this._applyDamage(_rTgt, _r1Raw, attacker, 'raw'); this.addLog(`${attacker.name} — Attaque Rapide : −${_r1Raw} dégâts bruts`); }
+            attacker._r1AaHits[_rTgt.instanceId] = 0;
+            attacker.runeCd = 3;
+          }
+        }
+        // Rune 3 — Pied Léger
+        if (attacker.runeId === 'pied_leger' && !(attacker.runeCd > 0)) {
+          const _r3H = Math.floor((100 + 0.4 * attacker.ad + 0.4 * this._effectiveAP(attacker)) * (attacker.hemorrhageTurns > 0 ? 0.5 : 1) * (1 + (attacker.healEfficiency || 0) / 100));
+          attacker.currentHP = Math.min(attacker.maxHP, attacker.currentHP + _r3H);
+          this.movementLeft += 1;
+          this.addLog(`${attacker.name} — Pied Léger : +${_r3H} HP, +1 PM`);
+          attacker.runeCd = 4;
+        }
+        // Rune 7 — Épées en Cercle
+        if (attacker.runeId === 'epees_en_cercle') {
+          if (attacker._r7Active[_rTgt.instanceId]) {
+            this._applyDamage(_rTgt, 20, attacker, 'raw');
+            this.addLog(`${attacker.name} — Épées en Cercle : −20 dégâts bruts`);
+          }
+          if (!(attacker.runeCd > 0) && !attacker._r7Active[_rTgt.instanceId]) {
+            attacker._r7Active[_rTgt.instanceId] = true;
+            attacker.runeCd = 4;
+          }
+        }
+        // Rune 12 — Poing de Destinée : 1ère AA du tour
+        if (attacker.runeId === 'poing_de_destinee' && !attacker._r12FirstAaDone) {
+          attacker._r12FirstAaDone = true;
+          const _r12Dmg = Math.floor(attacker.maxHP * 0.02);
+          this._applyDamage(_rTgt, _r12Dmg, attacker, 'physical');
+          attacker.currentHP = Math.min(attacker.maxHP, attacker.currentHP + _r12Dmg);
+          const _r12Gain = attacker.po <= 1 ? 50 : 20;
+          attacker.maxHP += _r12Gain; attacker.currentHP += _r12Gain;
+          this.addLog(`${attacker.name} — Poing de Destinée : −${_r12Dmg} HP phys, +${_r12Dmg} HP, +${_r12Gain} HP max`);
+        }
+      }
     }
     if (attacker._skjerPassiveFired) { delete attacker._skjerPassiveFired; } else { this.autoAttacksUsed++; }
     this.actionsUsed++;
@@ -2519,6 +2717,15 @@ class GameState {
           caster.currentHP = Math.min(caster.maxHP, caster.currentHP + selfHeal);
           Stats.addHeal(caster.id, selfHeal);
           this.addLog(`${caster.name} — Passif : auto-soin +${selfHeal} HP`);
+        }
+        // Rune 8 — Assistant Magique : bouclier bonus sur l'allié soigné
+        if (caster.runeId === 'assistant_magique' && !(caster.runeCd > 0) && ally !== caster) {
+          const _r8Shield = Math.floor(100 + 0.3 * this._effectiveAP(caster));
+          ally.shield = (ally.shield || 0) + _r8Shield;
+          ally.shieldTurnsLeft = Math.max(ally.shieldTurnsLeft || 0, 3);
+          Stats.addShield(caster.id, _r8Shield);
+          caster.runeCd = 5;
+          this.addLog(`${caster.name} — Assistant Magique : ${ally.name} +${_r8Shield} bouclier (3 tours)`);
         }
         break;
       }
@@ -4100,6 +4307,33 @@ class GameState {
       if (!caster.focusLointainMarks) caster.focusLointainMarks = {};
       caster.focusLointainMarks[target.instanceId] = true;
     }
+
+    // ── Hooks Runes (sort) ───────────────────────────────────
+    if (caster.runeId && target.playerIdx !== caster.playerIdx && target.isAlive) {
+      // Rune 5 — Décharge : 2e sort sur même cible → bonus magique
+      if (caster.runeId === 'decharge' && !(caster.runeCd > 0)) {
+        caster._r5SpellHits[target.instanceId] = (caster._r5SpellHits[target.instanceId] || 0) + 1;
+        if (caster._r5SpellHits[target.instanceId] >= 2) {
+          const _r5Raw = Math.floor(60 + 0.4 * caster.ad + 0.4 * this._effectiveAP(caster));
+          const _r5Dmg = this._reduceDmg(_r5Raw, 'magical', target);
+          if (_r5Dmg > 0) { this._applyDamage(target, _r5Dmg, caster, 'magical'); this.addLog(`${caster.name} — Décharge : −${_r5Dmg} dégâts magiques`); }
+          caster._r5SpellHits[target.instanceId] = 0;
+          caster.runeCd = 4;
+        }
+      }
+      // Rune 9 — Comète : enregistrer la position de la cible
+      if (caster.runeId === 'comete' && !(caster.runeCd > 0) && target.position) {
+        caster._r9Pending = { targetId: target.instanceId, x: target.position.x, y: target.position.y };
+        caster.runeCd = 4;
+      }
+      // Rune 11 — Toucher Sombre : DOT 20+0,1×AP sur la cible
+      if (caster.runeId === 'toucher_sombre') {
+        const _r11DmgPT = Math.floor(20 + 0.1 * this._effectiveAP(caster));
+        target.dots = target.dots || [];
+        target.dots = target.dots.filter(d => !(d.label === 'Toucher Sombre' && d.caster === caster));
+        target.dots.push({ dmgPerTurn: _r11DmgPT, type: 'magical', turns: 1, caster, label: 'Toucher Sombre' });
+      }
+    }
   }
 
   _recalcEnchanteurAura() {
@@ -4212,6 +4446,13 @@ class GameState {
         && target.currentHP < target.maxHP * 0.4) {
       damage = Math.floor(damage * 1.2);
     }
+    // Rune 16 — Première Touche : activation + 7% dégâts (dès le 1er hit)
+    if (attacker && target.playerIdx !== attacker.playerIdx && damage > 0 && attacker.runeId === 'premiere_touche') {
+      if (!(attacker.runeCd > 0)) { attacker.runeCd = 5; attacker._r16Active = true; }
+      if (attacker._r16Active) damage = Math.floor(damage * 1.07);
+    }
+    // Rune 14 — Gardien : réduction 20% des dégâts reçus si allié a activé la protection
+    if ((target._guardianReductionTurns || 0) > 0) damage = Math.floor(damage * 0.8);
     // Passif Toucher Magique (casque_necrometien) : +1 PM une fois par sort sur dégât magique
     if (dmgType === 'magical' && this._toucherMagiqueReady) {
       this.movementLeft += 1;
@@ -4271,6 +4512,67 @@ class GameState {
       // Contribution tracking pour les assistances
       if (!target.damageContributors) target.damageContributors = {};
       target.damageContributors[attacker.id] = this.globalTurn;
+
+      // ── Rune 4 — Le Conquérant : stacks AD/AP ──────────────
+      if (attacker.runeId === 'le_conquerant') {
+        if ((attacker._r4Stacks || 0) < 6) {
+          attacker._r4Stacks = (attacker._r4Stacks || 0) + 1;
+          attacker.ad += 8; attacker.ap += 8;
+          if (attacker._r4Stacks === 6 && !attacker._r4LifestealActive) {
+            attacker._r4LifestealActive = true;
+            attacker.lifeSteal += 15;
+            this.addLog(`${attacker.name} — Le Conquérant : max stacks ! +15% vol de vie`);
+          } else {
+            this.addLog(`${attacker.name} — Le Conquérant : ${attacker._r4Stacks}/6 stacks (+8 AD +8 AP)`);
+          }
+        }
+      }
+
+      // ── Rune 6 — Collecteur d'Âme : +2 AD/AP si cible < 40% HP ──
+      if (attacker.runeId === 'collecteur_dames' && target.currentHP < target.maxHP * 0.40) {
+        attacker.ad += 2; attacker.ap += 2;
+        this.addLog(`${attacker.name} — Collecteur d'Âme : +2 AD +2 AP (total AD:${attacker.ad} AP:${attacker.ap})`);
+      }
+
+      // ── Rune 10 — Vitesse de l'Assassin : tracker dégâts par cible ──
+      if (attacker.runeId === 'vitesse_assassin' && !(attacker.runeCd > 0)) {
+        attacker._r10DmgToTarget[target.instanceId] = (attacker._r10DmgToTarget[target.instanceId] || 0) + damage;
+        if (attacker._r10DmgToTarget[target.instanceId] >= target.maxHP * 0.25) {
+          this.movementLeft += 3;
+          this.addLog(`${attacker.name} — Vitesse de l'Assassin : +3 PM !`);
+          attacker.runeCd = 4;
+          attacker._r10DmgToTarget[target.instanceId] = -999999;
+        }
+      }
+
+      // ── Rune 16 — Première Touche : 7% dégâts + or ──────────
+      if (attacker.runeId === 'premiere_touche') {
+        if (!(attacker.runeCd > 0)) { attacker.runeCd = 5; attacker._r16Active = true; }
+        if (attacker._r16Active) {
+          const _pt16Gold = Math.floor(damage * 0.5);
+          if (_pt16Gold > 0) { this._giveGold(attacker, _pt16Gold); this.addLog(`${attacker.name} — Première Touche : +${_pt16Gold}g`); }
+        }
+      }
+    }
+
+    // ── Rune 14 — Gardien : tracker dégâts reçus par les alliés ──
+    if (damage > 0 && attacker && target.playerIdx !== (attacker?.playerIdx ?? -1)) {
+      this._turnDmgReceived = this._turnDmgReceived || {};
+      this._turnDmgReceived[target.instanceId] = (this._turnDmgReceived[target.instanceId] || 0) + damage;
+      const _guardianAllies = this._getAllies(target.playerIdx).filter(a =>
+        a !== target && a.isAlive && a.position && target.position &&
+        a.runeId === 'gardien' && !(a.runeCd > 0) &&
+        this._manhattan(a.position, target.position) < 5
+      );
+      if (_guardianAllies.length > 0 && this._turnDmgReceived[target.instanceId] > target.maxHP * 0.25) {
+        const _guard = _guardianAllies[0];
+        target._guardianReductionTurns = Math.max(target._guardianReductionTurns || 0, 3);
+        _guard.runeCd = 5;
+        this.addLog(`${_guard.name} — Gardien : ${target.name} protégé (−20% dégâts, 3 tours)`);
+      }
+    }
+
+    if (attacker && target.playerIdx !== attacker.playerIdx && damage > 0) {
       // Passif Révolver d'Or — Collecte : 35% des dégâts → or
       if (attacker.items?.includes('revolver_d_or')) {
         const collecteGold = Math.floor(damage * 0.35);
@@ -4859,10 +5161,20 @@ class GameState {
             debuffApplied = true;
           }
         } else if (eff.type === 'slow') {
-          (t.statusEffects = t.statusEffects || []).push({ ...eff });
-          this.addLog(`${t.name} perd ${eff.pmReduction} PM au prochain tour`);
+          const _slowEff = { ...eff };
+          // Rune 15 — Triangle Glacial : +1 tour sur les ralentissements du caster
+          if (this.currentHero?.runeId === 'triangle_glacial') _slowEff.turns = (_slowEff.turns || 1) + 1;
+          (t.statusEffects = t.statusEffects || []).push(_slowEff);
+          this.addLog(`${t.name} perd ${_slowEff.pmReduction} PM au prochain tour${this.currentHero?.runeId === 'triangle_glacial' ? ' (Triangle Glacial)' : ''}`);
           if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
           debuffApplied = true;
+          // Rune 13 — Retour de Bâton : activation sur slow
+          if (this.currentHero?.runeId === 'retour_de_baton' && !(this.currentHero.runeCd > 0)) {
+            this.currentHero.armor += 20; this.currentHero.mr += 20;
+            this.currentHero._r13Active = true; this.currentHero._r13TurnsLeft = 2;
+            this.currentHero.runeCd = 5;
+            this.addLog(`${this.currentHero.name} — Retour de Bâton : +20% Armure +20% RM (2 tours)`);
+          }
         } else if (eff.type === 'hemorrhage') {
           (t.statusEffects = t.statusEffects || []).push({ ...eff });
           this.addLog(`${t.name} subit une hémorragie (soins -50% pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''})`);
@@ -4885,6 +5197,13 @@ class GameState {
           this.addLog(`${t.name} est immobilisé (PM et dash bloqués) pendant ${eff.turns} tour${eff.turns > 1 ? 's' : ''} !`);
           if (this.currentHero) { if (!t.debuffContributors) t.debuffContributors = {}; t.debuffContributors[this.currentHero.id] = this.globalTurn; }
           debuffApplied = true;
+          // Rune 13 — Retour de Bâton : activation sur root
+          if (this.currentHero?.runeId === 'retour_de_baton' && !(this.currentHero.runeCd > 0)) {
+            this.currentHero.armor += 20; this.currentHero.mr += 20;
+            this.currentHero._r13Active = true; this.currentHero._r13TurnsLeft = 2;
+            this.currentHero.runeCd = 5;
+            this.addLog(`${this.currentHero.name} — Retour de Bâton : +20% Armure +20% RM (2 tours)`);
+          }
         } else if (eff.type === 'mr_shred') {
           (t.statusEffects = t.statusEffects || []).push({ ...eff });
           this.addLog(`${t.name} perd 20% de RM pendant ${eff.turns} tours`);

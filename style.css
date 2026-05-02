@@ -412,7 +412,8 @@ body {
 }
 
 .hli-info   { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
-.hli-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1px; }
+.hli-header    { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1px; }
+.hli-name-group { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .hli-name   { font-weight: bold; font-size: 0.8rem; }
 .hli-gold   { font-size: 0.68rem; color: #f0c040; }
 .hli-role   { color: var(--muted); font-size: 0.67rem; margin-bottom: 1px; }
@@ -423,6 +424,7 @@ body {
 .shield-fill       { position: absolute; right: 0; top: 0; height: 100%; background: rgba(180,230,255,0.90); border-radius: 3px; pointer-events: none; }
 .magic-shield-fill { position: absolute;           top: 0; height: 100%; background: rgba(180,100,255,0.85); border-radius: 3px; pointer-events: none; }
 .mana-fill  { background: #3498db; }
+.rage-fill  { background: #c0392b; }
 
 .hli-nums { font-size: 0.63rem; color: var(--muted); margin-top: 1px; }
 .hli-dead   { font-size: 0.68rem; color: #e74c3c; text-align: center; margin-top: 2px; }
@@ -690,6 +692,7 @@ body {
 .shop-bar-fill { height: 100%; border-radius: 4px; }
 .shop-hp-fill   { background: #2ecc71; }
 .shop-mana-fill { background: #3498db; }
+.shop-rage-fill { background: #c0392b; }
 .shop-bar-num { font-size: 0.62rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 
 #shop-hero-stats {
@@ -1923,10 +1926,105 @@ body {
   flex-shrink: 0;
 }
 
+.st-rune-cell { display: flex; align-items: center; gap: 8px; }
+.st-rune-icon { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+
 .st-item-tier {
   font-size: 0.75rem;
   color: var(--muted);
   margin-left: 2px;
+}
+
+/* ============================================================
+   MODAL RUNE
+   ============================================================ */
+
+#rune-modal-overlay { display: none; }
+#rune-modal-overlay.active { display: flex !important; }
+
+#rune-modal {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 24px 28px;
+  max-width: 780px;
+  width: 95vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#rune-modal-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #f0f6fc;
+  text-align: center;
+}
+
+#rune-modal-title span { color: #58a6ff; }
+
+#rune-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.rune-card {
+  background: #0d1117;
+  border: 2px solid #30363d;
+  border-radius: 8px;
+  padding: 10px 10px 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 90px;
+}
+
+.rune-card:hover { border-color: #58a6ff; background: #161b22; }
+.rune-card.selected { border-color: #f7c948; background: #1a1600; }
+
+.rune-card-img  { width: 40px; height: 40px; object-fit: contain; display: block; margin: 0 auto; }
+.rune-card-icon { font-size: 1.4rem; text-align: center; }
+.rune-card-name { font-size: 0.8rem; font-weight: bold; color: #e6edf3; text-align: center; line-height: 1.2; }
+.rune-card-desc { font-size: 0.67rem; color: #8b949e; line-height: 1.35; }
+
+#rune-modal-confirm {
+  align-self: center;
+  padding: 10px 32px;
+  font-size: 1rem;
+  background: #f7c948;
+  color: #0d1117;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: opacity 0.15s;
+}
+
+#rune-modal-confirm:disabled { opacity: 0.35; cursor: not-allowed; }
+#rune-modal-confirm:not(:disabled):hover { opacity: 0.85; }
+
+/* Icône rune dans les hero lists (en jeu) */
+.hli-rune-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.hli-rune-icon-emoji { font-size: 0.85rem; line-height: 1; }
+
+/* Icône rune dans les pick slots */
+.pick-slot-rune {
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  font-size: 0.9rem;
+  z-index: 2;
 }
 
 /* ============================================================

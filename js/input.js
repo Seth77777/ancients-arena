@@ -124,29 +124,75 @@ class InputHandler {
     if (online && !this._isMyTurn()) return;
     if (g._isUnavailable(typeId)) return;
 
-    if (isGuest) {
-      const action = d.phase === 'ban'
-        ? { type: 'ban',  heroId: typeId }
-        : { type: 'pick', heroId: typeId };
-      window.OnlineMode.sendGuestAction(action);
+    if (d.phase === 'ban') {
+      if (isGuest) { window.OnlineMode.sendGuestAction({ type: 'ban', heroId: typeId }); return; }
+      if (g.banHero(typeId)) { this._onlineSync(); this.renderer.renderDraft(); }
       return;
     }
 
-    let ok = false;
-    if (d.phase === 'ban')       ok = g.banHero(typeId);
-    else if (d.phase === 'pick') ok = g.pickHero(typeId);
-
-    if (ok) {
-      this._onlineSync();
-      if (g.phase === 'playing') {
-        document.getElementById('draft-screen').classList.remove('active');
-        document.getElementById('game-screen').classList.add('active');
-        this.renderer.render();
-        this.renderer.updateUI();
-      } else {
-        this.renderer.renderDraft();
+    if (d.phase === 'pick') {
+      if (isGuest) {
+        this._showRuneModal(typeId, runeId => {
+          window.OnlineMode.sendGuestAction({ type: 'pick', heroId: typeId, runeId });
+        });
+        return;
       }
+      this._showRuneModal(typeId, runeId => {
+        if (g.pickHeroWithRune(typeId, runeId)) {
+          this._onlineSync();
+          if (g.phase === 'playing') {
+            document.getElementById('draft-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            this.renderer.render();
+            this.renderer.updateUI();
+          } else {
+            this.renderer.renderDraft();
+          }
+        }
+      });
     }
+  }
+
+  _showRuneModal(typeId, onConfirm) {
+    const heroType = HERO_TYPES[typeId];
+    document.getElementById('rune-modal-hero-name').textContent = heroType?.name || typeId;
+
+    const grid = document.getElementById('rune-modal-grid');
+    grid.innerHTML = '';
+    let selectedRuneId = null;
+
+    RUNE_LIST.forEach(rune => {
+      const card = document.createElement('div');
+      card.className = 'rune-card';
+      const _runeIconHtml = rune.img
+        ? `<img src="${rune.img}" class="rune-card-img" alt="${rune.name}" onerror="this.style.display='none';this.nextElementSibling.style.display=''"><span class="rune-card-icon" style="display:none">${rune.icon}</span>`
+        : `<div class="rune-card-icon">${rune.icon}</div>`;
+      card.innerHTML = `
+        ${_runeIconHtml}
+        <div class="rune-card-name">${rune.name}</div>
+        <div class="rune-card-desc">${rune.desc}</div>`;
+      card.addEventListener('click', () => {
+        grid.querySelectorAll('.rune-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedRuneId = rune.id;
+        document.getElementById('rune-modal-confirm').disabled = false;
+      });
+      grid.appendChild(card);
+    });
+
+    const confirmBtn = document.getElementById('rune-modal-confirm');
+    confirmBtn.disabled = true;
+
+    const overlay = document.getElementById('rune-modal-overlay');
+    overlay.classList.add('active');
+
+    const _onConfirmClick = () => {
+      if (!selectedRuneId) return;
+      overlay.classList.remove('active');
+      confirmBtn.removeEventListener('click', _onConfirmClick);
+      onConfirm(selectedRuneId);
+    };
+    confirmBtn.addEventListener('click', _onConfirmClick);
   }
 
   // ============================================================

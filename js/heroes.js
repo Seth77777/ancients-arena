@@ -1212,7 +1212,7 @@ Object.values(HERO_TYPES).forEach(t => {
 // HERO INSTANCE FACTORY
 // ============================================================
 
-function createHeroInstance(typeId, playerIdx, slotIdx) {
+function createHeroInstance(typeId, playerIdx, slotIdx, runeId = null) {
   const t = HERO_TYPES[typeId];
   const _rc = ROLE_COLORS[t.roleId] || ROLE_COLORS.mage;
   return {
@@ -1340,6 +1340,45 @@ function createHeroInstance(typeId, playerIdx, slotIdx) {
     // State
     position: null,
     isAlive:  true,
-    items:    []
+    items:    [],
+
+    // ── Rune ──────────────────────────────────────────────────
+    runeId:  runeId,
+    runeCd:  0,          // CD actuel (non réductible par CD reduction)
+
+    // Rune 1 — Attaque Rapide
+    _r1AaHits: {},       // { targetInstanceId: count } par tour
+
+    // Rune 2 — Vitesse Létale
+    _r2ConsecTurns: 0,
+    _r2AaThisTurn:  false,
+    _r2Active:      false,
+
+    // Rune 4 — Le Conquérant
+    _r4Stacks:        0,
+    _r4TurnsNoDmg:    0,
+    _r4LifestealActive: false,
+
+    // Rune 5 — Décharge
+    _r5SpellHits: {},    // { targetInstanceId: count } par tour
+
+    // Rune 7 — Épées en Cercle
+    _r7Active: {},       // { targetInstanceId: true } par tour
+
+    // Rune 9 — Comète
+    _r9Pending: null,    // { targetId, x, y }
+
+    // Rune 10 — Vitesse de l'Assassin
+    _r10DmgToTarget: {}, // { targetInstanceId: dmg total } par tour
+
+    // Rune 12 — Poing de Destinée
+    _r12FirstAaDone: false,
+
+    // Rune 13 — Retour de Bâton
+    _r13Active:    false,
+    _r13TurnsLeft: 0,
+
+    // Rune 16 — Première Touche
+    _r16Active: false    // 7% bonus actif ce tour
   };
 }
