@@ -1200,14 +1200,14 @@ HERO_TYPES['solo_7'] = {
   spells: [
     {
       id: 'maahes_q', name: 'Tranchée du Nil',
-      description: 'Dash d\'1 case en avant. Inflige 110+1 AD dégâts physiques aux cibles orthogonalement adjacentes. Si une cible a plus de HP max que Maahes : +0,7 AD dégâts bruts supplémentaires.',
+      description: 'Dash d\'1 case en avant. Inflige 80+0,8 AD dégâts physiques aux cibles orthogonalement adjacentes. Si une cible a plus de HP max que Maahes : +0,3 AD dégâts bruts supplémentaires.',
       manaCost: 90, range: 1, cooldown: 3, cdMin: 1,
-      damageType: 'physical', baseDamage: 110, adRatio: 1, apRatio: 0,
+      damageType: 'physical', baseDamage: 80, adRatio: 0.8, apRatio: 0,
       targetType: 'maahes_q', zone: null, effects: []
     },
     {
       id: 'maahes_w', name: 'Sécheresse Infernale',
-      description: 'Bouclier de 120+1 AD pendant 3 tours. Tant que le bouclier est actif, les ennemis à ≤4 cases reçoivent 50+0,4 AD dégâts physiques au début de chaque tour de Maahes.',
+      description: 'Bouclier de 120+1 AD pendant 3 tours. Tant que le bouclier est actif, les ennemis à ≤4 cases reçoivent 30+0,3 AD dégâts physiques au début de chaque tour de Maahes.',
       manaCost: 80, range: 0, cooldown: 4, cdMin: 1,
       damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
       shieldAmount: 120, adShieldRatio: 1, shieldTurns: 3,

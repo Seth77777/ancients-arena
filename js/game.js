@@ -726,7 +726,7 @@ class GameState {
     if (hero.passive === 'maahes_passive' && hero.maahesSecheresseActive && hero.shield > 0 && hero.position) {
       const _secEnemies = this._getEnemies(hero.playerIdx).filter(e => e.isAlive && e.position && this._manhattan(hero.position, e.position) <= 4);
       _secEnemies.forEach(e => {
-        const _secRaw = Math.floor(50 + 0.4 * hero.ad);
+        const _secRaw = Math.floor(30 + 0.3 * hero.ad);
         const _secDmg = this._reduceDmg(_secRaw, 'physical', e, hero.armorPenPct || 0);
         if (_secDmg > 0) {
           this._applyDamage(e, _secDmg, hero, 'physical');
@@ -2847,7 +2847,7 @@ class GameState {
           caster.maahesSecheresseActive = true;
           const _wEnemies = this._getEnemies(caster.playerIdx).filter(e => e.isAlive && e.position && this._manhattan(caster.position, e.position) <= 4);
           _wEnemies.forEach(e => {
-            const _wRaw = Math.floor(50 + 0.4 * caster.ad);
+            const _wRaw = Math.floor(30 + 0.3 * caster.ad);
             const _wDmg = this._reduceDmg(_wRaw, 'physical', e, caster.armorPenPct || 0);
             if (_wDmg > 0) {
               this._applyDamage(e, _wDmg, caster, 'physical');
@@ -3829,7 +3829,7 @@ class GameState {
           this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${mqDmg} HP`);
           // Lion divin : cible a plus de HP max que Maahes → dégâts bruts supplémentaires
           if (e.isAlive && e.maxHP > caster.maxHP) {
-            const mqRawBonus = Math.floor(0.7 * caster.ad);
+            const mqRawBonus = Math.floor(0.3 * caster.ad);
             this._applyDamage(e, mqRawBonus, caster, 'raw');
             this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${mqRawBonus} bruts (Lion divin)`);
           }
