@@ -265,12 +265,12 @@ HERO_TYPES['solo_3'] = {
   portrait: 'assets/heroes/ondine.png',
   passive: 'vaillance',
   maxHP: 2450, maxMana: 400, hpRegen: 45, manaRegen: 50,
-  ad: 75, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
+  ad: 60, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
   spells: [
     {
       id: 'ondine_q', name: 'Estoc',
       description: '100 + 1 AD dégâts physiques sur un ennemi adjacent',
-      manaCost: 70, range: 1, cooldown: 2, cdMin: 1,
+      manaCost: 110, range: 1, cooldown: 2, cdMin: 1,
       damageType: 'physical', baseDamage: 100, adRatio: 1, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: []
     },
@@ -1189,6 +1189,81 @@ HERO_TYPES['solo_6'] = {
   ]
 };
 
+HERO_TYPES['solo_7'] = {
+  id: 'solo_7', name: 'Maahes', role: 'Solo', roleId: 'solo', roleOrder: 1,
+  colorFill: '#922b21', colorStroke: '#e74c3c',
+  portrait: 'assets/heroes/maahes.png',
+  passive: 'maahes_passive',
+  passiveDescription: 'Lion divin : Si Maahes a un bouclier, ses sorts infligent 15% de dégâts supplémentaires.',
+  maxHP: 1900, maxMana: 400, hpRegen: 45, manaRegen: 50,
+  ad: 75, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
+  spells: [
+    {
+      id: 'maahes_q', name: 'Tranchée du Nil',
+      description: 'Dash d\'1 case en avant. Inflige 110+1 AD dégâts physiques aux cibles orthogonalement adjacentes. Si une cible a plus de HP max que Maahes : +0,7 AD dégâts bruts supplémentaires.',
+      manaCost: 90, range: 1, cooldown: 3, cdMin: 1,
+      damageType: 'physical', baseDamage: 110, adRatio: 1, apRatio: 0,
+      targetType: 'maahes_q', zone: null, effects: []
+    },
+    {
+      id: 'maahes_w', name: 'Sécheresse Infernale',
+      description: 'Bouclier de 120+1 AD pendant 3 tours. Tant que le bouclier est actif, les ennemis à ≤4 cases reçoivent 50+0,4 AD dégâts physiques au début de chaque tour de Maahes.',
+      manaCost: 80, range: 0, cooldown: 4, cdMin: 1,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      shieldAmount: 120, adShieldRatio: 1, shieldTurns: 3,
+      targetType: 'self', zone: null, effects: []
+    },
+    {
+      id: 'maahes_r', name: 'L\'art de la guerre',
+      description: 'Jusqu\'à 4 dash en ligne droite (3 cases, sans LdV). 70+1 AD dégâts physiques, +25% par activation (×1,×1.25,×1.5,×1.75). Une fois par cible.',
+      manaCost: 100, range: 3, cooldown: 12, cdMin: 2,
+      damageType: 'physical', baseDamage: 70, adRatio: 1, apRatio: 0,
+      targetType: 'maahes_r', zone: null, effects: [],
+      maxUsesPerTurn: 4
+    },
+    {
+      id: 'solo_recall', name: 'Rappel',
+      description: 'Se téléporte sur une case adjacente à un allié (portée illimitée). Réactivez pour retourner à votre case de départ.',
+      manaCost: 0, range: 99, cooldown: 7, cdMin: 7,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'solo_recall', zone: null, effects: [],
+      icon: 'img/spells/solo_recall.png'
+    }
+  ]
+};
+
+HERO_TYPES['dpt_6'] = {
+  id: 'dpt_6', name: 'Sylvia', role: 'DPT', roleId: 'dpt', roleOrder: 4,
+  colorFill: '#1d6a39', colorStroke: '#27ae60',
+  portrait: 'assets/heroes/sylvia.png',
+  passive: 'sylvia_passive',
+  maxHP: 2000, maxMana: 250, hpRegen: 45, manaRegen: 30,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 5,
+  spells: [
+    {
+      id: 'sylvia_q', name: 'Avec la nature',
+      description: 'Dash sur un arbre à ≤5 cases (sans LdV). Gagne +1 auto-attaque ce tour.',
+      manaCost: 100, range: 5, cooldown: 4, cdMin: 1,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'sylvia_q', zone: null, effects: []
+    },
+    {
+      id: 'sylvia_w', name: 'Flèche de recul',
+      description: 'Pousse un ennemi de 4 cases (en ligne). 80+0,6 AD+0,8 AP dégâts magiques. L\'ennemi perd 2 PM à son prochain tour.',
+      manaCost: 110, range: 5, cooldown: 5, cdMin: 1,
+      damageType: 'magical', baseDamage: 80, adRatio: 0.6, apRatio: 0.8,
+      targetType: 'sylvia_w', zone: null, effects: [{ type: 'slow', pmReduction: 2, turns: 1 }]
+    },
+    {
+      id: 'sylvia_r', name: 'Appel de la forêt',
+      description: 'Le nombre d\'arbres plantés par tour augmente de 1 de façon permanente.',
+      manaCost: 100, range: 0, cooldown: 8, cdMin: 1, initialCooldown: 8,
+      damageType: null, baseDamage: 0, adRatio: 0, apRatio: 0,
+      targetType: 'no_target', sylviaR: true, zone: null, effects: []
+    }
+  ]
+};
+
 const ROLE_ORDER = ['solo', 'roam', 'mage', 'dpt', 'support'];
 
 // ============================================================
@@ -1281,6 +1356,14 @@ function createHeroInstance(typeId, playerIdx, slotIdx, runeId = null) {
     hornetHarpoonedTargets: {},  // { targetInstanceId: expiryTurn }
     hornetDidNotUsePMThisTurn: true,  // tracks if Hornet used any PM this turn
     hornetPMBonusNextTurn: 0,  // extra PM from passive
+
+    // Maahes passive state
+    maahesSecheresseActive: false,  // true while Sécheresse Infernale shield is active
+    maahesRTargetsHit: {},          // { targetInstanceId: true } — cibles touchées par L'art de la guerre ce tour
+
+    // Sylvia passive state
+    sylviaTreesPerTurn: 1,          // number of trees planted each turn (increases with Sort 3)
+    sylviaAABonusActive: false,     // true this turn if Sylvia walked on a tree
 
     // Solo recall state
     soloRecallActive: false,   // true after first cast, allows reactivation (return to spawn)

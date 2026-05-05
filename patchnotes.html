@@ -317,7 +317,8 @@
   <div class="patch-version">PATCH NOTES</div>
   <div class="patch-subtitle">Ancients Arena</div>
   <div class="patch-tabs">
-    <button class="patch-tab active" onclick="showPatch('patch-121', this)">Alpha 1.2.1</button>
+    <button class="patch-tab active" onclick="showPatch('patch-122', this)">Alpha 1.2.2</button>
+    <button class="patch-tab" onclick="showPatch('patch-121', this)">Alpha 1.2.1</button>
     <button class="patch-tab" onclick="showPatch('patch-120', this)">Alpha 1.2.0</button>
     <button class="patch-tab" onclick="showPatch('patch-112', this)">Alpha 1.1.2</button>
     <button class="patch-tab" onclick="showPatch('patch-111', this)">Alpha 1.1.1</button>
@@ -334,7 +335,129 @@
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- PATCH ALPHA 1.2.1                                      -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="patch-121" class="patch-section active">
+<div id="patch-122" class="patch-section active">
+<div class="patch-body">
+  <div class="patch-main">
+
+    <!-- NOUVEAUX HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon sys">✦</span> NOUVEAUX HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card new">
+          <img src="assets/heroes/maahes.png" alt="Maahes">
+          <div class="hero-card-name">Maahes</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Maahes — Solo</div>
+            <ul>
+              <li><span class="neu"><strong>Passif — Lion divin :</strong> si Maahes possède un bouclier, ses sorts infligent <strong>15%</strong> de dégâts supplémentaires.</span></li>
+              <li><span class="neu"><strong>Sort 1 — Tranchée du Nil :</strong> dash d'1 case. Inflige <strong>110+1 AD</strong> dégâts physiques aux cibles orthogonalement adjacentes. Si la cible a plus de HP max que Maahes : <strong>+0,7 AD</strong> dégâts bruts. Mana 90 · CD 3.</span></li>
+              <li><span class="neu"><strong>Sort 2 — Sécheresse Infernale :</strong> bouclier <strong>120+1 AD</strong> (3 tours). Tant que le bouclier est actif, les ennemis à ≤4 cases subissent <strong>50+0,4 AD</strong> dégâts physiques au début de chaque tour de Maahes. Mana 80 · CD 4.</span></li>
+              <li><span class="neu"><strong>Sort 3 — L'art de la guerre :</strong> jusqu'à <strong>4 dash</strong> en ligne droite (3 cases, sans LdV). <strong>70+1 AD</strong> dégâts physiques, +25% par activation (×1 → ×1,75). Une seule fois par cible par tour. Mana 100/dash · CD 12.</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="hero-card new">
+          <img src="assets/heroes/sylvia.png" alt="Sylvia">
+          <div class="hero-card-name">Sylvia</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Sylvia — DPT</div>
+            <ul>
+              <li><span class="neu"><strong>Passif — Forêt vivante :</strong> au début de chaque tour de Sylvia, un arbre 🌳 est planté aléatoirement dans un rayon de 20 cases. Marcher dessus : soin <strong>25% HP max</strong> + <strong>+0,4 AP</strong> sur chaque attaque de base ce tour. Arbres trop éloignés (>20 cases) disparaissent.</span></li>
+              <li><span class="neu"><strong>Sort 1 — Avec la nature :</strong> dash sur un arbre à ≤5 cases (sans LdV). Déclenche le passif et confère <strong>+1 attaque de base</strong> ce tour. Mana 100 · CD 4.</span></li>
+              <li><span class="neu"><strong>Sort 2 — Flèche de recul :</strong> pousse un ennemi de <strong>4 cases</strong> en ligne droite. Inflige <strong>80+0,6 AD+0,8 AP</strong> dégâts magiques. L'ennemi perd <strong>2 PM</strong> à son prochain tour. Portée 5 · Mana 110 · CD 5.</span></li>
+              <li><span class="neu"><strong>Sort 3 — Appel de la forêt :</strong> augmente de <strong>+1</strong> le nombre d'arbres plantés par tour (permanent, cumulable). Commence avec 8 tours de recharge. Mana 100 · CD 8.</span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CHANGEMENTS RUNES -->
+    <div>
+      <div class="section-title"><span class="section-icon buff">↑</span> BUFFS — RUNES</div>
+      <div class="items-grid">
+
+        <div class="item-card buff">
+          <img src="assets/runes/attaque_rapide.png" alt="Attaque Rapide">
+          <div class="item-card-name">Attaque Rapide</div>
+          <div class="tooltip"><div class="tooltip-name">Attaque Rapide</div><ul>
+            <li><span class="up">Dégâts bruts : <strong>0,2×AD+0,2×AP → 20+0,3×AD+0,3×AP</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="assets/runes/epees_en_cercle.png" alt="Épées en Cercle">
+          <div class="item-card-name">Épées en Cercle</div>
+          <div class="tooltip"><div class="tooltip-name">Épées en Cercle</div><ul>
+            <li><span class="up">CD : <strong>4 → 3</strong></span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card buff">
+          <img src="assets/runes/premiere_touche.png" alt="Première Touche">
+          <div class="item-card-name">Première Touche</div>
+          <div class="tooltip"><div class="tooltip-name">Première Touche</div><ul>
+            <li><span class="up">CD : <strong>5 → 4</strong></span></li>
+            <li><span class="up">Or gagné : <strong>50% → 75%</strong> des dégâts infligés</span></li>
+          </ul></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div>
+      <div class="section-title"><span class="section-icon adj">↔</span> CHANGEMENTS — RUNES</div>
+      <div class="items-grid">
+
+        <div class="item-card adj">
+          <img src="assets/runes/collecteur_dames.png" alt="Collecteur d'Âme">
+          <div class="item-card-name">Collecteur d'Âme</div>
+          <div class="tooltip"><div class="tooltip-name">Collecteur d'Âme — Rework</div><ul>
+            <li><span class="down">Supprimé : <strong>+2 AD +2 AP permanents</strong> à chaque coup sur ennemi <40% HP.</span></li>
+            <li><span class="neu">Nouveau : infligez <strong>+20% de dégâts</strong> aux ennemis ayant moins de 40% de leurs HP max.</span></li>
+          </ul></div>
+        </div>
+
+        <div class="item-card adj">
+          <img src="assets/runes/assistant_magique.png" alt="Assistant Magique">
+          <div class="item-card-name">Assistant Magique</div>
+          <div class="tooltip"><div class="tooltip-name">Assistant Magique</div><ul>
+            <li><span class="adj">Bouclier conféré : <strong>100+0,3×AP → 80+0,5×AP</strong></span></li>
+          </ul></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NERFS HÉROS -->
+    <div>
+      <div class="section-title"><span class="section-icon nerf">↓</span> NERFS — HÉROS</div>
+      <div class="heroes-grid">
+
+        <div class="hero-card nerf">
+          <img src="assets/heroes/ondine.png" alt="Ondine">
+          <div class="hero-card-name">Ondine</div>
+          <div class="tooltip">
+            <div class="tooltip-name">Ondine</div>
+            <ul>
+              <li><span class="down">AD de base : <strong>75 → 60</strong></span></li>
+              <li><span class="down">Estoc — coût en mana : <strong>70 → 110</strong></span></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /patch-main -->
+</div><!-- /patch-body -->
+</div><!-- /patch-122 -->
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div id="patch-121" class="patch-section">
 <div class="patch-body">
   <div class="patch-main">
 

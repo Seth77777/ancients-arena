@@ -195,6 +195,9 @@ class GameState {
     // Batteries de Pibot (une par héros Pibot, générée chaque tour)
     this.pibotBatteries = [];
 
+    // Arbres de Sylvia (générés chaque tour de Sylvia)
+    this.sylviaTrees = [];
+
     // Pièges posés sur la carte
     this.traps = [];
 
@@ -570,9 +573,12 @@ class GameState {
     // Tick bouclier temporisé (Barrière Protectrice)
     if (hero.shieldTurnsLeft > 0) {
       hero.shieldTurnsLeft--;
-      if (hero.shieldTurnsLeft === 0 && hero.shield > 0) {
-        hero.shield = 0;
-        this.addLog(`${hero.name} — Bouclier expiré`);
+      if (hero.shieldTurnsLeft === 0) {
+        if (hero.shield > 0) {
+          hero.shield = 0;
+          this.addLog(`${hero.name} — Bouclier expiré`);
+        }
+        if (hero.passive === 'maahes_passive') hero.maahesSecheresseActive = false;
       }
     }
 
@@ -682,6 +688,9 @@ class GameState {
     // Passif Faëna : reset bonus PO du W
     if (hero.passive === 'faena_passive') hero.faenaBonusPOTurn = 0;
 
+    // Sylvia — reset du bonus AA d'arbre
+    if (hero.passive === 'sylvia_passive') hero.sylviaAABonusActive = false;
+
     // Salena — reset Découpage
     if (hero.passive === 'salena_passive') hero.decoupageActive = false;
 
@@ -713,6 +722,22 @@ class GameState {
       this.addLog(`${hero.name} — Pierre qui roule : bouclier +70 (total ${hero.shield})`);
     }
 
+    // Passif Maahes — Sécheresse Infernale : aura physique au début du tour de Maahes
+    if (hero.passive === 'maahes_passive' && hero.maahesSecheresseActive && hero.shield > 0 && hero.position) {
+      const _secEnemies = this._getEnemies(hero.playerIdx).filter(e => e.isAlive && e.position && this._manhattan(hero.position, e.position) <= 4);
+      _secEnemies.forEach(e => {
+        const _secRaw = Math.floor(50 + 0.4 * hero.ad);
+        const _secDmg = this._reduceDmg(_secRaw, 'physical', e, hero.armorPenPct || 0);
+        if (_secDmg > 0) {
+          this._applyDamage(e, _secDmg, hero, 'physical');
+          this.addLog(`${e.name} — Sécheresse Infernale : −${_secDmg} HP`);
+        }
+      });
+      if (_secEnemies.length > 0) this._checkGameOver();
+    }
+    // L'art de la guerre (Maahes) : réinitialisation des cibles touchées au début du tour
+    if (hero.passive === 'maahes_passive') hero.maahesRTargetsHit = {};
+
     // Passif Pibot — Batterie : supprime l'ancienne et génère une nouvelle chaque tour
     if (hero.passive === 'pibot_passive' && hero.position) {
       // Supprimer l'ancienne batterie de ce Pibot
@@ -733,6 +758,37 @@ class GameState {
         const pick = cands[Math.floor(Math.random() * cands.length)];
         this.pibotBatteries.push({ x: pick.x, y: pick.y, heroInstanceId: hero.instanceId });
       }
+    }
+
+    // Passif Sylvia — plantation d'arbres au début du tour
+    if (hero.passive === 'sylvia_passive' && hero.position) {
+      const _SYLV_MAX = 20;
+      // Supprimer les arbres à plus de 20 cases
+      const _removed = this.sylviaTrees.filter(t => this._manhattan(hero.position, t) > _SYLV_MAX).length;
+      this.sylviaTrees = this.sylviaTrees.filter(t => this._manhattan(hero.position, t) <= _SYLV_MAX);
+      if (_removed > 0) this.addLog(`${hero.name} — Passif : ${_removed} arbre${_removed > 1 ? 's' : ''} trop loin, retiré${_removed > 1 ? 's' : ''}`);
+      // Planter de nouveaux arbres dans le rayon
+      const _sylvCount = hero.sylviaTreesPerTurn || 1;
+      const _sylvOcc = new Set([
+        ...this.brownSpots.map(s => `${s.x},${s.y}`),
+        ...this.pibotBatteries.map(b => `${b.x},${b.y}`),
+        ...this.sylviaTrees.map(t => `${t.x},${t.y}`),
+      ]);
+      this.players.forEach(p => p.heroes.forEach(h => { if (h.position) _sylvOcc.add(`${h.position.x},${h.position.y}`); }));
+      const _sylvCands = [];
+      for (let bx = 1; bx < MAP_SIZE - 1; bx++) for (let by = 1; by < MAP_SIZE - 1; by++) {
+        if (!isWall(bx, by) && !_sylvOcc.has(`${bx},${by}`) && this._manhattan(hero.position, { x: bx, y: by }) <= _SYLV_MAX)
+          _sylvCands.push({ x: bx, y: by });
+      }
+      let _planted = 0;
+      for (let i = 0; i < _sylvCount && _sylvCands.length; i++) {
+        const _idx = Math.floor(Math.random() * _sylvCands.length);
+        this.sylviaTrees.push({ x: _sylvCands[_idx].x, y: _sylvCands[_idx].y });
+        _sylvOcc.add(`${_sylvCands[_idx].x},${_sylvCands[_idx].y}`);
+        _sylvCands.splice(_idx, 1);
+        _planted++;
+      }
+      if (_planted > 0) this.addLog(`${hero.name} — Passif : ${_planted} arbre${_planted > 1 ? 's' : ''} planté${_planted > 1 ? 's' : ''}`);
     }
 
     // Passif Layia : reset bonus PO temporaire
@@ -879,6 +935,18 @@ class GameState {
     this.selectedWolf  = null;
 
     const hero = this.currentHero;
+
+    // Sorts multi-activation : appliquer le CD si utilisé au moins 1 fois mais pas épuisé
+    if (hero) {
+      hero.spells.forEach(spell => {
+        if ((spell.maxUsesPerTurn || 1) <= 1) return;
+        const _usedCount = typeof this.spellsUsed[spell.id] === 'number' ? this.spellsUsed[spell.id] : 0;
+        if (_usedCount > 0 && _usedCount < spell.maxUsesPerTurn && (hero.cooldowns[spell.id] || 0) === 0) {
+          const _minCd = spell.cdMin ?? 1;
+          hero.cooldowns[spell.id] = Math.max(_minCd, spell.cooldown - (hero.cdReduction || 0));
+        }
+      });
+    }
 
     // Mémorise la zone sur laquelle le héros termine son tour individuel (pour les golds de zone en fin de tour global)
     if (hero && hero.position) {
@@ -1460,6 +1528,7 @@ class GameState {
       }
       if (hero.roleId === 'roam') this._checkBrownCollection(hero);
       this._checkPibotBattery(hero);
+      this._checkSylviaTree(hero);
       this._checkTrap(hero);
       this._checkBombZone(hero);
       return true;
@@ -1483,6 +1552,7 @@ class GameState {
     this.addLog(`${hero.name} → (${tx},${ty}) [−${result.cost} PM, reste ${this.movementLeft}]`);
     if (hero.roleId === 'roam') this._checkBrownCollection(hero);
     this._checkPibotBattery(hero);
+    this._checkSylviaTree(hero);
     this._feninoRCheckAdjacent(hero);
     this._checkTrap(hero);
     this._checkBombZone(hero);
@@ -1746,6 +1816,14 @@ class GameState {
           const decRaw = Math.floor(0.03 * e.maxHP + 0.02 * this._effectiveAP(attacker));
           if (decRaw > 0) { this._applyDamage(e, decRaw, attacker, 'raw'); this.addLog(`${attacker.name} — Découpage : −${decRaw} dégâts bruts`); }
         }
+        // Passif Sylvia — bonus AA d'arbre : +0,4 AP dégâts magiques
+        if (attacker.passive === 'sylvia_passive' && attacker.sylviaAABonusActive && e.isAlive) {
+          const _sylvBonus = Math.floor(0.4 * this._effectiveAP(attacker));
+          if (_sylvBonus > 0) {
+            const _sylvDmg = this._reduceDmg(_sylvBonus, 'magical', e);
+            if (_sylvDmg > 0) { this._applyDamage(e, _sylvDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Arbre : +${_sylvDmg} dégâts magiques`); }
+          }
+        }
         // Passif Tueur de Dieux : 30% bruts
         for (let _h = 0; _h < _onHitPassesL; _h++) {
           if (_tdRawL <= 0 || !e.isAlive) break;
@@ -1850,7 +1928,7 @@ class GameState {
           if (attacker.runeId === 'attaque_rapide' && !(attacker.runeCd > 0)) {
             attacker._r1AaHits[targetHero.instanceId] = (attacker._r1AaHits[targetHero.instanceId] || 0) + 1;
             if (attacker._r1AaHits[targetHero.instanceId] >= 3) {
-              const _r1RawL = Math.floor(0.2 * attacker.ad + 0.2 * this._effectiveAP(attacker));
+              const _r1RawL = Math.floor(20 + 0.3 * attacker.ad + 0.3 * this._effectiveAP(attacker));
               if (_r1RawL > 0) { this._applyDamage(targetHero, _r1RawL, attacker, 'raw'); this.addLog(`${attacker.name} — Attaque Rapide : −${_r1RawL} dégâts bruts`); }
               attacker._r1AaHits[targetHero.instanceId] = 0; attacker.runeCd = 3;
             }
@@ -1862,7 +1940,7 @@ class GameState {
           }
           if (attacker.runeId === 'epees_en_cercle') {
             if (attacker._r7Active[targetHero.instanceId]) { this._applyDamage(targetHero, 20, attacker, 'raw'); this.addLog(`${attacker.name} — Épées en Cercle : −20 dégâts bruts`); }
-            if (!(attacker.runeCd > 0) && !attacker._r7Active[targetHero.instanceId]) { attacker._r7Active[targetHero.instanceId] = true; attacker.runeCd = 4; }
+            if (!(attacker.runeCd > 0) && !attacker._r7Active[targetHero.instanceId]) { attacker._r7Active[targetHero.instanceId] = true; attacker.runeCd = 3; }
           }
           if (attacker.runeId === 'poing_de_destinee' && !attacker._r12FirstAaDone) {
             attacker._r12FirstAaDone = true;
@@ -1998,6 +2076,14 @@ class GameState {
     if (empMagicalDmg2 > 0 && targetHero.isAlive) {
       this._applyDamage(targetHero, empMagicalDmg2, attacker, 'magical');
       this.addLog(`${attacker.name} — Rock and Roll : +${empMagicalDmg2} dégâts magiques${hasBlade2 ? ' (Lame Bleue)' : ''}`);
+    }
+    // Passif Sylvia — bonus AA d'arbre : +0,4 AP dégâts magiques
+    if (attacker.passive === 'sylvia_passive' && attacker.sylviaAABonusActive && targetHero.isAlive) {
+      const _sylvAABonus = Math.floor(0.4 * this._effectiveAP(attacker));
+      if (_sylvAABonus > 0) {
+        const _sylvAADmg = this._reduceDmg(_sylvAABonus, 'magical', targetHero);
+        if (_sylvAADmg > 0) { this._applyDamage(targetHero, _sylvAADmg, attacker, 'magical'); this.addLog(`${attacker.name} — Arbre : +${_sylvAADmg} dégâts magiques`); }
+      }
     }
     this._applyHemorrhage(attacker, targetHero);
     // Passif Gelure (Gantelet Refroidissant) : slow + zone si attaque boostée
@@ -2202,7 +2288,7 @@ class GameState {
         if (attacker.runeId === 'attaque_rapide' && !(attacker.runeCd > 0)) {
           attacker._r1AaHits[_rTgt.instanceId] = (attacker._r1AaHits[_rTgt.instanceId] || 0) + 1;
           if (attacker._r1AaHits[_rTgt.instanceId] >= 3) {
-            const _r1Raw = Math.floor(0.2 * attacker.ad + 0.2 * this._effectiveAP(attacker));
+            const _r1Raw = Math.floor(20 + 0.3 * attacker.ad + 0.3 * this._effectiveAP(attacker));
             if (_r1Raw > 0) { this._applyDamage(_rTgt, _r1Raw, attacker, 'raw'); this.addLog(`${attacker.name} — Attaque Rapide : −${_r1Raw} dégâts bruts`); }
             attacker._r1AaHits[_rTgt.instanceId] = 0;
             attacker.runeCd = 3;
@@ -2224,7 +2310,7 @@ class GameState {
           }
           if (!(attacker.runeCd > 0) && !attacker._r7Active[_rTgt.instanceId]) {
             attacker._r7Active[_rTgt.instanceId] = true;
-            attacker.runeCd = 4;
+            attacker.runeCd = 3;
           }
         }
         // Rune 12 — Poing de Destinée : 1ère AA du tour
@@ -2299,7 +2385,7 @@ class GameState {
     if (caster.mutedThisTurn || (caster.statusEffects || []).some(e => e.type === 'mute')) {
       this.addLog(`${caster.name} est muet — sorts bloqués !`); return false;
     }
-    const _dashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy','swap_enemy','swap_ally','faena_w','pibot_w','fenino_q','fenino_w','velna_q'];
+    const _dashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy','swap_enemy','swap_ally','faena_w','pibot_w','fenino_q','fenino_w','velna_q','maahes_q','maahes_r','sylvia_q'];
     if ((caster.rootTurns || 0) > 0 && _dashTypes.includes(spell.targetType)) {
       this.addLog(`${caster.name} est immobilisé — dash bloqué !`); return false;
     }
@@ -2728,7 +2814,7 @@ class GameState {
         }
         // Rune 8 — Assistant Magique : bouclier bonus sur l'allié soigné
         if (caster.runeId === 'assistant_magique' && !(caster.runeCd > 0) && ally !== caster) {
-          const _r8Shield = Math.floor((100 + 0.3 * this._effectiveAP(caster)) * (1 + (ally.healEfficiency || 0) / 100));
+          const _r8Shield = Math.floor((80 + 0.5 * this._effectiveAP(caster)) * (1 + (ally.healEfficiency || 0) / 100));
           ally.shield = (ally.shield || 0) + _r8Shield;
           ally.shieldTurnsLeft = Math.max(ally.shieldTurnsLeft || 0, 3);
           Stats.addShield(caster.id, _r8Shield);
@@ -2755,6 +2841,20 @@ class GameState {
           if (spell.shieldTurns) caster.shieldTurnsLeft = spell.shieldTurns;
           Stats.addShield(caster.id, shield);
           this.addLog(`${caster.name} → ${spell.name}: bouclier +${shield}${_echoShieldBonus > 0 ? ` (+${_echoShieldBonus} Écho)` : ''}`);
+        }
+        // Sécheresse Infernale : activer l'aura et déclencher les dégâts immédiatement
+        if (spell.id === 'maahes_w' && caster.position) {
+          caster.maahesSecheresseActive = true;
+          const _wEnemies = this._getEnemies(caster.playerIdx).filter(e => e.isAlive && e.position && this._manhattan(caster.position, e.position) <= 4);
+          _wEnemies.forEach(e => {
+            const _wRaw = Math.floor(50 + 0.4 * caster.ad);
+            const _wDmg = this._reduceDmg(_wRaw, 'physical', e, caster.armorPenPct || 0);
+            if (_wDmg > 0) {
+              this._applyDamage(e, _wDmg, caster, 'physical');
+              this.addLog(`${e.name} — Sécheresse Infernale : −${_wDmg} HP`);
+            }
+          });
+          if (_wEnemies.length > 0) this._checkGameOver();
         }
         break;
       }
@@ -2986,6 +3086,12 @@ class GameState {
         break;
       }
       case 'no_target': {
+        // Sylvia — Appel de la forêt : +1 arbre par tour
+        if (spell.sylviaR) {
+          caster.sylviaTreesPerTurn = (caster.sylviaTreesPerTurn || 1) + 1;
+          this.addLog(`${caster.name} → ${spell.name} : ${caster.sylviaTreesPerTurn} arbres plantés par tour`);
+          break;
+        }
         // Sinys — Découpe enragée : renforce la prochaine AA
         if (spell.sinysQ) {
           const _sRage = Math.floor(caster.currentMana * 0.40);
@@ -3655,6 +3761,117 @@ class GameState {
         this._checkBrownCollection(caster);
         break;
       }
+      case 'sylvia_q': {
+        // Dash sur un arbre : consommer l'arbre + +1 auto-attaque
+        const { x: sqx, y: sqy } = target;
+        const sqIdx = this.sylviaTrees.findIndex(t => t.x === sqx && t.y === sqy);
+        if (sqIdx === -1) { this.addLog('Aucun arbre à cette case !'); success = false; break; }
+        const sqOcc = this.getHeroAt(sqx, sqy);
+        if (sqOcc && sqOcc !== caster) { this.addLog('Case occupée !'); success = false; break; }
+        caster.position = { x: sqx, y: sqy };
+        this._checkSylviaTree(caster); // passif : consomme l'arbre, soin 25%, sylviaAABonusActive
+        this.autoAttacksAllowed++;     // +1 AA propre au Sort 1
+        this._checkTrap(caster);
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        this.addLog(`${caster.name} → ${spell.name} : +1 AA`);
+        break;
+      }
+      case 'sylvia_w': {
+        const swEnemy = target?.hero;
+        if (!swEnemy || swEnemy.playerIdx === caster.playerIdx) { success = false; break; }
+        const swdx = swEnemy.position.x - caster.position.x;
+        const swdy = swEnemy.position.y - caster.position.y;
+        if ((swdx !== 0 && swdy !== 0) || Math.abs(swdx) + Math.abs(swdy) > spell.range) {
+          this.addLog('Flèche de recul : cible en ligne droite requise !'); success = false; break;
+        }
+        const swPushDx = Math.sign(swdx), swPushDy = Math.sign(swdy);
+        let swPx = swEnemy.position.x, swPy = swEnemy.position.y;
+        for (let step = 1; step <= 4; step++) {
+          const nx = swPx + swPushDx, ny = swPy + swPushDy;
+          if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) break;
+          if (isWall(nx, ny) || this.getHeroAt(nx, ny)) break;
+          swPx = nx; swPy = ny;
+        }
+        swEnemy.position = { x: swPx, y: swPy };
+        this.addLog(`${caster.name} → ${spell.name} → ${swEnemy.name} poussé en (${swPx},${swPy})`);
+        const swDmg = this._calcSpellDmg(caster, spell, swEnemy);
+        this._applySpellDamage(caster, spell, swEnemy, swDmg);
+        this.addLog(`${caster.name} → ${spell.name} → ${swEnemy.name}: −${swDmg} HP`);
+        this._applySpellEffects(spell, [swEnemy]);
+        this._checkTrap(swEnemy);
+        this._checkBombZone(swEnemy);
+        this._checkGameOver();
+        break;
+      }
+      case 'maahes_q': {
+        const { x: mqx, y: mqy } = target;
+        const mqdx = mqx - caster.position.x, mqdy = mqy - caster.position.y;
+        if ((mqdx !== 0 && mqdy !== 0) || Math.abs(mqdx) + Math.abs(mqdy) !== 1) {
+          this.addLog('Tranchée du Nil : case adjacente orthogonale requise !'); success = false; break;
+        }
+        const mqOccupant = this.getHeroAt(mqx, mqy);
+        if (isWall(mqx, mqy) || (mqOccupant && mqOccupant !== caster)) {
+          this.addLog('Case bloquée !'); success = false; break;
+        }
+        caster.position = { x: mqx, y: mqy };
+        this._checkTrap(caster);
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        this.addLog(`${caster.name} → ${spell.name} : dash en (${mqx},${mqy})`);
+        // Dégâts aux 4 voisins orthogonaux
+        const mqDirs4 = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        mqDirs4.forEach(({dx, dy}) => {
+          const nx = mqx + dx, ny = mqy + dy;
+          if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) return;
+          const e = this.getHeroAt(nx, ny);
+          if (!e || e.playerIdx === caster.playerIdx || !e.isAlive) return;
+          const mqDmg = this._calcSpellDmg(caster, spell, e);
+          this._applySpellDamage(caster, spell, e, mqDmg);
+          this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${mqDmg} HP`);
+          // Lion divin : cible a plus de HP max que Maahes → dégâts bruts supplémentaires
+          if (e.isAlive && e.maxHP > caster.maxHP) {
+            const mqRawBonus = Math.floor(0.7 * caster.ad);
+            this._applyDamage(e, mqRawBonus, caster, 'raw');
+            this.addLog(`${caster.name} → ${spell.name} → ${e.name}: −${mqRawBonus} bruts (Lion divin)`);
+          }
+        });
+        this._checkGameOver();
+        break;
+      }
+      case 'maahes_r': {
+        const mrEnemy = target?.hero;
+        if (!mrEnemy || mrEnemy.playerIdx === caster.playerIdx || !mrEnemy.isAlive) {
+          success = false; break;
+        }
+        // Validation : en ligne orthogonale, ≤3 cases
+        const mrdx = mrEnemy.position.x - caster.position.x;
+        const mrdy = mrEnemy.position.y - caster.position.y;
+        if ((mrdx !== 0 && mrdy !== 0) || (mrdx === 0 && mrdy === 0) || Math.abs(mrdx) + Math.abs(mrdy) > spell.range) {
+          this.addLog('L\'art de la guerre : cible en ligne droite (max 3 cases) !'); success = false; break;
+        }
+        // Une fois par cible
+        if (caster.maahesRTargetsHit[mrEnemy.instanceId]) {
+          this.addLog(`${caster.name} → ${spell.name} : ${mrEnemy.name} déjà ciblé ce tour !`); success = false; break;
+        }
+        // Case libre adjacente pour le dash
+        const mrFreeAdj = this._getAdjacentFreeCells(mrEnemy.position, caster);
+        if (!mrFreeAdj.length) { this.addLog('Aucune case libre autour de la cible !'); success = false; break; }
+        const mrDest = mrFreeAdj.reduce((best, c) =>
+          this._manhattan(caster.position, c) < this._manhattan(caster.position, best) ? c : best
+        );
+        caster.position = mrDest;
+        this._checkTrap(caster);
+        if (caster.roleId === 'roam') this._checkBrownCollection(caster);
+        // Dégâts avec multiplicateur : 1er=×1, 2e=×1.25, 3e=×1.5, 4e=×1.75
+        const mrUsesBefore = typeof this.spellsUsed[spell.id] === 'number' ? this.spellsUsed[spell.id] : 0;
+        const mrMult = 1 + mrUsesBefore * 0.25;
+        const mrBaseDmg = this._calcSpellDmg(caster, spell, mrEnemy);
+        const mrFinalDmg = Math.floor(mrBaseDmg * mrMult);
+        this._applySpellDamage(caster, spell, mrEnemy, mrFinalDmg);
+        this.addLog(`${caster.name} → ${spell.name} → ${mrEnemy.name}: −${mrFinalDmg} HP (×${mrMult.toFixed(2)})`);
+        caster.maahesRTargetsHit[mrEnemy.instanceId] = true;
+        this._checkGameOver();
+        break;
+      }
       case 'solo_recall': {
         if (caster.soloRecallActive) {
           // Réactivation : retour au point de spawn
@@ -3736,6 +3953,10 @@ class GameState {
             // Premier lancement : pas de CD, juste la marque
             caster.cooldowns[spell.id] = 0;
           }
+        } else if ((spell.maxUsesPerTurn || 1) > 1) {
+          // Multi-activation : CD seulement au dernier lancer, 0 entre les lancers
+          const _usedNow = typeof this.spellsUsed[spell.id] === 'number' ? this.spellsUsed[spell.id] : 0;
+          caster.cooldowns[spell.id] = (_usedNow + 1 >= spell.maxUsesPerTurn) ? _cd : 0;
         } else {
           caster.cooldowns[spell.id] = _cd;
         }
@@ -3765,7 +3986,7 @@ class GameState {
       // Passif Ceinture Propulsée : dash → bonus dégâts activé pour le reste du tour
       if (caster.items.includes('ceinture_propulsee') && !caster.ceinturePropulseeThisTurn) {
         const _ceintureDashTypes = ['stealth_dash','dash_to_enemy','dash_to_ally','dash_behind_enemy',
-          'fenino_q','fenino_w','faena_w','pibot_w','abyss_w','abyss_r','velna_q'];
+          'fenino_q','fenino_w','faena_w','pibot_w','abyss_w','abyss_r','velna_q','maahes_q','maahes_r','sylvia_q'];
         if (_ceintureDashTypes.includes(spell.targetType)) {
           caster.ceinturePropulseeThisTurn = true;
           this.addLog(`${caster.name} — Ceinture Propulsée : bonus +0,1×AP activé ce tour`);
@@ -4189,6 +4410,57 @@ class GameState {
             .filter(w => w.ownerInstanceId === hero.instanceId)
             .map(w => ({ x: w.x, y: w.y }))
         };
+      case 'sylvia_q': {
+        // Arbres à portée ≤5 (sans LdV) comme cellules cibles
+        const sqTrees = (this.sylviaTrees || []).filter(t =>
+          this._manhattan(hero.position, t) <= effRange && !this.getHeroAt(t.x, t.y)
+        );
+        return { heroes: [], heroesOutOfRange: [], cells: sqTrees.map(t => ({ x: t.x, y: t.y })) };
+      }
+      case 'sylvia_w': {
+        // Ennemis en ligne orthogonale, portée 5
+        const swAll = this._getEnemies(hero.playerIdx);
+        const swInLine = swAll.filter(e => e.position.x === hero.position.x || e.position.y === hero.position.y);
+        return {
+          heroes:           swInLine.filter(e => this._manhattan(hero.position, e.position) <= effRange),
+          heroesOutOfRange: swInLine.filter(e => this._manhattan(hero.position, e.position) > effRange),
+          cells: []
+        };
+      }
+      case 'maahes_q': {
+        // Cases libres à 1 case orthogonale (destination du dash)
+        const mqTargetCells = [];
+        const mqDirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        mqDirs.forEach(({dx, dy}) => {
+          const nx = hero.position.x + dx, ny = hero.position.y + dy;
+          if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) return;
+          if (isWall(nx, ny) || this.getHeroAt(nx, ny)) return;
+          mqTargetCells.push({ x: nx, y: ny });
+        });
+        return { heroes: [], heroesOutOfRange: [], cells: mqTargetCells };
+      }
+      case 'maahes_r': {
+        // Ennemis en ligne orthogonale ≤3 cases, sans LdV
+        const mrAllEnemies = this._getEnemies(hero.playerIdx);
+        const mrInLine = mrAllEnemies.filter(e =>
+          e.position.x === hero.position.x || e.position.y === hero.position.y
+        );
+        const mrInRange  = mrInLine.filter(e => this._manhattan(hero.position, e.position) <= spell.range);
+        const mrOutRange = mrInLine.filter(e => this._manhattan(hero.position, e.position) > spell.range);
+        // Cibles déjà touchées ce tour → hors portée (anneau rouge)
+        const mrAvail   = mrInRange.filter(e => !hero.maahesRTargetsHit[e.instanceId]);
+        const mrAlready = mrInRange.filter(e => !!hero.maahesRTargetsHit[e.instanceId]);
+        const mrLineCells = [];
+        const mrDirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+        mrDirs.forEach(({dx, dy}) => {
+          for (let s = 1; s <= spell.range; s++) {
+            const cx = hero.position.x + dx * s, cy = hero.position.y + dy * s;
+            if (cx < 0 || cx >= MAP_SIZE || cy < 0 || cy >= MAP_SIZE) break;
+            mrLineCells.push({ x: cx, y: cy });
+          }
+        });
+        return { heroes: mrAvail, heroesOutOfRange: [...mrAlready, ...mrOutRange], cells: mrLineCells };
+      }
       default:
         return { heroes: [], heroesOutOfRange: [], cells: [] };
     }
@@ -4205,6 +4477,11 @@ class GameState {
     // Passif Lumière filante (Velna) : +10% dégâts magiques si dash effectué avant ce sort
     if (caster.passive === 'velna_passive' && caster.velnaLumiereActive && spell.damageType === 'magical')
       raw = Math.floor(raw * 1.1);
+    // Passif Lion divin (Maahes) : +15% dégâts de sorts si bouclier actif
+    if (caster.passive === 'maahes_passive' && (caster.shield || 0) > 0) {
+      raw = Math.floor(raw * 1.15);
+      this.addLog(`${caster.name} — Lion divin : +15% dégâts (bouclier ${caster.shield})`);
+    }
     // Anneau Divin — Ultime Chasseur : +15% dégâts physiques sur le Sort 3
     if (caster.items.includes('anneau_divin') && spell.damageType === 'physical') {
       const _aDivIdx = caster.spells.findIndex(s => s.id === spell.id);
@@ -4494,9 +4771,13 @@ class GameState {
         && target.currentHP < target.maxHP * 0.4) {
       damage = Math.floor(damage * 1.2);
     }
+    // Rune Collecteur d'Âme : +20% dégâts si cible < 40% HP max
+    if (attacker?.runeId === 'collecteur_dames' && target.currentHP < target.maxHP * 0.4 && damage > 0) {
+      damage = Math.floor(damage * 1.2);
+    }
     // Rune 16 — Première Touche : activation + 7% dégâts (dès le 1er hit)
     if (attacker && target.playerIdx !== attacker.playerIdx && damage > 0 && attacker.runeId === 'premiere_touche') {
-      if (!(attacker.runeCd > 0)) { attacker.runeCd = 5; attacker._r16Active = true; }
+      if (!(attacker.runeCd > 0)) { attacker.runeCd = 4; attacker._r16Active = true; }
       if (attacker._r16Active) damage = Math.floor(damage * 1.07);
     }
     // Rune 14 — Gardien : réduction 20% des dégâts reçus si allié a activé la protection
@@ -4576,11 +4857,6 @@ class GameState {
         }
       }
 
-      // ── Rune 6 — Collecteur d'Âme : +2 AD/AP si cible < 40% HP ──
-      if (attacker.runeId === 'collecteur_dames' && target.currentHP < target.maxHP * 0.40) {
-        attacker.ad += 2; attacker.ap += 2;
-        this.addLog(`${attacker.name} — Collecteur d'Âme : +2 AD +2 AP (total AD:${attacker.ad} AP:${attacker.ap})`);
-      }
 
       // ── Rune 10 — Vitesse de l'Assassin : tracker dégâts par cible ──
       if (attacker.runeId === 'vitesse_assassin' && !(attacker.runeCd > 0)) {
@@ -4595,9 +4871,9 @@ class GameState {
 
       // ── Rune 16 — Première Touche : 7% dégâts + or ──────────
       if (attacker.runeId === 'premiere_touche') {
-        if (!(attacker.runeCd > 0)) { attacker.runeCd = 5; attacker._r16Active = true; }
+        if (!(attacker.runeCd > 0)) { attacker.runeCd = 4; attacker._r16Active = true; }
         if (attacker._r16Active) {
-          const _pt16Gold = Math.floor(damage * 0.5);
+          const _pt16Gold = Math.floor(damage * 0.75);
           if (_pt16Gold > 0) { this._giveGold(attacker, _pt16Gold); this.addLog(`${attacker.name} — Première Touche : +${_pt16Gold}g`); }
         }
       }
@@ -4982,6 +5258,21 @@ class GameState {
     hero.currentMana = Math.min(hero.maxMana, hero.currentMana + regen);
     this.addLog(`${hero.name} collecte une batterie — +${regen} mana !`);
     this.pibotBatteries.splice(idx, 1);
+    if (window.renderer) { renderer.render(); renderer.updateUI(); }
+  }
+
+  _checkSylviaTree(hero) {
+    if (!hero.position || hero.passive !== 'sylvia_passive') return;
+    const idx = (this.sylviaTrees || []).findIndex(t => t.x === hero.position.x && t.y === hero.position.y);
+    if (idx === -1) return;
+    this.sylviaTrees.splice(idx, 1);
+    // Soin de 25% HP max
+    const healFactor = hero.hemorrhageTurns > 0 ? 0.5 : 1;
+    const heal = Math.floor(hero.maxHP * 0.25 * healFactor);
+    hero.currentHP = Math.min(hero.maxHP, hero.currentHP + heal);
+    // Bonus AA ce tour
+    hero.sylviaAABonusActive = true;
+    this.addLog(`${hero.name} — Arbre : +${heal} HP, bonus AA activé ce tour`);
     if (window.renderer) { renderer.render(); renderer.updateUI(); }
   }
 
@@ -5378,6 +5669,7 @@ class GameState {
       brownSpots:         this.brownSpots,
       pibotBatteries:     this.pibotBatteries,
       noyalaWolves:       this.noyalaWolves,
+      sylviaTrees:        this.sylviaTrees,
       traps:              this.traps.map(serObj),
       glyphs:             this.glyphs.map(serObj),
       bombZones:          this.bombZones.map(serObj),
@@ -5412,6 +5704,7 @@ class GameState {
     this.brownSpots         = s.brownSpots;
     this.pibotBatteries     = s.pibotBatteries || [];
     this.noyalaWolves       = s.noyalaWolves   || [];
+    this.sylviaTrees        = s.sylviaTrees    || [];
     this.teamGoldEarned     = s.teamGoldEarned;
     this.globalTurn         = s.globalTurn;
     this.heroTurnIndex      = s.heroTurnIndex;

@@ -647,6 +647,7 @@ body {
 
 .stat-row { display: flex; gap: 8px; font-size: 0.7rem; flex-wrap: wrap; }
 .stat-shield { color: #f0c040; }
+.stat-passive { font-size: 0.65rem; color: #a0c4ff; margin-top: 3px; font-style: italic; }
 
 /* Boutique button in action bar */
 .shop-open-btn { border-color: #f0c040; color: #f0c040; }
@@ -947,6 +948,7 @@ body {
 .mht-items   { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; border-top: 1px solid #2d3a50; padding-top: 5px; }
 .mht-item-icon { width: 22px; height: 22px; border-radius: 3px; object-fit: cover; border: 1px solid #3a4460; }
 .mht-none    { color: #8b949e; font-style: italic; font-size: 0.68rem; }
+.mht-passive { margin-top: 5px; border-top: 1px solid #2d3a50; padding-top: 4px; color: #a0c4ff; font-size: 0.68rem; font-style: italic; }
 
 #action-counter {
   font-size: 0.72rem;

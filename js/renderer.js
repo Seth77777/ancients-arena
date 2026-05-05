@@ -217,6 +217,7 @@ class Renderer {
     const _brownSet    = new Set(this.game.brownSpots.map(s => `${s.x},${s.y}`));
     const _batterySet  = new Set((this.game.pibotBatteries || []).map(b => `${b.x},${b.y}`));
     const _wolfMap     = new Map((this.game.noyalaWolves || []).map(w => [`${w.x},${w.y}`, w]));
+    const _treeSet     = new Set((this.game.sylviaTrees   || []).map(t => `${t.x},${t.y}`));
     for (let x = 0; x < MAP_SIZE; x++) for (let y = 0; y < MAP_SIZE; y++) {
       const px = x * cs, py = y * cs;
       const key = `${x},${y}`;
@@ -252,6 +253,17 @@ class Renderer {
       if (_brownSet.has(key)) {
         ctx.fillStyle = 'rgba(140,75,20,0.75)';
         ctx.fillRect(px, py, cs, cs);
+      }
+
+      // Sylvia trees
+      if (_treeSet.has(key)) {
+        ctx.fillStyle = 'rgba(34,120,40,0.55)';
+        ctx.fillRect(px, py, cs, cs);
+        ctx.fillStyle = '#5dba60';
+        ctx.font = `${cs * 0.5}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🌳', px + cs / 2, py + cs / 2);
       }
 
       // Pibot batteries
@@ -801,7 +813,8 @@ class Renderer {
         ${(hero.cdReduction || 0) > 0 ? `<span title="Réduction de cooldown">⏬ −${hero.cdReduction} CD</span>` : ''}
         ${hero.shield > 0 ? `<span class="stat-shield">🔰 ${hero.shield}</span>` : ''}
         ${_wolfInfo}
-      </div>`;
+      </div>
+      ${(() => { const _pd = HERO_TYPES[hero.id]?.passiveDescription; return _pd ? `<div class="stat-passive">⚡ ${_pd}</div>` : ''; })()}`;
 
     btnMove.classList.toggle('active-mode', g.actionMode === 'move');
     btnMove.disabled = g.movementLeft === 0 || g.actionsUsed >= MAX_ACTIONS;
@@ -877,7 +890,8 @@ class Renderer {
       <div class="mht-row"><span>Armure / RM</span><span>${hero.armor} / ${hero.mr}</span></div>
       <div class="mht-row"><span>PM / PO</span><span>${hero.pm} / ${hero.po}</span></div>
       ${statusHtml ? `<div class="mht-statuses">${statusHtml}</div>` : ''}
-      <div class="mht-items">${itemsHtml}</div>`;
+      <div class="mht-items">${itemsHtml}</div>
+      ${(() => { const _pd = HERO_TYPES[hero.id]?.passiveDescription; return _pd ? `<div class="mht-passive">⚡ ${_pd}</div>` : ''; })()}`;
 
     tip.style.display = 'block';
     const tw = tip.offsetWidth, th = tip.offsetHeight;
@@ -1566,6 +1580,38 @@ class Renderer {
           Math.abs(e.position.x - tx) + Math.abs(e.position.y - ty) <= 1
         );
         return { inZone: true, valid: inRange && hit };
+      }
+      case 'sylvia_q': {
+        if (x !== tx || y !== ty) return { inZone: false, valid: false };
+        const sqDist = g._manhattan(hero.position, { x: tx, y: ty });
+        const sqIsTree = (g.sylviaTrees || []).some(t => t.x === tx && t.y === ty);
+        const sqFree = !g.getHeroAt(tx, ty);
+        return { inZone: true, valid: sqIsTree && sqFree && sqDist <= sp.range };
+      }
+      case 'sylvia_w': {
+        if (x !== tx || y !== ty) return { inZone: false, valid: false };
+        const t = g.getHeroAt(tx, ty);
+        if (!t || t.playerIdx === hero.playerIdx) return { inZone: true, valid: false };
+        const swIsLine = tx === hero.position.x || ty === hero.position.y;
+        const swDist = Math.abs(tx - hero.position.x) + Math.abs(ty - hero.position.y);
+        return { inZone: true, valid: swIsLine && swDist > 0 && swDist <= sp.range };
+      }
+      case 'maahes_q': {
+        if (x !== tx || y !== ty) return { inZone: false, valid: false };
+        const mqdx = tx - hero.position.x, mqdy = ty - hero.position.y;
+        const mqCardinal = (mqdx === 0 || mqdy === 0) && (mqdx !== 0 || mqdy !== 0);
+        const mqFree = !isWall(tx, ty) && !g.getHeroAt(tx, ty);
+        return { inZone: true, valid: mqCardinal && Math.abs(mqdx) + Math.abs(mqdy) === 1 && mqFree };
+      }
+      case 'maahes_r': {
+        if (x !== tx || y !== ty) return { inZone: false, valid: false };
+        const t = g.getHeroAt(tx, ty);
+        if (!t || t.playerIdx === hero.playerIdx) return { inZone: true, valid: false };
+        const mrdx = tx - hero.position.x, mrdy = ty - hero.position.y;
+        const mrInLine = mrdx === 0 || mrdy === 0;
+        const mrDist = Math.abs(mrdx) + Math.abs(mrdy);
+        const notHit = !hero.maahesRTargetsHit[t.instanceId];
+        return { inZone: true, valid: mrInLine && mrDist > 0 && mrDist <= sp.range && notHit };
       }
       default:
         return { inZone: false, valid: false };

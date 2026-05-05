@@ -8,7 +8,7 @@
 const RUNES = {
   attaque_rapide: {
     id: 'attaque_rapide', name: 'Attaque Rapide', icon: '⚡', img: 'assets/runes/attaque_rapide.png',
-    desc: '3 auto-attaques sur le même ennemi dans le même tour infligent 0,2×AD + 0,2×AP dégâts bruts bonus. (CD 3 tours)'
+    desc: '3 auto-attaques sur le même ennemi dans le même tour infligent 20+0,3×AD+0,3×AP dégâts bruts bonus. (CD 3 tours)'
   },
   vitesse_letale: {
     id: 'vitesse_letale', name: 'Vitesse Létale', icon: '💨', img: 'assets/runes/vitesse_letale.png',
@@ -28,15 +28,15 @@ const RUNES = {
   },
   collecteur_dames: {
     id: 'collecteur_dames', name: "Collecteur d'Âme", icon: '💀', img: 'assets/runes/collecteur_dames.png',
-    desc: "Infliger des dégâts à un ennemi sous 40% de ses HP max : +2 AD et +2 AP permanents."
+    desc: "Vous infligez 20% de dégâts supplémentaires aux ennemis ayant moins de 40% de leurs HP max."
   },
   epees_en_cercle: {
     id: 'epees_en_cercle', name: 'Épées en Cercle', icon: '🗡', img: 'assets/runes/epees_en_cercle.png',
-    desc: 'La 1ère AA sur un ennemi rend les AAs suivantes sur cette cible ce tour +20 dégâts bruts. (CD 4 tours)'
+    desc: 'La 1ère AA sur un ennemi rend les AAs suivantes sur cette cible ce tour +20 dégâts bruts. (CD 3 tours)'
   },
   assistant_magique: {
     id: 'assistant_magique', name: 'Assistant Magique', icon: '🧙', img: 'assets/runes/assistant_magique.png',
-    desc: 'Soigner ou bouclier un allié lui confère aussi un bouclier de 100+0,3×AP pendant 3 tours. (CD 5 tours)'
+    desc: 'Soigner ou bouclier un allié lui confère aussi un bouclier de 80+0,5×AP pendant 3 tours. (CD 5 tours)'
   },
   comete: {
     id: 'comete', name: 'Comète', icon: '☄', img: 'assets/runes/comete.png',
@@ -68,7 +68,7 @@ const RUNES = {
   },
   premiere_touche: {
     id: 'premiere_touche', name: 'Première Touche', icon: '💰', img: 'assets/runes/premiere_touche.png',
-    desc: 'Infliger des dégâts à un ennemi : +7% dégâts ce tour et 50% des dégâts en or. (CD 5 tours)'
+    desc: 'Infliger des dégâts à un ennemi : +7% dégâts ce tour et 75% des dégâts en or. (CD 4 tours)'
   }
 };
 
