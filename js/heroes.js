@@ -1162,8 +1162,8 @@ HERO_TYPES['solo_6'] = {
   colorFill: '#922b21', colorStroke: '#e74c3c',
   portrait: 'assets/heroes/sinys.png',
   passive: 'sinys_passive',
-  maxHP: 2900, maxMana: 0, hpRegen: 60, manaRegen: 0,
-  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
+  maxHP: 2000, maxMana: 0, hpRegen: 60, manaRegen: 0,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 1,
   spells: [
     {
       id: 'sinys_q', name: 'Découpe enragée',
