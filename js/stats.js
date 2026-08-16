@@ -162,6 +162,12 @@ const Stats = (() => {
     getTotalGames() {
       return Object.values(_data.heroes).reduce((m, h) => Math.max(m, h.games), 0);
     },
+
+    getRuneStats(runeId) {
+      const e = _data.runes && _data.runes[runeId];
+      if (!e || !e.picks) return null;
+      return { picks: e.picks, wins: e.wins, pct: Math.round(e.wins / e.picks * 100) };
+    },
   };
 })();
 

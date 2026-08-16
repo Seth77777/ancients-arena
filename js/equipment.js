@@ -39,12 +39,12 @@ const EQUIPMENT = {
 
   reinforced_boots: { tier: 2, categories: [], name: 'Bottes Renforcées',       icon: 'img/items/reinforced_boots.png', combineCost: 800, recipe: ['simple_boots'],
                       isBoots: true,
-                      stats: { pm: 2, armorPct: 12, hpRegenPct: 100 },
+                      stats: { pm: 2, armor: 12, hpRegenPct: 100 },
                       passive: 'Augmente votre régénération de HP de 100%.' },
 
   anti_spell_boots: { tier: 2, categories: [], name: 'Bottes Anti-Sort',        icon: 'img/items/anti_spell_boots.png', combineCost: 800, recipe: ['simple_boots'],
                       isBoots: true,
-                      stats: { pm: 2, mrPct: 12, hpRegenPct: 100 },
+                      stats: { pm: 2, mr: 12, hpRegenPct: 100 },
                       passive: 'Augmente votre régénération de HP de 100%.' },
 
   sorcerer_boots:  { tier: 2, categories: [], name: 'Bottes du Sorcier',        icon: 'img/items/sorcerer_boots.png', combineCost: 800, recipe: ['simple_boots'],
@@ -148,7 +148,7 @@ const EQUIPMENT = {
 
   plaque_du_golem:      { tier: 3, categories: ['bruiser'], name: 'Plaque du Golem',         icon: 'img/items/plaque_du_golem.png',      combineCost: 250,
                           recipe: ['moyenne_armure', 'small_armor', 'life_crystal'],
-                          stats: { maxHP: 400, armorPct: 20, pm: 1 },
+                          stats: { maxHP: 400, armor: 20, pm: 1 },
                           passive: 'Vous pouvez esquiver 1 ralentissement par tour.' },
 
   marteau_divin:        { tier: 3, categories: ['bruiser', 'dpt'], name: 'Marteau Divin',         icon: 'img/items/marteau_divin.png',        combineCost: 0,
@@ -176,12 +176,12 @@ const EQUIPMENT = {
 
   plastron_du_diable_immortel: { tier: 3, notInUtil: true, categories: ['bruiser'], name: 'Plastron du Diable Immortel', icon: 'img/items/plastron_du_diable_immortel.png', combineCost: 200,
                                   recipe: ['moyenne_armure', 'coeur_de_vie', 'life_crystal'],
-                                  stats: { maxHP: 500, cdReduction: 1, armorPct: 15 },
+                                  stats: { maxHP: 500, cdReduction: 1, armor: 15 },
                                   passive: '2 tours après avoir subi des dégâts, inflige 7% de vos HP max aux ennemis à ≤5 cases en dégâts magiques et vous soigne de 150% des dégâts totaux infligés (après résistances).' },
 
   couronne_du_gladiateur: { tier: 3, categories: ['bruiser', 'support'], name: 'Couronne du Gladiateur', icon: 'img/items/couronne_du_gladiateur.png', combineCost: 250,
                             recipe: ['coeur_de_vie', 'moyenne_armure', 'regen_necklace'],
-                            stats: { maxHP: 250, hpRegenPct: 100, armorPct: 15 },
+                            stats: { maxHP: 250, hpRegenPct: 100, armor: 15 },
                             passive: 'Lorsque l\'allié le plus proche de votre position subit des dégâts, vous redirigez 20% de ces dégâts (pré-résistances) vers vous, puis appliquez vos propres résistances.' },
 
   armure_de_stalnoth:   { tier: 3, categories: ['bruiser'], name: 'Armure de Stal\'noth',   icon: 'img/items/armure_de_stalnoth.png',   combineCost: 400,
@@ -236,7 +236,7 @@ const EQUIPMENT = {
   lame_du_ninja:         { tier: 3, categories: ['dpt', 'assassin'], name: 'Lame du Ninja',              icon: 'img/items/lame_du_ninja.png',        combineCost: 550,
                            recipe: ['dague_destructrice', 'grande_pioche'],
                            stats: { ad: 70 },
-                           passive: 'Ignore 4,5% de l\'armure adverse (peut devenir négative). Si vous n\'avez pas infligé de dégâts à un héros ennemi lors de votre précédent tour, vous gagnez 1 PM pour ce tour.' },
+                           passive: 'Ignore 4,5% de l\'armure adverse (peut devenir négative). Si vous n\'avez pas infligé de dégâts à un héros ennemi lors de votre précédent tour (décompte à partir de l\'achat), vous gagnez 1 PM pour ce tour.' },
 
   lame_tueuse_boucliers: { tier: 3, categories: ['dpt'], name: 'Lame Tueuse de Boucliers', icon: 'img/items/lame_tueuse_boucliers.png', combineCost: 600,
                            recipe: ['dague_destructrice', 'grande_pioche'],

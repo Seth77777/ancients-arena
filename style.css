@@ -861,6 +861,9 @@ body {
 .action-btn.end-turn:hover { background: #2a1c1c; }
 .action-btn.forfeit-btn { border-color: #6e4040; color: #8b6060; font-size: 0.8rem; }
 .action-btn.forfeit-btn:hover { background: #2a1c1c; color: #e74c3c; border-color: #e74c3c; }
+.action-btn.pause-timer-btn { border-color: #f0c040; color: #f0c040; }
+.action-btn.pause-timer-btn:hover:not(:disabled) { background: #3d2f0a; }
+.action-btn.pause-timer-btn.active-mode { border-color: #f0c040; background: #3d2f0a; color: #f0c040; }
 
 .spell-btn {
   border-color: #6e40c9;
@@ -1755,6 +1758,10 @@ body {
 .sb-heal  { font-size: 0.8rem; color: #4caf7d; white-space: nowrap; }
 .sb-items { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
 .sb-item-icon { width: 22px; height: 22px; border-radius: 3px; object-fit: cover; }
+.sb-rune-row { margin-top: 4px; }
+.sb-rune { display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; color: #a9b1bb; }
+.sb-rune-icon { width: 15px; height: 15px; object-fit: contain; flex-shrink: 0; opacity: 0.85; }
+.sb-rune-wr { color: #7dc832; font-weight: bold; }
 .sb-hero-info { flex: 1; min-width: 0; }
 
 /* ── History screen ── */

@@ -20,6 +20,7 @@ class InputHandler {
     document.getElementById('btn-move').addEventListener('click',     () => this._toggleMove());
     document.getElementById('btn-attack').addEventListener('click',   () => this._toggleAttack());
     document.getElementById('btn-end-turn').addEventListener('click', () => this._endTurn());
+    document.getElementById('btn-pause-timer').addEventListener('click', () => this._togglePauseTimer());
 
     // Abandon
     const overlay = document.getElementById('forfeit-overlay');
@@ -603,6 +604,23 @@ class InputHandler {
     g.endHeroTurn();
     this._onlineSync();
     r.render(); r.updateUI();
+  }
+
+  _togglePauseTimer() {
+    const g = this.game, r = this.renderer;
+    if (g.phase !== 'playing' || !g.currentHero) return;
+
+    const online  = window.OnlineMode?.active;
+    if (online && !this._isMyTurn()) return;
+    const isGuest = online && !window.OnlineMode.isHost;
+
+    if (isGuest) {
+      window.OnlineMode.sendGuestAction({ type: 'pauseTimer' });
+      return;
+    }
+    if (g.timerPaused) g.resumeTimer(); else g.pauseTimer();
+    this._onlineSync();
+    r.updateUI();
   }
 
   // ============================================================

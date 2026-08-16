@@ -245,6 +245,7 @@ class GameState {
     // Timer
     this.timeLeft      = TURN_TIME;
     this._timerHandle  = null;
+    this.timerPaused   = false;
   }
 
   // ============================================================
@@ -1303,18 +1304,35 @@ class GameState {
   _resetTimer() {
     this._stopTimer();
     this.timeLeft = TURN_TIME;
-    this._timerHandle = setInterval(() => {
-      this.timeLeft--;
-      if (window.renderer) renderer.updateTimer(this.timeLeft);
-      if (this.timeLeft <= 0) {
-        this.addLog('⏱ Temps écoulé — fin de tour automatique');
-        this.endHeroTurn();
-      }
-    }, 1000);
+    this.timerPaused = false;
+    this._timerHandle = setInterval(() => this._tickTimer(), 1000);
+  }
+
+  _tickTimer() {
+    this.timeLeft--;
+    if (window.renderer) renderer.updateTimer(this.timeLeft, false);
+    if (this.timeLeft <= 0) {
+      this.addLog('⏱ Temps écoulé — fin de tour automatique');
+      this.endHeroTurn();
+    }
   }
 
   _stopTimer() {
     if (this._timerHandle) { clearInterval(this._timerHandle); this._timerHandle = null; }
+  }
+
+  pauseTimer() {
+    if (this.timerPaused || !this._timerHandle) return;
+    this._stopTimer();
+    this.timerPaused = true;
+    if (window.renderer) renderer.updateTimer(this.timeLeft, true);
+  }
+
+  resumeTimer() {
+    if (!this.timerPaused) return;
+    this.timerPaused = false;
+    this._timerHandle = setInterval(() => this._tickTimer(), 1000);
+    if (window.renderer) renderer.updateTimer(this.timeLeft, false);
   }
 
   // ============================================================
@@ -1356,7 +1374,7 @@ class GameState {
   // Consomme les composants récursivement (sous-composants si l'intermédiaire est absent)
   _consumeComponents(hero, recipe) {
     const _isSinys = hero.passive === 'sinys_passive';
-    const _MANA_STATS = new Set(['maxMana', 'manaRegen', 'manaRegenPct', 'manaOnSpell', 'manaOnSpellMax']);
+    const _MANA_STATS = new Set(['maxMana', 'manaRegen', 'manaRegenPct', 'manaOnSpell', 'manaOnAutoAttack', 'manaOnSpellMax']);
     for (const cId of recipe) {
       const idx = hero.items.indexOf(cId);
       if (idx !== -1) {
@@ -1421,7 +1439,7 @@ class GameState {
     hero.gold -= cost;
 
     const _isSinys = hero.passive === 'sinys_passive';
-    const _MANA_STATS = new Set(['maxMana', 'manaRegen', 'manaRegenPct', 'manaOnSpell', 'manaOnSpellMax']);
+    const _MANA_STATS = new Set(['maxMana', 'manaRegen', 'manaRegenPct', 'manaOnSpell', 'manaOnAutoAttack', 'manaOnSpellMax']);
     Object.entries(item.stats).forEach(([stat, val]) => {
       if (_isSinys && _MANA_STATS.has(stat)) return;
       hero[stat] += val;
@@ -1471,7 +1489,7 @@ class GameState {
     }
     hero.items.splice(idx, 1);
     const _isSinysSell = hero.passive === 'sinys_passive';
-    const _MANA_STATS_SELL = new Set(['maxMana', 'manaRegen', 'manaRegenPct', 'manaOnSpell', 'manaOnSpellMax']);
+    const _MANA_STATS_SELL = new Set(['maxMana', 'manaRegen', 'manaRegenPct', 'manaOnSpell', 'manaOnAutoAttack', 'manaOnSpellMax']);
     Object.entries(item.stats).forEach(([stat, val]) => {
       if (_isSinysSell && _MANA_STATS_SELL.has(stat)) return;
       hero[stat] -= val;
@@ -1688,8 +1706,8 @@ class GameState {
       const empowered     = attacker.empoweredAttack;
       const hadSpellBonus = wasEmpowered || bonusFlat > 0;
       if (wasEmpowered) attacker.empoweredAttack = null;
-      const armorPen = (attacker.items.includes('dague_destructrice') ? 2.8 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 4.5 : 0) + (attacker.items.includes('lame_du_ninja') ? 4.5 : 0) + (attacker.items.includes('anneau_divin') ? 4.5 : 0);
-      const armorPenPct = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 4.5 : 0) + (attacker.items.includes('lame_de_nargoth') ? 4.5 : 0) + (attacker.items.includes('bottes_assassin') ? 3 : 0);
+      const armorPen = (attacker.items.includes('dague_destructrice') ? 2.8 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 4.5 : 0) + (attacker.items.includes('lame_du_ninja') ? 4.5 : 0) + (attacker.items.includes('anneau_divin') ? 4.5 : 0) + (attacker.items.includes('revolver_d_or') ? 4.5 : 0) + (attacker.items.includes('lame_de_nargoth') ? 4.5 : 0) + (attacker.items.includes('bottes_assassin') ? 3 : 0);
+      const armorPenPct = (attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
       targets.forEach(e => {
         const isCrit = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
         const _critMult = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) * 5 / 100 : 0);
@@ -1742,7 +1760,7 @@ class GameState {
         }
         // Passif Gantelet Refroidissant : +3×Armure% dégâts magiques sur attaque renforcée
         if (hadSpellBonus && attacker.items.includes('gantelet_refroidissant') && e.isAlive) {
-          const _ganArmor = Math.floor(attacker.armor * (1 + (attacker.armorPct || 0) / 100));
+          const _ganArmor = attacker.armor;
           const _ganDmg = this._reduceDmg(_ganArmor * 3, 'magical', e);
           if (_ganDmg > 0) { this._applyDamage(e, _ganDmg, attacker, 'magical'); this.addLog(`${attacker.name} — Gantelet Refroidissant : +${_ganDmg} dégâts magiques`); }
         }
@@ -1965,8 +1983,8 @@ class GameState {
     attacker.layiaBonusNextAttack = 0;
     const wasEmpowered  = !!attacker.empoweredAttack;
     const hadSpellBonus = wasEmpowered || bonusFlat2 > 0;
-    const armorPen2 = (attacker.items.includes('dague_destructrice') ? 2.8 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 4.5 : 0) + (attacker.items.includes('lame_du_ninja') ? 4.5 : 0) + (attacker.items.includes('anneau_divin') ? 4.5 : 0);
-    const armorPenPct2 = ((attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0) + (attacker.items.includes('revolver_d_or') ? 4.5 : 0) + (attacker.items.includes('lame_de_nargoth') ? 4.5 : 0) + (attacker.items.includes('bottes_assassin') ? 3 : 0);
+    const armorPen2 = (attacker.items.includes('dague_destructrice') ? 2.8 : 0) + (attacker.items.includes('lame_tueuse_boucliers') ? 4.5 : 0) + (attacker.items.includes('lame_du_ninja') ? 4.5 : 0) + (attacker.items.includes('anneau_divin') ? 4.5 : 0) + (attacker.items.includes('revolver_d_or') ? 4.5 : 0) + (attacker.items.includes('lame_de_nargoth') ? 4.5 : 0) + (attacker.items.includes('bottes_assassin') ? 3 : 0);
+    const armorPenPct2 = (attacker.items.includes('arc_perforant_anges') || attacker.items.includes('arc_des_morts')) ? 35 : attacker.items.includes('arc_percant') ? 20 : 0;
     const isCrit2 = (attacker.critChance || 0) > 0 && Math.random() * 100 < attacker.critChance;
     const _critMult2 = (attacker.items.includes('lame_d_infini') ? 4.5 : 3.5) + (attacker.passive === 'faena_passive' ? Math.floor(attacker.ad / 10) * 5 / 100 : 0);
     const rawBase2 = Math.floor((attacker.ad * 0.25 + bonusFlat2) * (isCrit2 ? _critMult2 : 1));
@@ -2146,7 +2164,7 @@ class GameState {
     }
     // Passif Gantelet Refroidissant : +3×Armure% dégâts magiques sur attaque renforcée
     if (hadSpellBonus && attacker.items.includes('gantelet_refroidissant') && targetHero.isAlive) {
-      const _ganArmor2 = Math.floor(attacker.armor * (1 + (attacker.armorPct || 0) / 100));
+      const _ganArmor2 = attacker.armor;
       const _ganDmg2 = this._reduceDmg(_ganArmor2 * 3, 'magical', targetHero);
       if (_ganDmg2 > 0) { this._applyDamage(targetHero, _ganDmg2, attacker, 'magical'); this.addLog(`${attacker.name} — Gantelet Refroidissant : +${_ganDmg2} dégâts magiques`); }
     }
@@ -2983,8 +3001,8 @@ class GameState {
         const frCritChance  = caster.critChance || 0;
         const frIsCrit      = frCritChance > 0 && Math.random() * 100 < frCritChance;
         const frCritMult    = (caster.items.includes('lame_d_infini') ? 2.5 : 2.0) + (caster.passive === 'faena_passive' ? Math.floor(caster.ad / 10) * 5 / 100 : 0);
-        const armorPenFr    = (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0) + (caster.items.includes('anneau_divin') ? 7 : 0);
-        const armorPenPctFr = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0) + (caster.items.includes('bottes_assassin') ? 5 : 0);
+        const armorPenFr    = (caster.items.includes('dague_destructrice') ? 5 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 7 : 0) + (caster.items.includes('lame_du_ninja') ? 7 : 0) + (caster.items.includes('anneau_divin') ? 7 : 0) + (caster.items.includes('lame_de_nargoth') ? 7 : 0) + (caster.items.includes('bottes_assassin') ? 5 : 0);
+        const armorPenPctFr = (caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
         frHit.forEach(e => {
           const baseRaw = spell.baseDamage + spell.adRatio * caster.ad + frCritChance;
           const rawFr   = Math.floor(baseRaw * (frIsCrit ? frCritMult : 1));
@@ -4379,7 +4397,7 @@ class GameState {
       case 'faena_w': {
         // Cellules adjacentes libres (range 1)
         const fwCells = [];
-        const fwDirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1},{dx:1,dy:1},{dx:1,dy:-1},{dx:-1,dy:1},{dx:-1,dy:-1}];
+        const fwDirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
         fwDirs.forEach(({dx, dy}) => {
           const cx = hero.position.x + dx, cy = hero.position.y + dy;
           if (cx >= 0 && cx < MAP_SIZE && cy >= 0 && cy < MAP_SIZE && !isWall(cx, cy) && !this.getHeroAt(cx, cy))
@@ -4487,19 +4505,22 @@ class GameState {
       const _aDivIdx = caster.spells.findIndex(s => s.id === spell.id);
       if (_aDivIdx === 2) raw = Math.floor(raw * 1.15);
     }
-    const armorPen    = (caster.items.includes('dague_destructrice') ? 2.8 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 4.5 : 0) + (caster.items.includes('lame_du_ninja') ? 4.5 : 0) + (caster.items.includes('anneau_divin') ? 4.5 : 0);
+    const armorPen    = (caster.items.includes('dague_destructrice') ? 2.8 : 0) + (caster.items.includes('lame_tueuse_boucliers') ? 4.5 : 0) + (caster.items.includes('lame_du_ninja') ? 4.5 : 0) + (caster.items.includes('anneau_divin') ? 4.5 : 0) + (caster.items.includes('revolver_d_or') ? 4.5 : 0) + (caster.items.includes('lame_de_nargoth') ? 4.5 : 0) + (caster.items.includes('bottes_assassin') ? 3 : 0);
     const mrPen       = (caster.items.includes('sorcerer_boots') ? 3 : 0) + (caster.items.includes('furie_magique') ? 7 : 0);
-    const armorPenPct = ((caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0) + (caster.items.includes('revolver_d_or') ? 4.5 : 0) + (caster.items.includes('lame_de_nargoth') ? 4.5 : 0) + (caster.items.includes('bottes_assassin') ? 3 : 0);
+    const armorPenPct = (caster.items.includes('arc_perforant_anges') || caster.items.includes('arc_des_morts')) ? 35 : caster.items.includes('arc_percant') ? 20 : 0;
     const _hasBaton   = caster.items.includes('baton_des_abysses');
     const _hasCristal = caster.items.includes('cristal_de_vide');
     const mrPenPct    = _hasBaton ? 35 : (_hasCristal ? 15 : 0);
     const capMRAtZero = _hasCristal && !_hasBaton;
     let dmg = this._reduceDmg(raw, spell.damageType, target, armorPen, mrPen, armorPenPct, mrPenPct, capMRAtZero);
-    // Bâton des Abysses : si la RM effective passe négative, bonus plafonné à ×1,35
+    // Bâton des Abysses : si la RM passe négative À CAUSE du Bâton, plafonner à ×1,35
+    // Si la RM était déjà négative avant, laisser l'exponentielle naturelle s'appliquer
     if (_hasBaton && spell.damageType === 'magical') {
       const mrShredMult = (target.statusEffects || []).filter(e => e.type === 'mr_shred').reduce((m, e) => m * (1 - e.pct / 100), 1);
-      const _batonEffMR = Math.min(80, Math.floor(target.mr * (1 + (target.mrPct || 0) / 100) * mrShredMult * (1 - 35 / 100)) - mrPen);
-      if (_batonEffMR < 0) dmg = Math.floor(raw * 1.35);
+      const _mrBeforeBaton = Math.min(80, Math.floor(target.mr * mrShredMult) - mrPen);
+      const _baseMRBaton   = target.mr * mrShredMult;
+      const _batonEffMR    = Math.min(80, Math.floor(_baseMRBaton - Math.abs(_baseMRBaton) * 35 / 100) - mrPen);
+      if (_mrBeforeBaton >= 0 && _batonEffMR < 0) dmg = Math.floor(raw * 1.35);
     }
     if (armorPen > 0 && target.armor - armorPen < 15) dmg = Math.floor(dmg * 1.1);
     return dmg;
@@ -4511,7 +4532,7 @@ class GameState {
 
   _reduceDmg(raw, dmgType, target, armorPen = 0, mrPen = 0, armorPenPct = 0, mrPenPct = 0, capMRAtZero = false) {
     if (dmgType === 'physical') {
-      const effectiveArmor = Math.min(80, Math.floor(target.armor * (1 + (target.armorPct || 0) / 100) * (1 - armorPenPct / 100)) - armorPen);
+      const effectiveArmor = Math.min(80, Math.floor(target.armor - Math.abs(target.armor) * armorPenPct / 100) - armorPen);
       let dmg;
       if (effectiveArmor >= 0) {
         dmg = Math.floor(raw * (1 - effectiveArmor / 100));
@@ -4525,7 +4546,8 @@ class GameState {
       const mrShredMult = (target.statusEffects || [])
         .filter(e => e.type === 'mr_shred')
         .reduce((m, e) => m * (1 - e.pct / 100), 1);
-      const rawEffMR = Math.min(80, Math.floor(target.mr * (1 + (target.mrPct || 0) / 100) * mrShredMult * (1 - mrPenPct / 100)) - mrPen);
+      const _baseMR = target.mr * mrShredMult;
+      const rawEffMR = Math.min(80, Math.floor(_baseMR - Math.abs(_baseMR) * mrPenPct / 100) - mrPen);
       const effectiveMR = capMRAtZero ? Math.max(0, rawEffMR) : rawEffMR;
       if (effectiveMR >= 0) {
         return Math.max(0, Math.floor(raw * (1 - effectiveMR / 100)));
@@ -5635,6 +5657,7 @@ class GameState {
           damageDealt: Stats.getCurDamage(h.id),
           healingDone: Stats.getCurHeals(h.id),
           items:       [...h.items],
+          runeId:      h.runeId || null,
         }))
       }))
     };
@@ -5692,6 +5715,7 @@ class GameState {
       spellsUsed:         this.spellsUsed,
       canBuy:             this.canBuy,
       timeLeft:           this.timeLeft,
+      timerPaused:        this.timerPaused,
     });
   }
 
@@ -5725,16 +5749,19 @@ class GameState {
     this.spellsUsed         = s.spellsUsed;
     this.canBuy             = s.canBuy;
     this.timeLeft           = s.timeLeft;
+    this.timerPaused        = s.timerPaused || false;
 
     // Timer côté invité : relancer un compte à rebours local depuis la valeur reçue
     if (this._guestTimerHandle) { clearInterval(this._guestTimerHandle); this._guestTimerHandle = null; }
     if (this.phase === 'playing' && window.renderer) {
-      renderer.updateTimer(this.timeLeft);
-      this._guestTimerHandle = setInterval(() => {
-        this.timeLeft = Math.max(0, this.timeLeft - 1);
-        renderer.updateTimer(this.timeLeft);
-        if (this.timeLeft <= 0) { clearInterval(this._guestTimerHandle); this._guestTimerHandle = null; }
-      }, 1000);
+      renderer.updateTimer(this.timeLeft, this.timerPaused);
+      if (!this.timerPaused) {
+        this._guestTimerHandle = setInterval(() => {
+          this.timeLeft = Math.max(0, this.timeLeft - 1);
+          renderer.updateTimer(this.timeLeft, false);
+          if (this.timeLeft <= 0) { clearInterval(this._guestTimerHandle); this._guestTimerHandle = null; }
+        }, 1000);
+      }
     }
 
     const all  = [...this.players[0].heroes, ...this.players[1].heroes];

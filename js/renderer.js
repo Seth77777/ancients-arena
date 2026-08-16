@@ -755,6 +755,7 @@ class Renderer {
     const btnAttack = document.getElementById('btn-attack');
     const btnShop   = document.getElementById('btn-shop');
     const btnEndTurn = document.getElementById('btn-end-turn');
+    const btnPauseTimer = document.getElementById('btn-pause-timer');
     const actionCounter = document.getElementById('action-counter-text');
 
     // Online mode — opponent's turn: hide action controls, show waiting message
@@ -769,6 +770,7 @@ class Renderer {
       btnAttack.style.display = 'none';
       if (btnShop)    btnShop.style.display    = 'none';
       if (btnEndTurn) btnEndTurn.style.display  = 'none';
+      if (btnPauseTimer) btnPauseTimer.style.display = 'none';
       if (actionCounter) actionCounter.innerHTML = '<span style="opacity:.7">⏳ Adversaire en train de jouer…</span>';
       return;
     }
@@ -778,11 +780,13 @@ class Renderer {
     btnAttack.style.display = '';
     if (btnShop)    btnShop.style.display    = '';
     if (btnEndTurn) btnEndTurn.style.display  = '';
+    if (btnPauseTimer) btnPauseTimer.style.display = '';
 
     if (!hero) {
       nameEl.textContent = '—';
       statsEl.innerHTML = spellsEl.innerHTML = '';
       if (btnShop) btnShop.disabled = true;
+      if (btnPauseTimer) btnPauseTimer.disabled = true;
       return;
     }
 
@@ -859,6 +863,13 @@ class Renderer {
       btnShop.disabled = !g.canBuy || g.actionsUsed >= MAX_ACTIONS;
       btnShop.title    = g.canBuy ? '' : 'Boutique verrouillée (action déjà effectuée)';
     }
+
+    // Pause timer button
+    if (btnPauseTimer) {
+      btnPauseTimer.disabled = false;
+      btnPauseTimer.textContent = g.timerPaused ? '▶ Reprendre' : '⏸ Pause';
+      btnPauseTimer.classList.toggle('active-mode', !!g.timerPaused);
+    }
   }
 
   // ============================================================
@@ -918,7 +929,7 @@ class Renderer {
       critChance:'Chance Critique %', extraAutoAttacks:'Attaques/tour',
       cdReduction:'Réduction CD',
       goldPerTurn:'Gold/tour', healEfficiency:'Efficacité soins %',
-      goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort', armorPct:'Armure %' };
+      goldSharePct:'Partage gold %', manaOnSpell:'Mana max/sort' };
 
     const show = (itemId, el) => {
       const item = EQUIPMENT[itemId];
@@ -1269,11 +1280,11 @@ class Renderer {
     el.scrollTop = el.scrollHeight;
   }
 
-  updateTimer(seconds) {
+  updateTimer(seconds, paused = false) {
     const el = document.getElementById('timer-display');
     if (!el) return;
-    el.textContent = `⏱ ${seconds}s`;
-    el.style.color = seconds <= 15 ? '#e74c3c' : '#ecf0f1';
+    el.textContent = paused ? `⏸ ${seconds}s` : `⏱ ${seconds}s`;
+    el.style.color = paused ? '#f0c040' : (seconds <= 15 ? '#e74c3c' : '#ecf0f1');
   }
 
   showGameOver(winnerIdx, matchResult) {

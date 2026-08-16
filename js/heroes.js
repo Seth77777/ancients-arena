@@ -223,7 +223,7 @@ HERO_TYPES['solo_2'] = {
   portrait: 'assets/heroes/frigiel.png',
   passive: 'dans_la_chair',
   maxHP: 2500, maxMana: 400, hpRegen: 45, manaRegen: 50,
-  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 3, po: 1,
+  ad: 50, ap: 0, armor: 0, mr: 0, lifeSteal: 0, pm: 4, po: 1,
   spells: [
     {
       id: 'frigiel_q', name: 'Couperie',
@@ -242,9 +242,9 @@ HERO_TYPES['solo_2'] = {
     },
     {
       id: 'frigiel_r', name: 'Appel du chevalier',
-      description: 'Si la cible a plus de HP max que Frigiel : inflige 130 +1.1 AD (70% physiques, 30% bruts)',
+      description: 'Si la cible a plus de HP max que Frigiel : inflige 170 +1,4 AD (70% physiques, 30% bruts)',
       manaCost: 80, range: 7, cooldown: 10, cdMin: 2,
-      damageType: 'physical', baseDamage: 130, adRatio: 1.1, apRatio: 0,
+      damageType: 'physical', baseDamage: 170, adRatio: 1.4, apRatio: 0,
       targetType: 'enemy_hero', zone: null, effects: [],
       conditionHigherHP: true, splitRawPct: 0.3
     },
@@ -1383,9 +1383,10 @@ function createHeroInstance(typeId, playerIdx, slotIdx, runeId = null) {
     goldPerTurn:       0,
     healEfficiency:    0,
     goldSharePct:      0,
-    manaOnSpell:       0,
-    manaOnSpellMax:    0,
-    manaOnSpellGained: 0,
+    manaOnSpell:        0,
+    manaOnAutoAttack:   0,
+    manaOnSpellMax:     0,
+    manaOnSpellGained:  0,
     manaRegenPct:      0,
     cdReduction:       0,
 

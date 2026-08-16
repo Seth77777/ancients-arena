@@ -33,7 +33,8 @@ const PASSIVE_LABELS = {
   egnamita_passive:   'Antimagie — 35% des dégâts magiques qu\'Egnamita inflige sont convertis en bouclier antimagie permanent (absorbe uniquement les dégâts magiques).',
   velna_passive:      'Lumière filante — Lorsque Velna effectue un dash, son prochain sort inflige 10% de dégâts magiques supplémentaires.',
   sinys_passive:      'Points de rage — Les sorts de Sinys ne coûtent pas de mana. 35% des dégâts encaissés sont stockés comme Rage (barre de mana). La Rage est dépensée et utilisée comme bonus par ses sorts. Sinys perd 10% de sa rage actuelle à chaque début de tour.',
-  maahes_passive:     'Lion divin — Si Maahes a un bouclier, ses sorts infligent 15% de dégâts supplémentaires.'
+  maahes_passive:     'Lion divin — Si Maahes a un bouclier, ses sorts infligent 15% de dégâts supplémentaires.',
+  sylvia_passive:     'Appel de la forêt — Au début de son tour, Sylvia plante 1 (ou plus) arbre(s) dans un rayon de 20 cases. Marcher sur un arbre le consomme : soigne 25% des HP max (50% si hémorragie) et confère un bonus de +0,4 AP dégâts magiques à sa prochaine attaque de base.'
 };
 
 const TARGET_LABELS = {
@@ -120,6 +121,11 @@ function renderScoreboard(matchResult) {
       }).join('');
       const dmgStr  = h.damageDealt ? `⚔ ${h.damageDealt.toLocaleString('fr-FR')}` : '';
       const healStr = h.healingDone ? `💚 ${h.healingDone.toLocaleString('fr-FR')}` : '';
+      const rune      = h.runeId && typeof RUNES !== 'undefined' ? RUNES[h.runeId] : null;
+      const runeStats = h.runeId && typeof Stats !== 'undefined' ? Stats.getRuneStats(h.runeId) : null;
+      const runeStr = rune
+        ? `<span class="sb-rune" title="${rune.desc}">${rune.img ? `<img src="${rune.img}" class="sb-rune-icon" onerror="this.outerHTML='${rune.icon}'">` : rune.icon} ${rune.name}${runeStats ? ` <span class="sb-rune-wr">${runeStats.pct}% WR (${runeStats.picks})</span>` : ''}</span>`
+        : '';
       return `
         <div class="scoreboard-hero-row">
           ${portrait}
@@ -131,6 +137,7 @@ function renderScoreboard(matchResult) {
               ${dmgStr  ? `<span class="sb-dmg">${dmgStr}</span>`   : ''}
               ${healStr ? `<span class="sb-heal">${healStr}</span>` : ''}
             </div>
+            ${runeStr ? `<div class="sb-rune-row">${runeStr}</div>` : ''}
             <div class="sb-items">${items}</div>
           </div>
         </div>`;
@@ -762,7 +769,8 @@ window.addEventListener('DOMContentLoaded', () => {
             totalGold: h.totalGoldEarned || h.gold,
             damageDealt: 0,
             healingDone: 0,
-            items: [...(h.items || [])]
+            items: [...(h.items || [])],
+            runeId: h.runeId || null,
           }))
         }))
       };
@@ -830,6 +838,11 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       case 'endTurn':
         if (g.currentHero?.playerIdx === 1) g.endHeroTurn();
+        break;
+      case 'pauseTimer':
+        if (g.currentHero?.playerIdx === 1) {
+          if (g.timerPaused) g.resumeTimer(); else g.pauseTimer();
+        }
         break;
       case 'buy':
         g.buyItem(action.itemId);
