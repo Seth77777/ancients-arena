@@ -651,7 +651,13 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     } catch (e) { /* pas de seed disponible — le bot démarre avec ce que ce navigateur a déjà */ }
 
-    bot = new GameBot(game, () => { renderer.render(); renderer.updateUI(); });
+    // window.bot (pas juste la variable locale `bot`) : renderer.js._renderHeroPool s'en sert pour
+    // déclencher automatiquement le ban/pick du bot pendant la phase de draft (voir maybeAct dans
+    // bot.js) — sans window.bot, ce déclenchement était silencieusement un no-op (if (window.bot)
+    // jamais vrai), obligeant à jouer les deux côtés du draft à la main. Même schéma que
+    // window.game/window.renderer/window.input un peu plus haut, pour la même raison (`let` en
+    // portée module ne crée pas de propriété sur window, contrairement à `var`).
+    window.bot = bot = new GameBot(game, () => { renderer.render(); renderer.updateUI(); });
 
     // Case "Faire jouer le bot par le réseau entraîné" (voir js/nn.js + sim/nn_train.js) : charge
     // les poids les plus récents depuis le serveur et bascule le bot en mode neuronal (mouvement +
