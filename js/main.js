@@ -632,6 +632,25 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-menu-bot').addEventListener('click', async () => {
+    // Charge l'historique appris par la simulation continue (des milliers de parties bot-vs-bot,
+    // voir sim/run.js) dans le localStorage de CE navigateur, pour que le bot heuristique affronté
+    // ici en bénéficie (choix d'objets/runes/décisions par EV+regret, voir js/stats.js) — sans ça,
+    // un navigateur qui n'a jamais accumulé de vraies parties fait jouer un bot "à froid", sans
+    // aucune donnée. Version allégée (voir sim/export_browser_stats.js) : le snapshot brut fait des
+    // dizaines de Mo, largement au-delà du quota de localStorage (~5-10Mo/site) — celle-ci tient en
+    // ~2-3Mo en ne gardant que le signal principal des tables les plus volumineuses.
+    // Rechargée à CHAQUE clic (écrase les parties jouées entre-temps dans ce navigateur) : donne un
+    // comportement prévisible ("le bot avec tout l'historique de la simu"), pas un mélange qui
+    // dérive au fil des sessions de jeu locales.
+    try {
+      const res = await fetch('data/bot_stats_browser.json');
+      if (res.ok) {
+        const seed = await res.json();
+        localStorage.setItem('arena_stats_v1', seed.arena_stats_v1);
+        Stats.load();
+      }
+    } catch (e) { /* pas de seed disponible — le bot démarre avec ce que ce navigateur a déjà */ }
+
     bot = new GameBot(game, () => { renderer.render(); renderer.updateUI(); });
 
     // Case "Faire jouer le bot par le réseau entraîné" (voir js/nn.js + sim/nn_train.js) : charge
