@@ -4,7 +4,7 @@
 
 const MAP_SIZE    = 30;
 const CELL_SIZE   = 34;
-const MAX_TURNS   = 200;
+const MAX_TURNS   = 100;
 const MAX_ACTIONS = 30;
 const TURN_TIME   = 120;
 const KILL_GOLD   = 200;
@@ -150,7 +150,7 @@ const HEAL_ZONE_CELL_SET = (() => {
 // ============================================================
 
 // Ban order: alternating, P1 first  (6 bans total)
-const BAN_ORDER = [0, 1, 0, 1, 0, 1];
+const BAN_ORDER = [0, 1, 0, 1]; // 2 bans par équipe (1 par rôle max, voir _isUnavailable)
 
 // Pick order: 1-2-2-2-2-1  (10 picks total, 5 each)
 const PICK_SEQUENCE = [
@@ -161,6 +161,21 @@ const PICK_SEQUENCE = [
   { p: 0, n: 2 },
   { p: 1, n: 1 }
 ];
+
+// JSON.stringify perd SILENCIEUSEMENT tout Set rencontré (converti en "{}", jamais une erreur) — et
+// plusieurs mécaniques de héros/zones s'appuient sur des Set comme état de partie (suivi Cupidon,
+// Titan's Heart, Fenino, zones qui n'appliquent leurs dégâts qu'une fois par cible et par tour...).
+// Utilisés par GameState.serialize()/applySerializedState() ci-dessous : plutôt que de traquer et
+// convertir chaque champ Set à la main un par un (fragile, et déjà pris en défaut deux fois — un
+// futur kit de héros ajoutant un nouveau Set retomberait dans le même piège sans qu'on y pense), ce
+// replacer/reviver générique convertit N'IMPORTE QUEL Set trouvé n'importe où dans l'arbre, sans
+// avoir besoin de connaître son nom de champ.
+function _setAwareReplacer(key, value) {
+  return value instanceof Set ? { __set: true, values: [...value] } : value;
+}
+function _setAwareReviver(key, value) {
+  return (value && typeof value === 'object' && value.__set === true) ? new Set(value.values) : value;
+}
 
 // ============================================================
 // GAME STATE
@@ -179,6 +194,7 @@ class GameState {
     this.draft = {
       phase:          'ban',   // 'ban' | 'pick'
       banned:         new Set(),
+      bannedRoles:    [[], []], // rôles déjà bannis par chaque joueur (1 par rôle max)
       picks:          [[], []],
       banIdx:         0,
       pickRound:      0,
@@ -265,7 +281,8 @@ class GameState {
     const p   = this.draftCurrentPlayer() + 1;
     if (d.phase === 'ban') {
       const myBansDone = [...Array(d.banIdx)].filter((_, i) => BAN_ORDER[i] === this.draftCurrentPlayer()).length;
-      return `Joueur ${p} — Bannissement ${myBansDone + 1}/3`;
+      const bansPerPlayer = BAN_ORDER.length / 2;
+      return `Joueur ${p} — Bannissement ${myBansDone + 1}/${bansPerPlayer}`;
     }
     if (d.phase === 'pick') {
       const seq  = PICK_SEQUENCE[d.pickRound];
@@ -279,6 +296,11 @@ class GameState {
     const d = this.draft;
     if (d.banned.has(typeId)) return true;
     if (d.picks[0].includes(typeId) || d.picks[1].includes(typeId)) return true;
+    // Pendant le ban : un joueur ne peut pas bannir 2 héros du même rôle
+    if (d.phase === 'ban') {
+      const banner = BAN_ORDER[d.banIdx];
+      if (banner !== undefined && d.bannedRoles[banner].includes(HERO_TYPES[typeId].roleId)) return true;
+    }
     // Pendant le pick : un joueur ne peut pas prendre 2 héros du même rôle
     if (d.phase === 'pick') {
       const seq = PICK_SEQUENCE[d.pickRound];
@@ -296,6 +318,7 @@ class GameState {
     if (this._isUnavailable(typeId)) return false;
 
     d.banned.add(typeId);
+    d.bannedRoles[BAN_ORDER[d.banIdx]].push(HERO_TYPES[typeId].roleId);
     Stats.recordBan(typeId);
     d.banIdx++;
     this.addLog(`Joueur ${BAN_ORDER[d.banIdx - 1] + 1} bannit ${HERO_TYPES[typeId].name}`);
@@ -318,7 +341,7 @@ class GameState {
     const seq  = PICK_SEQUENCE[d.pickRound];
     d.picks[seq.p].push(typeId);
     Stats.recordPick(typeId, seq.p);
-    if (runeId) Stats.recordRunePick(runeId, seq.p);
+    if (runeId) Stats.recordRunePick(runeId, seq.p, typeId);
     const runeName = runeId && typeof RUNES !== 'undefined' && RUNES[runeId] ? ` [${RUNES[runeId].name}]` : '';
     this.addLog(`Joueur ${seq.p + 1} choisit ${HERO_TYPES[typeId].name}${runeName}`);
 
@@ -1685,6 +1708,10 @@ class GameState {
       { this.addLog('Cible hors de portée !'); return false; }
     if (attacker.passive !== 'layia_passive' && !this._hasLineOfSight(attacker.position, targetHero.position))
       { this.addLog('Pas de ligne de vue !'); return false; }
+    // Capturée avant les dégâts : targetHero.position devient null si cette attaque tue la
+    // cible, mais les effets déclenchés après le coup (ex. Hydre de Poséidon) doivent quand
+    // même se situer là où le coup a porté.
+    const targetHeroDeathPosition = targetHero.position;
 
     // Passif Decigeno : consume PM restants → +15% dégâts par PM
     if (attacker.passive === 'decigeno_passive' && this.movementLeft > 0) {
@@ -1933,7 +1960,7 @@ class GameState {
       if (this.autoAttacksUsed === 0 && attacker.items.includes('hydre_de_poseidon')) {
         const _hydreDmgL = Math.floor(attacker.maxHP * 0.04);
         if (_hydreDmgL > 0) this._getEnemies(attacker.playerIdx).filter(e =>
-          e.isAlive && e.position && this._manhattan(targetHero.position, e.position) <= 4
+          e.isAlive && e.position && this._manhattan(targetHeroDeathPosition, e.position) <= 4
         ).forEach(e => {
           this._applyDamage(e, _hydreDmgL, attacker, 'raw');
           this.addLog(`${attacker.name} — Hydre de Poséidon : −${_hydreDmgL} dégâts bruts (${e.name})`);
@@ -2032,7 +2059,7 @@ class GameState {
       if (this.autoAttacksUsed === 0 && attacker.items.includes('hydre_de_poseidon')) {
         const _hydreDmgA = Math.floor(attacker.maxHP * 0.04);
         if (_hydreDmgA > 0) this._getEnemies(attacker.playerIdx).filter(e =>
-          e.isAlive && e.position && this._manhattan(targetHero.position, e.position) <= 4
+          e.isAlive && e.position && this._manhattan(targetHeroDeathPosition, e.position) <= 4
         ).forEach(e => {
           this._applyDamage(e, _hydreDmgA, attacker, 'raw');
           this.addLog(`${attacker.name} — Hydre de Poséidon : −${_hydreDmgA} dégâts bruts (${e.name})`);
@@ -2291,7 +2318,7 @@ class GameState {
     if (this.autoAttacksUsed === 0 && attacker.items.includes('hydre_de_poseidon')) {
       const _hydreDmgN = Math.floor(attacker.maxHP * 0.04);
       if (_hydreDmgN > 0) this._getEnemies(attacker.playerIdx).filter(e =>
-        e.isAlive && e.position && this._manhattan(targetHero.position, e.position) <= 4
+        e.isAlive && e.position && this._manhattan(targetHeroDeathPosition, e.position) <= 4
       ).forEach(e => {
         this._applyDamage(e, _hydreDmgN, attacker, 'raw');
         this.addLog(`${attacker.name} — Hydre de Poséidon : −${_hydreDmgN} dégâts bruts (${e.name})`);
@@ -2423,7 +2450,10 @@ class GameState {
       }
     }
 
-    if (!_isRecallReactivation && spell.id !== 'solo_recall') caster.currentMana -= _effectiveManaCost;
+    if (!_isRecallReactivation && spell.id !== 'solo_recall') {
+      caster.currentMana -= _effectiveManaCost;
+      Stats.addManaSpent(caster.id, _effectiveManaCost);
+    }
 
     // Passif Toucher Magique (casque_necrometien) — prêt à se déclencher pour ce sort
     this._toucherMagiqueReady = caster.items.includes('casque_necrometien');
@@ -5361,17 +5391,50 @@ class GameState {
     return true;
   }
 
+  // Réécrite en expansion Dijkstra à SOURCE UNIQUE (comme getReachableCells pour un héros),
+  // plutôt que l'ancienne version qui appelait _dijkstraPath (un calcul de chemin complet) une
+  // fois par case du plateau (900 cases, 30×30) — jamais un problème quand cette fonction n'était
+  // jamais invoquée (les loups n'étaient pas pilotés), mais devenu un vrai goulot dès qu'on les
+  // pilote chaque tour : avec plusieurs loups vivants en même temps (aucun plafond sur leur
+  // nombre), le coût explose et peut donner l'impression que la simulation s'arrête dès qu'une
+  // partie a Noyala. Même résultat, mêmes règles de blocage que l'ancienne version (traversée à
+  // travers un autre loup autorisée — seule sa case d'arrivée finale est exclue, comme avant).
   getWolfReachableCells(wolf) {
     if (!wolf || wolf.pmLeft <= 0) return [];
+    const ghost = !!(this.currentHero?.items.includes('danse_des_morts'));
+    const heroBlocked = new Set();
+    this.players.forEach(p => p.heroes.forEach(h => {
+      if (h.isAlive && h !== this.currentHero && h.position)
+        heroBlocked.add(`${h.position.x},${h.position.y}`);
+    }));
+    const otherWolfBlocked = new Set(
+      this.noyalaWolves.filter(w => w !== wolf).map(w => `${w.x},${w.y}`)
+    );
+
+    const cost = new Map([[`${wolf.x},${wolf.y}`, 0]]);
+    const pq = [{ c: 0, pos: { x: wolf.x, y: wolf.y } }];
     const cells = [];
-    for (let x = 0; x < MAP_SIZE; x++) {
-      for (let y = 0; y < MAP_SIZE; y++) {
-        if (isWall(x, y)) continue;
-        if (this.getHeroAt(x, y)) continue;
-        if (this.noyalaWolves.some(w => w !== wolf && w.x === x && w.y === y)) continue;
-        if (x === wolf.x && y === wolf.y) continue;
-        const result = this._dijkstraPath({ x: wolf.x, y: wolf.y }, { x, y });
-        if (result && result.cost <= wolf.pmLeft) cells.push({ x, y });
+    while (pq.length) {
+      pq.sort((a, b) => a.c - b.c);
+      const { c, pos } = pq.shift();
+      const posKey = `${pos.x},${pos.y}`;
+      if (c > (cost.get(posKey) ?? Infinity)) continue;
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+        if (!dx && !dy) continue;
+        const nx = pos.x + dx, ny = pos.y + dy;
+        if (nx < 0 || nx >= MAP_SIZE || ny < 0 || ny >= MAP_SIZE) continue;
+        if (!ghost && isWall(nx, ny)) continue;
+        const key = `${nx},${ny}`;
+        if (!ghost && heroBlocked.has(key)) continue;
+        const moveCost = (dx !== 0 && dy !== 0) ? 2 : 1;
+        const newCost = c + moveCost;
+        if (newCost <= wolf.pmLeft && newCost < (cost.get(key) ?? Infinity)) {
+          cost.set(key, newCost);
+          if (!isWall(nx, ny) && !this.getHeroAt(nx, ny) && !otherWolfBlocked.has(key)) {
+            cells.push({ x: nx, y: ny });
+          }
+          pq.push({ c: newCost, pos: { x: nx, y: ny } });
+        }
       }
     }
     return cells;
@@ -5464,6 +5527,11 @@ class GameState {
   _checkGlyph(hero) {
     if (!hero?.position) return;
     for (let i = this.glyphs.length - 1; i >= 0; i--) {
+      // Une glyphe précédente dans cette même boucle a pu tuer hero (dégâts de la glyphe de
+      // douleur, voir plus bas) — sans ce garde-fou, la case suivante lit hero.position.x sur un
+      // héros déjà mort (position devenue null), comme le crash déjà rencontré côté loups de
+      // Noyala (état figé réutilisé après une mort en plein tour).
+      if (!hero.position) break;
       const g = this.glyphs[i];
       if (!g.cells.some(c => c.x === hero.position.x && c.y === hero.position.y)) continue;
       // Pain glyph damages enemies only
@@ -5663,7 +5731,7 @@ class GameState {
     };
     MatchHistory.save(matchResult);
 
-    Stats.recordGameEnd(winnerIdx, this.players);
+    Stats.recordGameEnd(winnerIdx, this.players, this.globalTurn);
     if (window.renderer) renderer.showGameOver(winnerIdx, matchResult);
   }
 
@@ -5678,7 +5746,7 @@ class GameState {
       dots: (hero.dots || []).map(d => ({
         dmgPerTurn: d.dmgPerTurn, turns: d.turns,
         casterId: heroToId(d.caster), type: d.type, label: d.label
-      }))
+      })),
     });
     const serObj = obj => {
       const o = { ...obj };
@@ -5716,11 +5784,11 @@ class GameState {
       canBuy:             this.canBuy,
       timeLeft:           this.timeLeft,
       timerPaused:        this.timerPaused,
-    });
+    }, _setAwareReplacer);
   }
 
   applySerializedState(stateStr) {
-    const s = typeof stateStr === 'string' ? JSON.parse(stateStr) : stateStr;
+    const s = typeof stateStr === 'string' ? JSON.parse(stateStr, _setAwareReviver) : stateStr;
 
     this.phase              = s.phase;
     this.players            = s.players;
@@ -5770,6 +5838,8 @@ class GameState {
     this.currentHero   = byId(s.currentHeroId);
     this.selectedSpell = this.currentHero?.spells.find(sp => sp.id === s.selectedSpellId) ?? null;
 
+    // Les Set par héros (Cupidon/Titan's Heart/Fenino...) sont déjà de vrais Set à ce stade — voir
+    // _setAwareReviver, appliqué par JSON.parse ci-dessus avant même d'arriver ici.
     all.forEach(h => {
       if (h.dots) h.dots = h.dots.map(d => ({ ...d, caster: byId(d.casterId) }));
     });

@@ -631,8 +631,24 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer.renderDraft();
   });
 
-  document.getElementById('btn-menu-bot').addEventListener('click', () => {
+  document.getElementById('btn-menu-bot').addEventListener('click', async () => {
     bot = new GameBot(game, () => { renderer.render(); renderer.updateUI(); });
+
+    // Case "Faire jouer le bot par le réseau entraîné" (voir js/nn.js + sim/nn_train.js) : charge
+    // les poids les plus récents depuis le serveur et bascule le bot en mode neuronal (mouvement +
+    // sorts + achats, voir GameBot._neuralNet dans bot.js) au lieu des formules heuristiques.
+    // _neuralExploreTemp reste à 0 (défaut) : argmax pur, le réseau joue son meilleur coup connu,
+    // pas une variante exploratoire (ça, c'est réservé à l'auto-jeu d'entraînement).
+    if (document.getElementById('menu-bot-neural-checkbox')?.checked) {
+      try {
+        const res = await fetch('/api/nn/weights');
+        if (!res.ok) throw new Error('Aucun réseau entraîné disponible pour le moment.');
+        bot._neuralNet = NeuralNet.fromJSON(await res.json());
+      } catch (e) {
+        alert(`Impossible de charger le réseau entraîné (${e.message}) — le bot standard sera utilisé à la place.`);
+      }
+    }
+
     showScreen('draft-screen');
     renderer.renderDraft();
   });

@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Simulations IA — Ancients Arena</title>
+<script src="js/heroes.js"></script>
+<script src="js/equipment.js"></script>
+<script src="js/runes.js"></script>
+<!-- Chargé uniquement pour réutiliser MAP_SIZE / WALL_SET / ZONES (murs & zones du vrai plateau) —
+     aucune instance de GameState n'est créée ici, et ce fichier ne touche pas au localStorage. -->
+<script src="js/game.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Beaufort+for+LOL:wght@400;700&family=Spiegel:wght@400;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #010a13;
+    color: #c8aa6e;
+    font-family: 'Georgia', serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(180deg, #1a0a2e 0%, #0a0a1a 100%);
+    border-bottom: 2px solid #c8aa6e44;
+    padding: 18px 24px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+    letter-spacing: 4px;
+    color: #c8aa6e;
+    text-shadow: 0 0 20px #c8aa6e66;
+  }
+  .header .sub {
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #785a28;
+    margin-top: 4px;
+  }
+  .tabs { display: flex; justify-content: center; gap: 0; margin-top: 14px; }
+  .tab-btn {
+    background: transparent;
+    border: none; border-top: 1px solid #c8aa6e33; border-left: 1px solid #c8aa6e33; border-right: 1px solid #c8aa6e33;
+    color: #6a5a3a; font-family: inherit; font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase;
+    padding: 8px 22px; cursor: pointer; transition: color 0.2s, background 0.2s;
+  }
+  .tab-btn:hover { color: #a09060; background: #ffffff08; }
+  .tab-btn.active { color: #c8aa6e; background: #010a13; }
+
+  /* ── Stats & Tier List ── */
+  .stats-view { flex: 1; overflow-y: auto; padding: 20px 28px 60px; }
+  .stats-controls {
+    display: flex; align-items: center; gap: 20px; margin-bottom: 18px;
+    font-size: 0.78rem; color: #a09060;
+  }
+  .stats-controls input {
+    background: #0a1220; border: 1px solid #c8aa6e55; color: #c8aa6e;
+    font-family: inherit; font-size: 0.78rem; padding: 4px 6px; width: 50px;
+  }
+  .stats-controls button {
+    margin-left: auto;
+    background: #1a1408; border: 1px solid #c8aa6e55; color: #c8aa6e;
+    font-family: inherit; font-size: 0.72rem; padding: 5px 10px; cursor: pointer;
+    letter-spacing: 0.5px; transition: background 0.15s;
+  }
+  .stats-controls button:hover { background: #c0392b33; border-color: #e74c3c88; }
+  .tier-section { margin-bottom: 28px; }
+  .tier-title {
+    font-size: 0.72rem; letter-spacing: 3px; text-transform: uppercase; color: #c8aa6e;
+    border-bottom: 1px solid #c8aa6e33; padding-bottom: 6px; margin-bottom: 10px;
+  }
+  .tier-table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+  .tier-table th, .tier-table td {
+    text-align: left; padding: 6px 10px; border-bottom: 1px solid #c8aa6e18; color: #a09060;
+  }
+  .tier-table th { color: #6a5a3a; font-weight: normal; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 1px; }
+  .tier-table tr.low-sample { opacity: 0.45; }
+  .tier-table tr:hover { background: #ffffff06; }
+  .hero-row { cursor: pointer; }
+  .hero-row:hover { background: #c8aa6e14 !important; }
+
+  /* ── Évolution ── */
+  .evo-chart { width: 100%; height: 180px; background: #0a1220; border: 1px solid #c8aa6e33; }
+  .evo-summary { margin-top: 10px; font-size: 0.78rem; color: #a09060; display: flex; flex-direction: column; gap: 4px; }
+  .evo-summary b { color: #c8aa6e; }
+  .evo-hint { color: #6a5a3a; font-size: 0.68rem; }
+  .evo-delta { font-weight: bold; margin-left: 6px; }
+  .evo-delta.evo-good { color: #6fbf73; }
+  .evo-delta.evo-bad  { color: #e05a5a; }
+
+  /* ── Panneau détail héros ── */
+  .hero-detail {
+    background: #0a1220; border: 1px solid #c8aa6e55; padding: 16px 20px; margin-bottom: 24px;
+  }
+  .hero-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .hero-detail-header img { width: 44px; height: 44px; object-fit: cover; object-position: top; border: 2px solid #c8aa6e; }
+  .hero-detail-header .name { font-size: 1rem; color: #c8aa6e; letter-spacing: 1px; }
+  .hero-detail-close { margin-left: auto; background: none; border: 1px solid #c8aa6e55; color: #a09060; cursor: pointer; padding: 4px 10px; font-family: inherit; }
+  .hero-detail-cols { display: flex; gap: 30px; flex-wrap: wrap; }
+  .hero-detail-col { flex: 1; min-width: 260px; }
+  .hero-detail-subtitle { font-size: 0.68rem; letter-spacing: 2px; text-transform: uppercase; color: #6a5a3a; margin-bottom: 8px; }
+  .build-item-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.78rem; color: #a09060; }
+  .build-item-row img { width: 24px; height: 24px; object-fit: cover; border: 1px solid #1e2328; }
+  .build-item-row .score { margin-left: auto; color: #6a5a3a; font-size: 0.7rem; }
+  .decision-group { padding: 6px 0 10px; border-bottom: 1px solid #c8aa6e14; }
+  .decision-group:last-child { border-bottom: none; }
+  .decision-key { color: #c8aa6e; font-size: 0.72rem; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .decision-option-row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.74rem; color: #a09060; padding: 2px 0 2px 10px; }
+  .decision-option-row .ev-pos { color: #6fbf73; }
+  .decision-option-row .ev-neg { color: #e05a5a; }
+  .tier-portrait { width: 26px; height: 26px; object-fit: cover; object-position: top; border: 1px solid #1e2328; vertical-align: middle; }
+  .item-icon { width: 22px; height: 22px; object-fit: cover; border: 1px solid #1e2328; vertical-align: middle; margin-right: 6px; }
+  .tier-badge {
+    display: inline-block; width: 22px; text-align: center; font-weight: bold; font-size: 0.75rem;
+    border-radius: 3px; padding: 1px 0;
+  }
+  .tier-S { background: #f1c40f33; color: #f1c40f; }
+  .tier-A { background: #2ecc7133; color: #2ecc71; }
+  .tier-B { background: #5dade233; color: #5dade2; }
+  .tier-C { background: #f39c1233; color: #f39c12; }
+  .tier-D { background: #e74c3c33; color: #e74c3c; }
+  .tier-\? { background: #ffffff11; color: #6a5a3a; }
+
+  /* ── Layout ── */
+  .layout { flex: 1; display: flex; min-height: 0; }
+
+  /* ── Sidebar : lancement + liste des parties ── */
+  .sidebar {
+    width: 340px;
+    flex-shrink: 0;
+    border-right: 1px solid #c8aa6e33;
+    background: #05101c;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .sidebar-list { flex: 1; overflow-y: auto; }
+  .sidebar-empty {
+    padding: 24px 16px;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: #6a5a3a;
+  }
+  .sidebar-empty code {
+    color: #c8aa6e;
+    background: #ffffff0d;
+    padding: 1px 5px;
+  }
+
+  /* ── Panneau de lancement ── */
+  .run-panel {
+    padding: 14px 16px;
+    border-bottom: 1px solid #c8aa6e33;
+    flex-shrink: 0;
+  }
+  .run-row { display: flex; gap: 8px; }
+  .run-row input {
+    width: 70px;
+    background: #0a1220; border: 1px solid #c8aa6e55; color: #c8aa6e;
+    font-family: inherit; font-size: 0.85rem; padding: 6px 8px;
+  }
+  .run-row button {
+    flex: 1;
+    background: #1a1408; border: 1px solid #c8aa6e55; color: #c8aa6e;
+    font-family: inherit; font-size: 0.85rem; padding: 6px 12px; cursor: pointer;
+    letter-spacing: 1px; transition: background 0.15s;
+  }
+  .run-row button:hover { background: #c8aa6e22; }
+  .run-row button:disabled { opacity: 0.4; cursor: default; }
+  .run-status {
+    font-size: 0.68rem; color: #6a5a3a; margin-top: 8px; line-height: 1.6;
+    min-height: 1em;
+  }
+  .run-status.active { color: #c8aa6e; }
+  .run-status.error { color: #e74c3c; }
+
+  /* ── Style de jeu ── */
+  .style-panel {
+    padding: 12px 16px 14px;
+    border-bottom: 1px solid #c8aa6e33;
+    flex-shrink: 0;
+  }
+  .style-row { margin-bottom: 10px; }
+  .style-row:last-of-type { margin-bottom: 8px; }
+  .style-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.68rem; color: #9a8a6a; margin-bottom: 4px; letter-spacing: 0.5px;
+  }
+  .style-label b { color: #c8aa6e; font-weight: 600; }
+  .style-row input[type=range] {
+    width: 100%; accent-color: #c8aa6e; cursor: pointer;
+  }
+  .style-ends {
+    display: flex; justify-content: space-between;
+    font-size: 0.6rem; color: #5a4d33;
+  }
+  .style-checkbox-row label {
+    display: flex; align-items: flex-start; gap: 6px;
+    font-size: 0.68rem; color: #9a8a6a; letter-spacing: 0.3px; cursor: pointer; line-height: 1.35;
+  }
+  .style-checkbox-row input[type=checkbox] { accent-color: #c8aa6e; cursor: pointer; margin-top: 2px; flex-shrink: 0; }
+  .style-apply-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+  .style-apply-row button {
+    flex: 1;
+    background: #1a1408; border: 1px solid #c8aa6e55; color: #c8aa6e;
+    font-family: inherit; font-size: 0.78rem; padding: 5px 10px; cursor: pointer;
+    letter-spacing: 0.5px; transition: background 0.15s;
+  }
+  .style-apply-row button:hover { background: #c8aa6e22; }
+  .style-status { font-size: 0.65rem; color: #6a5a3a; }
+  .style-status.saved { color: #2ecc71; }
+  .style-status.error { color: #e74c3c; }
+
+  .game-row {
+    padding: 12px 16px;
+    border-bottom: 1px solid #c8aa6e1a;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .game-row:hover { background: #ffffff08; }
+  .game-row.active { background: #c8aa6e14; border-left: 3px solid #c8aa6e; padding-left: 13px; }
+  .game-row-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .game-winner {
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+  .game-winner.p0 { color: #5dade2; background: #5dade222; }
+  .game-winner.p1 { color: #e67e22; background: #e67e2222; }
+  .game-winner.draw { color: #888; background: #ffffff11; }
+  .game-turns { font-size: 0.68rem; color: #6a5a3a; }
+  .game-portraits { display: flex; gap: 3px; }
+  .game-portraits img {
+    width: 22px; height: 22px; object-fit: cover; object-position: top;
+    border: 1px solid #1e2328;
+  }
+  .game-portraits .vs { font-size: 0.6rem; color: #6a5a3a; align-self: center; margin: 0 2px; }
+  .game-date { font-size: 0.62rem; color: #4a3f28; margin-top: 4px; }
+
+  /* ── Détail ── */
+  .detail { flex: 1; overflow-y: auto; padding: 20px 28px 60px; min-width: 0; }
+  .detail-empty {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: #4a3f28; font-size: 0.85rem; letter-spacing: 1px;
+  }
+
+  .match-header {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #c8aa6e33; padding-bottom: 14px; margin-bottom: 18px;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .match-teams { display: flex; align-items: center; gap: 16px; }
+  .team { display: flex; gap: 6px; }
+  .team img {
+    width: 40px; height: 40px; object-fit: cover; object-position: top;
+    border: 2px solid #1e2328;
+  }
+  .team.winner img { border-color: #2ecc71; box-shadow: 0 0 6px #2ecc7166; }
+  .match-vs { font-size: 0.9rem; color: #6a5a3a; letter-spacing: 2px; }
+  .match-meta { font-size: 0.75rem; color: #a09060; text-align: right; line-height: 1.6; }
+
+  /* ── Contrôles de lecture ── */
+  .controls {
+    display: flex; align-items: center; gap: 10px;
+    background: #0a1220; border: 1px solid #c8aa6e33; padding: 10px 14px;
+    margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .controls button {
+    background: #1a1408; border: 1px solid #c8aa6e55; color: #c8aa6e;
+    font-family: inherit; font-size: 0.85rem; padding: 6px 12px; cursor: pointer;
+    letter-spacing: 1px; transition: background 0.15s;
+  }
+  .controls button:hover { background: #c8aa6e22; }
+  .controls button:disabled { opacity: 0.35; cursor: default; }
+  .controls select {
+    background: #1a1408; border: 1px solid #c8aa6e55; color: #c8aa6e;
+    font-family: inherit; font-size: 0.78rem; padding: 5px 8px;
+  }
+  .controls input[type=range] { flex: 1; min-width: 120px; accent-color: #c8aa6e; }
+  .controls .turn-indicator { font-size: 0.72rem; color: #a09060; white-space: nowrap; }
+
+  /* ── Journal ── */
+  .log-box {
+    background: #05090f; border: 1px solid #c8aa6e22;
+    padding: 14px 16px; font-size: 0.78rem; line-height: 1.85;
+    max-height: 55vh; overflow-y: auto;
+  }
+  .log-line {
+    padding: 2px 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    border-radius: 2px;
+  }
+  .log-line:hover { background: #ffffff08; }
+  .log-line .txt { color: #b8a878; }
+  .log-line.round   { color: #c8aa6e; font-weight: bold; letter-spacing: 1px; margin-top: 10px; opacity: 0.85; }
+  .log-line.round .txt { color: #c8aa6e; }
+  .log-line.turnhead { color: #8e6fa8; font-weight: bold; margin-top: 6px; }
+  .log-line.turnhead .txt { color: #9b7fc0; }
+  .log-line.flagged { background: #c0392b22; }
+  .log-line .flag-btn {
+    background: none; border: none; color: #6a5a3a; cursor: pointer; font-size: 0.75rem;
+    opacity: 0; flex-shrink: 0; padding: 0 4px;
+  }
+  .log-line:hover .flag-btn { opacity: 0.6; }
+  .log-line .flag-btn:hover { opacity: 1 !important; color: #e74c3c; }
+  .log-line.flagged .flag-btn { opacity: 1; color: #e74c3c; }
+
+  /* ── Résumé fin de partie ── */
+  .summary { margin-top: 20px; }
+  .summary-title {
+    font-size: 0.72rem; letter-spacing: 3px; text-transform: uppercase; color: #c8aa6e;
+    border-bottom: 1px solid #c8aa6e33; padding-bottom: 6px; margin-bottom: 10px;
+  }
+  .hero-summary-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+  .hero-summary-table th, .hero-summary-table td {
+    text-align: left; padding: 5px 8px; border-bottom: 1px solid #c8aa6e18; color: #a09060;
+  }
+  .hero-summary-table th { color: #6a5a3a; font-weight: normal; text-transform: uppercase; font-size: 0.65rem; letter-spacing: 1px; }
+  .hero-summary-table tr.p0 td:first-child { border-left: 2px solid #5dade2; }
+  .hero-summary-table tr.p1 td:first-child { border-left: 2px solid #e67e22; }
+
+  /* ── Plateau visuel ── */
+  .board-log-row { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 16px; }
+  .board-wrap { flex-shrink: 0; }
+  .board {
+    position: relative;
+    background: #050b12;
+    border: 1px solid #c8aa6e33;
+  }
+  .board-cell { position: absolute; }
+  .board-cell.wall { background: #1e232888; }
+  .board-cell.zone { background: #c8aa6e28; }
+  .board-cell.heal { background: #2ecc7126; }
+  .hero-marker {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid #1e2328;
+    background-color: #1e2328;
+    background-size: cover;
+    background-position: top;
+    transition: left 0.35s ease, top 0.35s ease, opacity 0.3s;
+    z-index: 2;
+  }
+  .hero-marker.p0 { border-color: #5dade2; box-shadow: 0 0 5px #5dade2aa; }
+  .hero-marker.p1 { border-color: #e67e22; box-shadow: 0 0 5px #e67e22aa; }
+  .hero-marker.dead { opacity: 0.12; filter: grayscale(1); transition: opacity 0.6s; }
+  .brown-spot {
+    position: absolute; border-radius: 50%;
+    background: #c8963c; border: 1px solid #7a5a20;
+    box-shadow: 0 0 4px #c8963caa;
+    z-index: 1;
+  }
+  .wolf-marker {
+    position: absolute; border-radius: 30%;
+    background: #3a3a3a; border: 2px solid #999;
+    transition: left 0.35s ease, top 0.35s ease;
+    z-index: 2;
+  }
+  .wolf-marker.p0 { border-color: #5dade2; box-shadow: 0 0 4px #5dade2aa; }
+  .wolf-marker.p1 { border-color: #e67e22; box-shadow: 0 0 4px #e67e22aa; }
+  .hero-hp-bar-bg, .hero-hp-bar {
+    position: absolute; height: 3px; left: 0; bottom: -5px; border-radius: 1px;
+  }
+  .hero-hp-bar-bg { width: 100%; background: #2a1608; }
+  .hero-hp-bar { background: #2ecc71; }
+  .board-legend {
+    display: flex; flex-direction: column; gap: 5px; margin-top: 10px;
+    font-size: 0.68rem; color: #6a5a3a;
+  }
+  .board-legend span { display: flex; align-items: center; gap: 6px; }
+  .board-legend .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .log-col { flex: 1; min-width: 320px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🧪 SIMULATIONS IA</h1>
+  <div class="sub">Ancients Arena — parties bot-vs-bot</div>
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-games" data-tab="games">🎮 Parties</button>
+    <button class="tab-btn" id="tab-stats" data-tab="stats">📊 Stats &amp; Tier List</button>
+    <button class="tab-btn" id="tab-evolution" data-tab="evolution">📈 Évolution</button>
+    <button class="tab-btn" id="tab-nn" data-tab="nn">🧠 Réseau</button>
+  </div>
+</div>
+
+<div class="layout" id="view-games">
+  <div class="sidebar">
+    <div class="run-panel">
+      <div class="run-row">
+        <button id="btn-run">▶ Simuler</button>
+      </div>
+      <div class="run-status" id="run-status"></div>
+    </div>
+    <div class="style-panel">
+      <div class="style-row">
+        <div class="style-label"><span>Exploration ↔ EV optimale</span> <b id="style-ev-val">0.50</b></div>
+        <input type="range" id="style-ev" min="0" max="1" step="0.05" value="0.5">
+        <div class="style-ends"><span>Exploration</span><span>EV optimale</span></div>
+      </div>
+      <div class="style-row">
+        <div class="style-label"><span>Passif ↔ Agressif</span> <b id="style-agg-val">0.50</b></div>
+        <input type="range" id="style-agg" min="0" max="1" step="0.05" value="0.5">
+        <div class="style-ends"><span>Passif</span><span>Agressif</span></div>
+      </div>
+      <div class="style-row style-checkbox-row">
+        <label>
+          <input type="checkbox" id="style-random-draft">
+          Draft aléatoire (ignore l'EV — casse le piège du démarrage à froid pour les héros peu joués)
+        </label>
+      </div>
+      <div class="style-apply-row">
+        <button id="btn-style-apply">Appliquer</button>
+        <span class="style-status" id="style-status"></span>
+      </div>
+    </div>
+    <div id="sidebar" class="sidebar-list">
+      <div class="sidebar-empty">Chargement…</div>
+    </div>
+  </div>
+  <div class="detail" id="detail">
+    <div class="detail-empty">Sélectionne une partie à gauche.</div>
+  </div>
+</div>
+
+<div class="stats-view" id="view-stats" style="display:none;">
+  <div class="detail-empty">Chargement…</div>
+</div>
+
+<div class="stats-view" id="view-evolution" style="display:none;">
+  <div class="detail-empty">Chargement…</div>
+</div>
+
+<div class="stats-view" id="view-nn" style="display:none;">
+  <div class="run-panel" style="padding:0 0 18px;">
+    <div class="run-row">
+      <button id="btn-nn-run">▶ Entraîner</button>
+    </div>
+    <div class="run-status" id="nn-run-status"></div>
+    <div class="style-row style-checkbox-row" style="margin-top:12px;">
+      <label>
+        <input type="checkbox" id="nn-play-toggle">
+        Faire jouer le réseau (poids actuels) en Joueur 2 dans la simulation continue — les parties
+        comptent alors dans les stats/l'Évolution, et sont repérées par 🧠 dans la liste des parties.
+      </label>
+    </div>
+    <div class="style-status" id="nn-play-status"></div>
+  </div>
+  <div class="detail-empty" id="nn-content">Chargement…</div>
+</div>
+
+<script>
+let games = [];
+let currentGame = null;
+let currentFile = null;
+let revealIndex = 0;
+let playing = false;
+let playTimer = null;
+let speedMsPerLine = 200;
+let flaggedLines = new Set();
+let heroMarkers = {}; // instanceId -> { el, hpBar }
+let nameToTypeIdMap = null;
+
+const MAP_N = (typeof MAP_SIZE !== 'undefined') ? MAP_SIZE : 30;
+const CELL  = 15; // px par case du plateau miniature
+
+const heroLabel = (typeId) => {
+  const h = (typeof HERO_TYPES !== 'undefined') && HERO_TYPES[typeId];
+  return h ? h.name : typeId;
+};
+const heroPortrait = (typeId) => {
+  const h = (typeof HERO_TYPES !== 'undefined') && HERO_TYPES[typeId];
+  return h && h.portrait ? h.portrait : null;
+};
+
+// Les snapshots identifient les héros par nom (pas par typeId) — reconstitue la correspondance
+// inverse une fois pour retrouver le portrait de chacun.
+function portraitForName(name) {
+  if (!nameToTypeIdMap) {
+    nameToTypeIdMap = {};
+    if (typeof HERO_TYPES !== 'undefined') {
+      Object.entries(HERO_TYPES).forEach(([id, h]) => { nameToTypeIdMap[h.name] = id; });
+    }
+  }
+  const typeId = nameToTypeIdMap[name];
+  return typeId ? heroPortrait(typeId) : null;
+}
+
+// ── Plateau visuel ──
+
+function initBoard() {
+  const board = document.getElementById('board');
+  if (!board) return;
+  board.style.width  = (CELL * MAP_N) + 'px';
+  board.style.height = (CELL * MAP_N) + 'px';
+  board.innerHTML = '';
+
+  const frag = document.createDocumentFragment();
+  if (typeof ZONES !== 'undefined') {
+    ZONES.forEach(z => z.cells.forEach(c => {
+      const d = document.createElement('div');
+      d.className = 'board-cell zone';
+      d.style.left = (c.x * CELL) + 'px'; d.style.top = (c.y * CELL) + 'px';
+      d.style.width = CELL + 'px'; d.style.height = CELL + 'px';
+      frag.appendChild(d);
+    }));
+  }
+  if (typeof HEAL_ZONE_CELL_SET !== 'undefined') {
+    HEAL_ZONE_CELL_SET.forEach(key => {
+      const [x, y] = key.split(',').map(Number);
+      const d = document.createElement('div');
+      d.className = 'board-cell heal';
+      d.style.left = (x * CELL) + 'px'; d.style.top = (y * CELL) + 'px';
+      d.style.width = CELL + 'px'; d.style.height = CELL + 'px';
+      frag.appendChild(d);
+    });
+  }
+  if (typeof WALL_SET !== 'undefined') {
+    WALL_SET.forEach(key => {
+      const [x, y] = key.split(',').map(Number);
+      const d = document.createElement('div');
+      d.className = 'board-cell wall';
+      d.style.left = (x * CELL) + 'px'; d.style.top = (y * CELL) + 'px';
+      d.style.width = CELL + 'px'; d.style.height = CELL + 'px';
+      frag.appendChild(d);
+    });
+  }
+  board.appendChild(frag);
+}
+
+function initHeroMarkers(g) {
+  const board = document.getElementById('board');
+  if (!board) return;
+  board.querySelectorAll('.hero-marker').forEach(el => el.remove());
+  heroMarkers = {};
+
+  const snap0 = g.snapshots && g.snapshots[0];
+  if (!snap0) return;
+  const sz = Math.round(CELL * 1.7);
+
+  snap0.positions.forEach(h => {
+    const marker = document.createElement('div');
+    marker.className = `hero-marker p${h.playerIdx}`;
+    marker.style.width = sz + 'px';
+    marker.style.height = sz + 'px';
+    const portrait = portraitForName(h.name);
+    if (portrait) marker.style.backgroundImage = `url(${portrait})`;
+
+    const hpBg = document.createElement('div');
+    hpBg.className = 'hero-hp-bar-bg';
+    const hpBar = document.createElement('div');
+    hpBar.className = 'hero-hp-bar';
+    marker.appendChild(hpBg);
+    marker.appendChild(hpBar);
+
+    board.appendChild(marker);
+    heroMarkers[h.id] = { el: marker, hpBar, sz };
+  });
+}
+
+function findSnapshotForRevealIndex(g, idx) {
+  const snaps = g && g.snapshots;
+  if (!snaps || !snaps.length) return null;
+  let result = null;
+  for (const s of snaps) {
+    if (s.logEndIndex <= idx) result = s; else break;
+  }
+  return result;
+}
+
+function updateHeroMarkers(snapshot) {
+  if (!snapshot) return;
+  snapshot.positions.forEach(h => {
+    const m = heroMarkers[h.id];
+    if (!m) return;
+    if (!h.alive || h.x === null || h.y === null) {
+      m.el.classList.add('dead');
+    } else {
+      m.el.classList.remove('dead');
+      m.el.style.left = (h.x * CELL - (m.sz - CELL) / 2) + 'px';
+      m.el.style.top  = (h.y * CELL - (m.sz - CELL) / 2) + 'px';
+    }
+    m.el.title = `${h.name} — ${Math.max(0, h.hp)}/${h.maxHp} HP`;
+    const pct = Math.max(0, Math.min(1, h.hp / Math.max(1, h.maxHp)));
+    m.hpBar.style.width = Math.round(pct * 100) + '%';
+    m.hpBar.style.background = pct < 0.3 ? '#e74c3c' : pct < 0.6 ? '#f39c12' : '#2ecc71';
+  });
+  updateBrownSpots(snapshot.brownSpots || []);
+  updateWolves(snapshot.wolves || []);
+}
+
+// Or du Roam : positions aléatoires qui changent au fil de la partie (pas une zone fixe du
+// plateau) — redessiné entièrement à chaque snapshot plutôt que suivi par identité stable.
+function updateBrownSpots(spots) {
+  const board = document.getElementById('board');
+  if (!board) return;
+  board.querySelectorAll('.brown-spot').forEach(el => el.remove());
+
+  const sz = Math.max(4, Math.round(CELL * 0.4));
+  spots.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'brown-spot';
+    d.style.width = sz + 'px';
+    d.style.height = sz + 'px';
+    d.style.left = (s.x * CELL + (CELL - sz) / 2) + 'px';
+    d.style.top  = (s.y * CELL + (CELL - sz) / 2) + 'px';
+    d.title = 'Or du Roam';
+    board.appendChild(d);
+  });
+}
+
+// Loups de Noyala : invoqués/déplacés/meurent en cours de partie (pas un décor statique) — même
+// traitement "redessiné entièrement" que les zones à or, avec la couleur d'équipe du marqueur héros.
+function updateWolves(wolves) {
+  const board = document.getElementById('board');
+  if (!board) return;
+  board.querySelectorAll('.wolf-marker').forEach(el => el.remove());
+
+  const sz = Math.max(6, Math.round(CELL * 0.55));
+  wolves.forEach(w => {
+    const d = document.createElement('div');
+    d.className = `wolf-marker p${w.playerIdx}`;
+    d.style.width = sz + 'px';
+    d.style.height = sz + 'px';
+    d.style.left = (w.x * CELL + (CELL - sz) / 2) + 'px';
+    d.style.top  = (w.y * CELL + (CELL - sz) / 2) + 'px';
+    d.title = `Loup de Noyala — ${Math.max(0, w.hp)}/${w.maxHp} PV`;
+    board.appendChild(d);
+  });
+}
+
+async function loadGames() {
+  const sidebar = document.getElementById('sidebar');
+  try {
+    const res = await fetch('/api/simulations');
+    games = await res.json();
+  } catch (e) {
+    sidebar.innerHTML = '<div class="sidebar-empty">Impossible de charger les parties — le serveur (<code>node server.js</code>) est-il lancé ?</div>';
+    return;
+  }
+  if (!games.length) {
+    sidebar.innerHTML = `<div class="sidebar-empty">
+      Aucune partie simulée pour l'instant.<br><br>
+      Lance-en depuis un terminal :<br>
+      <code>node sim/run.js 20</code><br><br>
+      Puis recharge cette page.
+    </div>`;
+    return;
+  }
+  sidebar.innerHTML = '';
+  games.forEach(g => {
+    const row = document.createElement('div');
+    row.className = 'game-row';
+    row.dataset.file = g.file;
+    const winnerLabel = g.winner === null ? 'Égalité' : `Joueur ${g.winner + 1}`;
+    const winnerClass = g.winner === null ? 'draw' : (g.winner === 0 ? 'p0' : 'p1');
+    const portraits0 = (g.picks?.[0] || []).map(id => {
+      const p = heroPortrait(id);
+      return p ? `<img src="${p}" title="${heroLabel(id)}">` : '';
+    }).join('');
+    const portraits1 = (g.picks?.[1] || []).map(id => {
+      const p = heroPortrait(id);
+      return p ? `<img src="${p}" title="${heroLabel(id)}">` : '';
+    }).join('');
+    const nnBadge = g.neuralSide !== null && g.neuralSide !== undefined
+      ? `<span class="game-turns" title="Joueur ${g.neuralSide + 1} joué par le réseau de valeur entraîné">🧠</span>` : '';
+    row.innerHTML = `
+      <div class="game-row-top">
+        <span class="game-winner ${winnerClass}">${winnerLabel}</span>
+        ${nnBadge}
+        <span class="game-turns">${g.turns} tours</span>
+      </div>
+      <div class="game-portraits">${portraits0}<span class="vs">vs</span>${portraits1}</div>
+      <div class="game-date">${g.date ? new Date(g.date).toLocaleString('fr-FR') : ''}</div>
+    `;
+    row.addEventListener('click', () => selectGame(g.file));
+    sidebar.appendChild(row);
+  });
+  // Réappliquer la sélection en cours : loadGames() est maintenant aussi appelé au fil de l'eau
+  // pendant une simulation continue (voir pollRunStatus), pas juste une fois au chargement — sans
+  // ça la partie ouverte perdait son surlignage à chaque rafraîchissement de la liste.
+  if (currentFile) {
+    const row = sidebar.querySelector(`.game-row[data-file="${CSS.escape(currentFile)}"]`);
+    if (row) row.classList.add('active');
+  }
+}
+
+async function selectGame(file) {
+  stopPlayback();
+  currentFile = file;
+  document.querySelectorAll('.game-row').forEach(r => r.classList.toggle('active', r.dataset.file === file));
+
+  const res = await fetch('/simulations/games/' + encodeURIComponent(file));
+  currentGame = await res.json();
+  revealIndex = 0;
+  flaggedLines = new Set();
+  await loadFlags();
+  renderDetail();
+}
+
+async function loadFlags() {
+  try {
+    const res = await fetch('/api/simulations/flags');
+    const flags = await res.json();
+    flaggedLines = new Set(
+      flags.filter(f => f.file === currentFile).map(f => f.lineIndex)
+    );
+  } catch (e) { flaggedLines = new Set(); }
+}
+
+function renderDetail() {
+  const g = currentGame;
+  if (!g) return;
+  const detail = document.getElementById('detail');
+
+  const team = (pi) => {
+    const isWinner = g.winner === pi;
+    const portraits = (g.picks?.[pi] || []).map(id => {
+      const p = heroPortrait(id);
+      return p ? `<img src="${p}" title="${heroLabel(id)}">` : '';
+    }).join('');
+    return `<div class="team ${isWinner ? 'winner' : ''}">${portraits}</div>`;
+  };
+
+  detail.innerHTML = `
+    <div class="match-header">
+      <div class="match-teams">
+        ${team(0)}<span class="match-vs">VS</span>${team(1)}
+      </div>
+      <div class="match-meta">
+        ${g.winner === null ? 'Égalité' : 'Vainqueur : Joueur ' + (g.winner + 1)} — ${g.turns} tours<br>
+        ${g.date ? new Date(g.date).toLocaleString('fr-FR') : ''}
+        ${g.neuralSide !== null && g.neuralSide !== undefined
+          ? `<br>🧠 Joueur ${g.neuralSide + 1} joué par le réseau de valeur entraîné (mouvement)` : ''}
+      </div>
+    </div>
+
+    <div class="board-log-row">
+      <div class="board-wrap">
+        <div class="board" id="board"></div>
+        <div class="board-legend">
+          <span><span class="dot" style="background:#5dade2"></span> Joueur 1</span>
+          <span><span class="dot" style="background:#e67e22"></span> Joueur 2</span>
+          <span><span class="dot" style="background:#1e2328"></span> Mur</span>
+          <span><span class="dot" style="background:#c8aa6e55"></span> Zone à gold</span>
+          <span><span class="dot" style="background:#2ecc7166"></span> Zone de soin</span>
+          <span><span class="dot" style="background:#c8963c"></span> Or du Roam (mobile)</span>
+          <span><span class="dot" style="background:#3a3a3a;border:1px solid #999"></span> Loup de Noyala</span>
+        </div>
+      </div>
+
+      <div class="log-col">
+        <div class="controls">
+          <button id="btn-play">▶ Lecture</button>
+          <button id="btn-reset">⏮ Début</button>
+          <button id="btn-end">⏭ Fin</button>
+          <select id="speed-select">
+            <option value="400">Lent</option>
+            <option value="200" selected>Normal</option>
+            <option value="60">Rapide</option>
+            <option value="10">Très rapide</option>
+          </select>
+          <input type="range" id="scrub" min="0" max="${g.log.length}" value="0">
+          <span class="turn-indicator" id="turn-indicator">0 / ${g.log.length}</span>
+        </div>
+
+        <div class="log-box" id="log-box"></div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="summary-title">Résumé</div>
+      <table class="hero-summary-table">
+        <tr><th>Héros</th><th>Joueur</th><th>Rune</th><th>K</th><th>D</th><th>A</th><th>Or total</th><th>Items</th></tr>
+        ${g.heroes.flatMap(p => p.heroes.map(h => {
+          const rune = h.runeId ? runeInfo(h.runeId) : null;
+          const runeCell = rune
+            ? (rune.img ? `<img class="item-icon" src="${rune.img}" title="${rune.name}">` : `${rune.emoji || ''} ${rune.name}`)
+            : '—';
+          const itemsCell = (h.items || []).map(id =>
+            itemIcon(id) ? `<img class="item-icon" src="${itemIcon(id)}" title="${itemLabel(id)}">` : itemLabel(id)
+          ).join(' ');
+          return `
+          <tr class="p${p.playerIdx}">
+            <td>${h.name}</td>
+            <td>Joueur ${p.playerIdx + 1}</td>
+            <td>${runeCell}</td>
+            <td>${h.kills}</td>
+            <td>${h.deaths}</td>
+            <td>${h.assists}</td>
+            <td>${h.totalGold || 0}</td>
+            <td>${itemsCell}</td>
+          </tr>
+        `; })).join('')}
+      </table>
+    </div>
+  `;
+
+  document.getElementById('btn-play').addEventListener('click', togglePlay);
+  document.getElementById('btn-reset').addEventListener('click', () => { revealIndex = 0; renderLog(); });
+  document.getElementById('btn-end').addEventListener('click', () => { revealIndex = g.log.length; renderLog(); });
+  document.getElementById('speed-select').addEventListener('change', e => { speedMsPerLine = parseInt(e.target.value, 10); if (playing) { stopPlayback(); startPlayback(); } });
+  document.getElementById('scrub').addEventListener('input', e => { revealIndex = parseInt(e.target.value, 10); stopPlayback(); renderLog(); });
+
+  initBoard();
+  initHeroMarkers(g);
+  renderLog();
+}
+
+function lineClass(line) {
+  if (line.startsWith('═══')) return 'round';
+  if (line.startsWith('──'))  return 'turnhead';
+  return '';
+}
+
+function renderLog() {
+  const g = currentGame;
+  const box = document.getElementById('log-box');
+  const scrub = document.getElementById('scrub');
+  const indicator = document.getElementById('turn-indicator');
+  if (!box) return;
+
+  const lines = g.log.slice(0, revealIndex);
+  box.innerHTML = lines.map((line, i) => {
+    const flagged = flaggedLines.has(i) ? 'flagged' : '';
+    const cls = lineClass(line);
+    return `<div class="log-line ${cls} ${flagged}" data-idx="${i}">
+      <span class="txt">${escapeHtml(line)}</span>
+      <button class="flag-btn" data-idx="${i}" title="Signaler ce mouvement">🚩</button>
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('.flag-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); flagLine(parseInt(btn.dataset.idx, 10)); });
+  });
+
+  box.scrollTop = box.scrollHeight;
+  if (scrub) scrub.value = revealIndex;
+  if (indicator) indicator.textContent = `${revealIndex} / ${g.log.length}`;
+
+  updateHeroMarkers(findSnapshotForRevealIndex(g, revealIndex));
+
+  if (revealIndex >= g.log.length) stopPlayback();
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function flagLine(idx) {
+  const line = currentGame.log[idx];
+  const note = prompt('Note (optionnel) sur ce mouvement :', '');
+  if (note === null) return; // annulé
+  flaggedLines.add(idx);
+  renderLog();
+  try {
+    await fetch('/api/simulations/flag', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file: currentFile, lineIndex: idx, line, note }),
+    });
+  } catch (e) { /* silencieux */ }
+}
+
+function togglePlay() {
+  if (playing) stopPlayback(); else startPlayback();
+}
+
+function startPlayback() {
+  if (!currentGame || revealIndex >= currentGame.log.length) revealIndex = 0;
+  playing = true;
+  const btn = document.getElementById('btn-play');
+  if (btn) btn.textContent = '⏸ Pause';
+  playTimer = setInterval(() => {
+    if (!currentGame || revealIndex >= currentGame.log.length) { stopPlayback(); return; }
+    revealIndex++;
+    renderLog();
+  }, speedMsPerLine);
+}
+
+function stopPlayback() {
+  playing = false;
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById('btn-play');
+  if (btn) btn.textContent = '▶ Lecture';
+}
+
+// ── Lancement de simulations depuis l'interface : bouton "Simuler"/"Pause" en continu, tourne
+// jusqu'à l'arrêt demandé (au lieu d'un nombre de parties fixé à l'avance) ──
+
+let runPollTimer = null;
+let lastKnownDone = 0; // pour ne recharger la liste des parties qu'après un arrêt réel, pas à chaque poll
+
+async function toggleRun() {
+  const btn = document.getElementById('btn-run');
+  const status = document.getElementById('run-status');
+
+  const current = await (await fetch('/api/simulations/run/status')).json().catch(() => ({}));
+
+  if (current.running && !current.stopping) {
+    // En cours → demander l'arrêt propre (entre deux parties, voir sim/run.js)
+    btn.disabled = true;
+    status.className = 'run-status active';
+    status.textContent = 'Arrêt demandé — fin de la partie en cours…';
+    try {
+      await fetch('/api/simulations/run/stop', { method: 'POST' });
+    } catch (e) {}
+    pollRunStatus();
+    return;
+  }
+
+  // Idle → démarrer en continu
+  btn.disabled = true;
+  status.className = 'run-status active';
+  status.textContent = 'Démarrage…';
+
+  try {
+    const res = await fetch('/api/simulations/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ continuous: true }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      status.className = 'run-status error';
+      status.textContent = err.error || 'Erreur au lancement.';
+      btn.disabled = false;
+      return;
+    }
+  } catch (e) {
+    status.className = 'run-status error';
+    status.textContent = 'Serveur injoignable.';
+    btn.disabled = false;
+    return;
+  }
+
+  pollRunStatus();
+}
+
+async function pollRunStatus() {
+  const btn = document.getElementById('btn-run');
+  const status = document.getElementById('run-status');
+  if (runPollTimer) clearTimeout(runPollTimer);
+
+  let s;
+  try {
+    s = await (await fetch('/api/simulations/run/status')).json();
+  } catch (e) {
+    runPollTimer = setTimeout(pollRunStatus, 1500);
+    return;
+  }
+
+  if (s.running) {
+    btn.disabled = false;
+    if (s.stopping) {
+      btn.textContent = '⏸ Arrêt en cours…';
+      btn.disabled = true;
+      status.textContent = `Arrêt demandé — ${s.done} partie(s) jouée(s), fin de la partie en cours…`;
+    } else {
+      btn.textContent = '⏸ Pause';
+      status.textContent = `Simulation en cours… ${s.done} partie(s) jouée(s)`;
+    }
+    status.className = 'run-status active';
+    // Rafraîchit la liste des parties au fil de l'eau (seulement quand le compte a bougé, pas
+    // à chaque poll — évite de re-rendre la liste 1x/1.5s pour rien pendant une pause de lecture)
+    if (s.done !== lastKnownDone) { lastKnownDone = s.done; loadGames(); }
+    runPollTimer = setTimeout(pollRunStatus, 1500);
+  } else {
+    btn.disabled = false;
+    btn.textContent = '▶ Simuler';
+    if (s.error) {
+      status.className = 'run-status error';
+      status.textContent = 'Erreur : ' + s.error;
+    } else if (s.startedAt) {
+      status.className = 'run-status';
+      status.textContent = `Arrêté — ${s.done} partie(s) jouée(s).`;
+      loadGames();
+    } else {
+      status.textContent = '';
+    }
+  }
+}
+
+document.getElementById('btn-run').addEventListener('click', toggleRun);
+
+// Reprend le suivi si une simulation était déjà en cours (ex. lancée depuis un terminal
+// ou après un rechargement de page pendant une simulation)
+pollRunStatus();
+
+loadGames();
+
+// ── Style de jeu (curseurs EV/exploration + agressivité — voir js/bot.js computeStyleParams) ──
+// N'affecte QUE les nouveaux process (une simulation en cours doit être arrêtée puis relancée
+// pour repartir avec le style choisi — voir sim/engine.js, appliqué une fois au chargement).
+
+async function loadStyle() {
+  try {
+    const s = await (await fetch('/api/simulations/style')).json();
+    document.getElementById('style-ev').value = s.evVsExploration;
+    document.getElementById('style-agg').value = s.aggression;
+    document.getElementById('style-ev-val').textContent = Number(s.evVsExploration).toFixed(2);
+    document.getElementById('style-agg-val').textContent = Number(s.aggression).toFixed(2);
+    document.getElementById('style-random-draft').checked = !!s.forceRandomDraft;
+  } catch (e) {}
+}
+
+document.getElementById('style-ev').addEventListener('input', (e) => {
+  document.getElementById('style-ev-val').textContent = Number(e.target.value).toFixed(2);
+});
+document.getElementById('style-agg').addEventListener('input', (e) => {
+  document.getElementById('style-agg-val').textContent = Number(e.target.value).toFixed(2);
+});
+
+document.getElementById('btn-style-apply').addEventListener('click', async () => {
+  const statusEl = document.getElementById('style-status');
+  const evVsExploration = Number(document.getElementById('style-ev').value);
+  const aggression = Number(document.getElementById('style-agg').value);
+  const forceRandomDraft = document.getElementById('style-random-draft').checked;
+  statusEl.className = 'style-status';
+  statusEl.textContent = 'Enregistrement…';
+  try {
+    const res = await fetch('/api/simulations/style', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ evVsExploration, aggression, forceRandomDraft }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Erreur');
+    statusEl.className = 'style-status saved';
+    statusEl.textContent = 'Enregistré — relance la simulation pour l\'appliquer.';
+  } catch (e) {
+    statusEl.className = 'style-status';
+    statusEl.textContent = 'Erreur : ' + e.message;
+  }
+});
+
+loadStyle();
+
+// ── Onglets ──
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('view-games').style.display = tab === 'games' ? 'flex' : 'none';
+    document.getElementById('view-stats').style.display = tab === 'stats' ? 'block' : 'none';
+    document.getElementById('view-evolution').style.display = tab === 'evolution' ? 'block' : 'none';
+    document.getElementById('view-nn').style.display = tab === 'nn' ? 'block' : 'none';
+    if (tab === 'stats') loadStatsView();
+    if (tab === 'evolution') loadEvolutionView();
+    if (tab === 'nn') loadNnView();
+  });
+});
+
+// ── Stats & Tier List ──
+
+const TIER_ROLE_ORDER  = ['solo', 'roam', 'mage', 'dpt', 'support'];
+const TIER_ROLE_LABELS = { solo: 'Solo', roam: 'Roam', mage: 'Mage', dpt: 'DPT', support: 'Support' };
+
+function tierFor(winrate, games, minGames) {
+  if (games < minGames) return '?';
+  if (winrate >= 56) return 'S';
+  if (winrate >= 52) return 'A';
+  if (winrate >= 48) return 'B';
+  if (winrate >= 44) return 'C';
+  return 'D';
+}
+
+function itemLabel(id) {
+  const it = (typeof EQUIPMENT !== 'undefined') && EQUIPMENT[id];
+  return it ? it.name : id;
+}
+function itemIcon(id) {
+  const it = (typeof EQUIPMENT !== 'undefined') && EQUIPMENT[id];
+  return it && it.icon ? it.icon : null;
+}
+function runeInfo(id) {
+  const r = (typeof RUNES !== 'undefined') && RUNES[id];
+  if (!r) return null;
+  return { name: r.name, img: r.img || null, emoji: r.icon || null };
+}
+
+let lastStatsData = null;
+
+async function loadStatsView() {
+  const container = document.getElementById('view-stats');
+  container.innerHTML = '<div class="detail-empty">Chargement…</div>';
+  let data;
+  try {
+    data = await (await fetch('/api/simulations/stats')).json();
+  } catch (e) {
+    container.innerHTML = '<div class="detail-empty">Impossible de charger les statistiques.</div>';
+    return;
+  }
+  lastStatsData = data;
+  renderStatsView(data, 3);
+}
+
+function renderStatsView(data, minGames) {
+  const container = document.getElementById('view-stats');
+  const totalGames = data.totalGames || 0;
+
+  if (!totalGames) {
+    container.innerHTML = `<div class="detail-empty">
+      Aucune partie simulée pour l'instant.<br><br>
+      Lance-en depuis l'onglet "🎮 Parties" (panneau en haut à gauche).
+    </div>`;
+    return;
+  }
+
+  const allHeroes = [];
+
+  Object.entries((typeof HERO_TYPES !== 'undefined') ? HERO_TYPES : {}).forEach(([typeId, hero]) => {
+    const s = data.heroes[typeId];
+    if (!s || !s.games) return;
+    const winrate  = Math.round(100 * s.wins / s.games);
+    const pickRate = Math.round(100 * s.picks / totalGames);
+    const banRate  = Math.round(100 * (s.bans || 0) / totalGames);
+    const avgDmg = Math.round(((s.dmgPhys || 0) + (s.dmgMag || 0)) / s.games);
+    const avgK = (s.kills / s.games).toFixed(1);
+    const avgD = (s.deaths / s.games).toFixed(1);
+    const avgA = (s.assists / s.games).toFixed(1);
+    if (!TIER_ROLE_LABELS[hero.roleId]) return; // rôle inconnu (ne devrait pas arriver)
+    allHeroes.push({ typeId, hero, s, winrate, pickRate, banRate, avgDmg, avgK, avgD, avgA });
+  });
+
+  // Classement unique tous rôles confondus : le winrate le plus haut = 100, le reste dégressif
+  // proportionnellement (pas de regroupement par rôle — le rôle reste affiché en colonne).
+  allHeroes.sort((a, b) => b.winrate - a.winrate);
+  const maxWinrate = allHeroes.length ? Math.max(...allHeroes.map(r => r.winrate), 1) : 1;
+  allHeroes.forEach(row => { row.powerScore = Math.round((row.winrate / maxWinrate) * 100); });
+
+  let html = `
+    <div class="stats-controls">
+      <span>${totalGames} partie(s) simulée(s)</span>
+      <label>Seuil min. de parties pour un tier fiable : <input type="number" id="stats-min-games" value="${minGames}" min="1"></label>
+      <button id="btn-reset-stats" title="Effacer parties + stats cumulées (à faire après un changement de comportement du bot)">🗑 Réinitialiser les stats</button>
+    </div>
+    <div id="hero-detail-container"></div>
+  `;
+
+  {
+    const list = allHeroes;
+    html += `<div class="tier-section">
+      <div class="tier-title">Tier list générale (tous rôles confondus)</div>
+      <table class="tier-table">
+        <tr><th></th><th>Héros</th><th>Rôle</th><th>Power</th><th>Tier</th><th>Parties</th><th>Winrate</th><th>Pick %</th><th>Ban %</th><th>K / D / A</th><th>Dégâts moy.</th></tr>
+        ${list.map(row => `
+          <tr class="hero-row ${row.s.games < minGames ? 'low-sample' : ''}" data-typeid="${row.typeId}">
+            <td>${row.hero.portrait ? `<img class="tier-portrait" src="${row.hero.portrait}">` : ''}</td>
+            <td>${row.hero.name}</td>
+            <td>${TIER_ROLE_LABELS[row.hero.roleId] || row.hero.roleId}</td>
+            <td>${row.powerScore}</td>
+            <td><span class="tier-badge tier-${tierFor(row.winrate, row.s.games, minGames)}">${tierFor(row.winrate, row.s.games, minGames)}</span></td>
+            <td>${row.s.games}</td>
+            <td>${row.winrate}%</td>
+            <td>${row.pickRate}%</td>
+            <td>${row.banRate}%</td>
+            <td>${row.avgK} / ${row.avgD} / ${row.avgA}</td>
+            <td>${row.avgDmg}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>`;
+  }
+
+  const itemEntries = Object.entries(data.items || {})
+    .filter(([, e]) => e.picks > 0)
+    // picks/wins décroissent en continu (décroissance temporelle, voir js/stats.js _decayAll) —
+    // arrondir seulement à l'affichage, le winrate lui reste calculé sur les valeurs exactes.
+    .map(([id, e]) => ({ id, picks: Math.round(e.picks), wins: e.wins, winrate: Math.round(100 * e.wins / e.picks) }))
+    .sort((a, b) => b.winrate - a.winrate);
+
+  if (itemEntries.length) {
+    html += `<div class="tier-section">
+      <div class="tier-title">Objets</div>
+      <table class="tier-table">
+        <tr><th></th><th>Objet</th><th>Achats</th><th>Winrate</th></tr>
+        ${itemEntries.map(it => `
+          <tr class="${it.picks < minGames ? 'low-sample' : ''}">
+            <td>${itemIcon(it.id) ? `<img class="item-icon" src="${itemIcon(it.id)}">` : ''}</td>
+            <td>${itemLabel(it.id)}</td>
+            <td>${it.picks}</td>
+            <td>${it.winrate}%</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+  const minInput = document.getElementById('stats-min-games');
+  if (minInput) minInput.addEventListener('change', () => renderStatsView(data, parseInt(minInput.value, 10) || 1));
+
+  const resetBtn = document.getElementById('btn-reset-stats');
+  if (resetBtn) resetBtn.addEventListener('click', async () => {
+    if (!confirm('Effacer toutes les parties simulées et les stats cumulées ? Irréversible.')) return;
+    resetBtn.disabled = true;
+    try {
+      await fetch('/api/simulations/reset', { method: 'POST' });
+      games = [];
+      loadStatsView();
+      loadGames();
+    } catch (e) {
+      alert('Échec de la réinitialisation.');
+      resetBtn.disabled = false;
+    }
+  });
+
+  document.querySelectorAll('.hero-row').forEach(row => {
+    row.addEventListener('click', () => showHeroDetail(row.dataset.typeid));
+  });
+}
+
+// ── Évolution (tendance sur une fenêtre glissante large — jusqu'à 1000 parties, voir
+// sim/run.js MAX_EVOLUTION_ENTRIES/evolution_log.json, indépendant de l'index des replays complets
+// qui lui reste limité à 100 pour l'espace disque, voir MAX_KEPT_GAMES) ──
+// Pas d'historique rétroactif des EV apprises (aucun log de ce type n'existait avant l'ajout de
+// cet onglet) : ce qu'on peut montrer dès maintenant, c'est la tendance directement dérivable des
+// dernières parties (durée, égalités, dérive de winrate par héros) — la vue "constantes" à jour
+// (objets/runes/décisions appris) reste dans le détail héros de l'onglet Stats (showHeroDetail).
+async function loadEvolutionView() {
+  const container = document.getElementById('view-evolution');
+  container.innerHTML = '<div class="detail-empty">Chargement…</div>';
+  let list;
+  try {
+    list = await (await fetch('/api/simulations/evolution')).json();
+  } catch (e) {
+    container.innerHTML = '<div class="detail-empty">Impossible de charger les parties.</div>';
+    return;
+  }
+  renderEvolutionView(list);
+}
+
+function renderEvolutionView(list) {
+  const container = document.getElementById('view-evolution');
+  if (!list.length) {
+    container.innerHTML = `<div class="detail-empty">
+      Aucune partie simulée pour l'instant.<br><br>
+      Lance-en depuis l'onglet "🎮 Parties" (panneau en haut à gauche).
+    </div>`;
+    return;
+  }
+
+  // /api/simulations/evolution renvoie déjà en ordre chronologique (les entrées sont ajoutées à la
+  // fin au fil des parties, voir sim/run.js appendToEvolutionLog) — pas de reverse nécessaire ici,
+  // contrairement à /api/simulations (index des replays, celui-là trié DESC).
+  const chrono = list;
+  const n = chrono.length;
+
+  // ── Graphe SVG : durée (tours) par partie, + moyenne glissante pour lisser le bruit partie-à-partie ──
+  const W = 900, H = 180, PAD = 24;
+  const turnsArr = chrono.map(g => g.turns || 0);
+  const maxTurns = Math.max(...turnsArr, 1);
+  const xAt = (i) => PAD + (n > 1 ? (i / (n - 1)) * (W - 2 * PAD) : 0);
+  const yAt = (t) => H - PAD - (t / maxTurns) * (H - 2 * PAD);
+
+  // Fenêtre de lissage proportionnelle à l'échantillon (jusqu'à 1000 parties désormais, voir
+  // evolution_log.json) plutôt que plafonnée à 10 — sinon la moyenne glissante reste illisible sur
+  // une grande fenêtre (bruit partie-à-partie noyant la vraie tendance).
+  const ROLL = Math.max(1, Math.min(100, Math.floor(n / 20) || 1));
+  const rollAvg = turnsArr.map((_, i) => {
+    const from = Math.max(0, i - ROLL + 1);
+    const slice = turnsArr.slice(from, i + 1);
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  });
+
+  const turnsPath = turnsArr.map((t, i) => `${i === 0 ? 'M' : 'L'}${xAt(i).toFixed(1)},${yAt(t).toFixed(1)}`).join(' ');
+  const rollPath  = rollAvg.map((t, i) => `${i === 0 ? 'M' : 'L'}${xAt(i).toFixed(1)},${yAt(t).toFixed(1)}`).join(' ');
+  const drawDots  = chrono.map((g, i) => g.winner === null
+    ? `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(g.turns || 0).toFixed(1)}" r="3" fill="#e05a5a"></circle>` : '').join('');
+
+  const chartSvg = `
+    <svg viewBox="0 0 ${W} ${H}" class="evo-chart">
+      <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="#3a3a2a" stroke-width="1"></line>
+      <path d="${turnsPath}" fill="none" stroke="#5a6a7a" stroke-width="1"></path>
+      <path d="${rollPath}" fill="none" stroke="#c8aa6e" stroke-width="2"></path>
+      ${drawDots}
+    </svg>`;
+
+  // ── Première moitié vs seconde moitié de la fenêtre conservée : direction de la tendance sans
+  // dépendre d'un historique qui n'existe pas encore (voir commentaire en tête de fonction). ──
+  const mid = Math.floor(n / 2);
+  const firstHalf = chrono.slice(0, mid);
+  const secondHalf = chrono.slice(mid);
+  const avg = (arr) => arr.length ? arr.reduce((s, g) => s + (g.turns || 0), 0) / arr.length : 0;
+  const drawRate = (arr) => arr.length ? 100 * arr.filter(g => g.winner === null).length / arr.length : 0;
+  const avgTurnsFirst = avg(firstHalf), avgTurnsSecond = avg(secondHalf);
+  const drawRateFirst = drawRate(firstHalf), drawRateSecond = drawRate(secondHalf);
+  const turnsDelta = avgTurnsSecond - avgTurnsFirst;
+
+  // ── Dérive de winrate par héros entre les deux moitiés (repérer qui monte/descend) ──
+  const heroStats = (arr) => {
+    const m = {};
+    arr.forEach(g => {
+      (g.picks || []).forEach((team, pi) => {
+        if (g.winner === null) return; // égalités exclues, comme partout ailleurs (voir js/stats.js)
+        (team || []).forEach(typeId => {
+          if (!m[typeId]) m[typeId] = { picks: 0, wins: 0 };
+          m[typeId].picks++;
+          if (g.winner === pi) m[typeId].wins++;
+        });
+      });
+    });
+    return m;
+  };
+  const firstStats = heroStats(firstHalf), secondStats = heroStats(secondHalf);
+  const MIN_HALF_SAMPLE = 3;
+  const drift = Object.keys(Object.assign({}, firstStats, secondStats))
+    .map(typeId => {
+      const f = firstStats[typeId], s = secondStats[typeId];
+      if (!f || !s || f.picks < MIN_HALF_SAMPLE || s.picks < MIN_HALF_SAMPLE) return null;
+      const wrF = 100 * f.wins / f.picks, wrS = 100 * s.wins / s.picks;
+      return { typeId, wrF, wrS, delta: wrS - wrF, picksF: f.picks, picksS: s.picks };
+    })
+    .filter(Boolean)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .slice(0, 12);
+
+  const heroName = (typeId) => (typeof HERO_TYPES !== 'undefined' && HERO_TYPES[typeId]) ? HERO_TYPES[typeId].name : typeId;
+
+  container.innerHTML = `
+    <div class="stats-controls">
+      <span>${n} partie(s) conservée(s) — fenêtre glissante (les plus anciennes sont remplacées au fil des simulations)</span>
+    </div>
+    <div class="tier-section">
+      <div class="tier-title">Durée des parties (tours) — moyenne glissante sur ${ROLL} parties, points rouges = égalités</div>
+      ${chartSvg}
+      <div class="evo-summary">
+        <div>Durée moyenne : <b>${avgTurnsFirst.toFixed(1)}</b> → <b>${avgTurnsSecond.toFixed(1)}</b> tours
+          <span class="evo-delta ${turnsDelta <= 0 ? 'evo-good' : 'evo-bad'}">${turnsDelta <= 0 ? '▼' : '▲'} ${Math.abs(turnsDelta).toFixed(1)}</span>
+          <span class="evo-hint">(1ère moitié → 2e moitié de la fenêtre — plus court = combats plus décisifs)</span>
+        </div>
+        <div>Taux d'égalité : <b>${drawRateFirst.toFixed(0)}%</b> → <b>${drawRateSecond.toFixed(0)}%</b></div>
+      </div>
+    </div>
+    <div class="tier-section">
+      <div class="tier-title">Dérive de winrate par héros (1ère moitié → 2e moitié de la fenêtre, min. ${MIN_HALF_SAMPLE} parties par moitié)</div>
+      ${drift.length ? `
+      <table class="tier-table">
+        <tr><th>Héros</th><th>Winrate avant</th><th>Winrate maintenant</th><th>Δ</th></tr>
+        ${drift.map(d => `
+          <tr class="hero-row" data-typeid="${d.typeId}">
+            <td>${heroName(d.typeId)}</td>
+            <td>${d.wrF.toFixed(0)}% (${d.picksF})</td>
+            <td>${d.wrS.toFixed(0)}% (${d.picksS})</td>
+            <td class="evo-delta ${d.delta >= 0 ? 'evo-good' : 'evo-bad'}">${d.delta >= 0 ? '▲' : '▼'} ${Math.abs(d.delta).toFixed(0)}</td>
+          </tr>
+        `).join('')}
+      </table>` : '<div class="detail-empty">Pas encore assez de parties dans chaque moitié de la fenêtre pour comparer.</div>'}
+    </div>
+    <div class="tier-section">
+      <div class="tier-title">Constantes apprises (objets/runes/décisions par héros)</div>
+      <div class="evo-hint" style="padding:8px 0;">
+        Clique un héros ci-dessus, ou passe par l'onglet "📊 Stats &amp; Tier List" → clique un héros dans la tier list,
+        pour voir l'état actuel de tout ce que le bot a appris pour lui (build recommandé, tier des runes, décisions
+        de combat apprises avec leur EV).
+      </div>
+    </div>
+  `;
+
+  document.querySelectorAll('#view-evolution .hero-row').forEach(row => {
+    row.addEventListener('click', () => goToHeroDetail(row.dataset.typeid));
+  });
+}
+
+// Bascule vers l'onglet Stats (qui héberge le conteneur du détail héros, voir renderStatsView)
+// et y ouvre directement le détail du héros cliqué depuis l'onglet Évolution.
+async function goToHeroDetail(typeId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-stats').classList.add('active');
+  document.getElementById('view-games').style.display = 'none';
+  document.getElementById('view-evolution').style.display = 'none';
+  document.getElementById('view-nn').style.display = 'none';
+  document.getElementById('view-stats').style.display = 'block';
+  await loadStatsView();
+  showHeroDetail(typeId);
+}
+
+// ── Réseau de valeur (js/nn.js + sim/nn_train.js) — même principe start/pause/poll que le
+// panneau "Simuler" de l'onglet Parties, processus et données totalement séparés. ──
+
+let nnPollTimer = null;
+
+async function toggleNnRun() {
+  const btn = document.getElementById('btn-nn-run');
+  const status = document.getElementById('nn-run-status');
+
+  const current = await (await fetch('/api/nn/train/status')).json().catch(() => ({}));
+
+  if (current.running && !current.stopping) {
+    btn.disabled = true;
+    status.className = 'run-status active';
+    status.textContent = 'Arrêt demandé — fin du round en cours…';
+    try { await fetch('/api/nn/train/stop', { method: 'POST' }); } catch (e) {}
+    pollNnRunStatus();
+    return;
+  }
+
+  btn.disabled = true;
+  status.className = 'run-status active';
+  status.textContent = 'Démarrage…';
+  try {
+    const res = await fetch('/api/nn/train/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ continuous: true }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      status.className = 'run-status error';
+      status.textContent = err.error || 'Erreur au lancement.';
+      btn.disabled = false;
+      return;
+    }
+  } catch (e) {
+    status.className = 'run-status error';
+    status.textContent = 'Serveur injoignable.';
+    btn.disabled = false;
+    return;
+  }
+  pollNnRunStatus();
+}
+
+let lastKnownNnRound = 0;
+
+async function pollNnRunStatus() {
+  const btn = document.getElementById('btn-nn-run');
+  const status = document.getElementById('nn-run-status');
+  if (nnPollTimer) clearTimeout(nnPollTimer);
+
+  let s;
+  try {
+    s = await (await fetch('/api/nn/train/status')).json();
+  } catch (e) {
+    nnPollTimer = setTimeout(pollNnRunStatus, 1500);
+    return;
+  }
+
+  if (s.running) {
+    btn.disabled = false;
+    if (s.stopping) {
+      btn.textContent = '⏸ Arrêt en cours…';
+      btn.disabled = true;
+      status.textContent = `Arrêt demandé — round ${s.round} en cours de finalisation…`;
+    } else {
+      btn.textContent = '⏸ Pause';
+      status.textContent = `Entraînement en cours… round ${s.round}`;
+    }
+    status.className = 'run-status active';
+    if (s.round !== lastKnownNnRound) { lastKnownNnRound = s.round; renderNnLog(); }
+    nnPollTimer = setTimeout(pollNnRunStatus, 1500);
+  } else {
+    btn.disabled = false;
+    btn.textContent = '▶ Entraîner';
+    if (s.error) {
+      status.className = 'run-status error';
+      status.textContent = 'Erreur : ' + s.error;
+    } else if (s.startedAt) {
+      status.className = 'run-status';
+      status.textContent = `Arrêté — round ${s.round}.`;
+      renderNnLog();
+    } else {
+      status.textContent = '';
+    }
+  }
+}
+
+document.getElementById('btn-nn-run').addEventListener('click', toggleNnRun);
+
+async function loadNnView() {
+  pollNnRunStatus();
+  await loadNnPlayToggle();
+  await renderNnLog();
+}
+
+// ── Bascule "faire jouer le réseau en Joueur 2 dans la simulation continue" (voir server.js
+// /api/nn/config + sim/run.js) — distincte du panneau ci-dessus qui ne fait qu'entraîner/évaluer
+// le réseau en tête-à-tête isolé, sans jamais toucher aux vraies parties comptées dans les stats. ──
+
+async function loadNnPlayToggle() {
+  const box = document.getElementById('nn-play-toggle');
+  try {
+    const cfg = await (await fetch('/api/nn/config')).json();
+    box.checked = !!cfg.enabled;
+  } catch (e) { /* laisse la case telle quelle si le serveur ne répond pas */ }
+}
+
+document.getElementById('nn-play-toggle').addEventListener('change', async (e) => {
+  const status = document.getElementById('nn-play-status');
+  const enabled = e.target.checked;
+  status.textContent = 'Enregistrement…';
+  status.className = 'style-status';
+  try {
+    const res = await fetch('/api/nn/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) throw new Error();
+    status.textContent = enabled
+      ? 'Activé — effectif dès la prochaine partie de la simulation continue.'
+      : 'Désactivé — Joueur 2 rejoue avec le bot heuristique standard.';
+    status.className = 'style-status saved';
+  } catch (err) {
+    e.target.checked = !enabled;
+    status.textContent = 'Erreur — non enregistré.';
+    status.className = 'style-status error';
+  }
+});
+
+async function renderNnLog() {
+  const container = document.getElementById('nn-content');
+  let data;
+  try {
+    data = await (await fetch('/api/nn/train/log')).json();
+  } catch (e) {
+    container.innerHTML = '<div class="detail-empty">Impossible de charger le journal d\'entraînement.</div>';
+    return;
+  }
+  const rounds = data.rounds || [];
+  if (!rounds.length) {
+    container.innerHTML = `<div class="detail-empty">
+      Aucun round entraîné pour l'instant.<br><br>
+      Clique "▶ Entraîner" ci-dessus pour lancer l'entraînement du réseau de valeur en continu
+      (génère des parties avec le bot standard, entraîne le réseau dessus, puis l'évalue en
+      tête-à-tête contre ce même bot standard — voir le round-par-round ci-dessous).
+    </div>`;
+    return;
+  }
+
+  const W = 900, H = 200, PAD = 28;
+  const xAt = (i) => PAD + (rounds.length > 1 ? (i / (rounds.length - 1)) * (W - 2 * PAD) : 0);
+  // Taux de victoire du réseau (%), nulles exclues du dénominateur (comme le winrate partout
+  // ailleurs dans ce projet — voir js/stats.js recordGameEnd)
+  const winPct = (r) => {
+    const total = r.eval.neuralWins + r.eval.baselineWins;
+    return total ? 100 * r.eval.neuralWins / total : null;
+  };
+  const yAtPct = (pct) => H - PAD - (pct / 100) * (H - 2 * PAD);
+  const pts = rounds.map((r, i) => ({ i, pct: winPct(r) })).filter(p => p.pct !== null);
+  const linePath = pts.map((p, k) => `${k === 0 ? 'M' : 'L'}${xAt(p.i).toFixed(1)},${yAtPct(p.pct).toFixed(1)}`).join(' ');
+  const refY = yAtPct(50).toFixed(1);
+
+  const lossVals = rounds.map(r => r.trainLoss).filter(v => v !== null && v !== undefined);
+  const maxLoss = Math.max(0.01, ...lossVals, 0.7);
+  const yAtLoss = (v) => H - PAD - (v / maxLoss) * (H - 2 * PAD);
+  const lossPath = rounds.map((r, i) => `${i === 0 ? 'M' : 'L'}${xAt(i).toFixed(1)},${yAtLoss(r.trainLoss ?? maxLoss).toFixed(1)}`).join(' ');
+
+  const last = rounds[rounds.length - 1];
+  const lastWinPct = winPct(last);
+
+  container.innerHTML = `
+    <div class="stats-controls">
+      <span>${rounds.length} round(s) — ${data.totalGamesGenerated || 0} partie(s) générée(s) au total — ${last.datasetSize} exemple(s) dans le jeu de données</span>
+    </div>
+    <div class="tier-section">
+      <div class="tier-title">Taux de victoire du réseau vs bot standard, par round (ligne pointillée = 50%)</div>
+      <svg viewBox="0 0 ${W} ${H}" class="evo-chart">
+        <line x1="${PAD}" y1="${refY}" x2="${W - PAD}" y2="${refY}" stroke="#6a5a3a" stroke-width="1" stroke-dasharray="4,4"></line>
+        <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="#3a3a2a" stroke-width="1"></line>
+        <path d="${linePath}" fill="none" stroke="#c8aa6e" stroke-width="2"></path>
+        ${pts.map(p => `<circle cx="${xAt(p.i).toFixed(1)}" cy="${yAtPct(p.pct).toFixed(1)}" r="2.5" fill="#c8aa6e"></circle>`).join('')}
+      </svg>
+      <div class="evo-summary">
+        <div>Dernier round : <b>${lastWinPct !== null ? lastWinPct.toFixed(0) + '%' : '—'}</b> (${last.eval.neuralWins}-${last.eval.baselineWins}, ${last.eval.draws} nulles)</div>
+      </div>
+    </div>
+    <div class="tier-section">
+      <div class="tier-title">Perte d'entraînement (entropie croisée), par round — plus bas = le réseau prédit mieux les parties observées</div>
+      <svg viewBox="0 0 ${W} ${H}" class="evo-chart">
+        <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="#3a3a2a" stroke-width="1"></line>
+        <path d="${lossPath}" fill="none" stroke="#5a6a7a" stroke-width="2"></path>
+      </svg>
+    </div>
+    <div class="tier-section">
+      <div class="tier-title">Détail par round (les plus récents en premier)</div>
+      <table class="tier-table">
+        <tr><th>Round</th><th>Nouveaux exemples</th><th>Dataset</th><th>Perte</th><th>Éval (réseau-standard)</th><th>Nulles</th><th>% réseau</th></tr>
+        ${rounds.slice().reverse().slice(0, 50).map(r => `
+          <tr>
+            <td>${r.round}</td>
+            <td>+${r.newExamples || 0}</td>
+            <td>${r.datasetSize}</td>
+            <td>${r.trainLoss ?? '—'}</td>
+            <td>${r.eval.neuralWins}-${r.eval.baselineWins}</td>
+            <td>${r.eval.draws}</td>
+            <td>${winPct(r) !== null ? winPct(r).toFixed(0) + '%' : '—'}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+  `;
+}
+
+async function showHeroDetail(typeId) {
+  const container = document.getElementById('hero-detail-container');
+  if (!container) return;
+  container.innerHTML = '<div class="hero-detail">Chargement…</div>';
+  container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  let build;
+  try {
+    build = await (await fetch(`/api/simulations/hero/${encodeURIComponent(typeId)}/build`)).json();
+  } catch (e) {
+    container.innerHTML = '<div class="hero-detail">Impossible de charger ce héros.</div>';
+    return;
+  }
+  if (build.error) {
+    container.innerHTML = `<div class="hero-detail">${build.error}</div>`;
+    return;
+  }
+
+  const portrait = heroPortrait(typeId);
+  const iconOrEmoji = (it) => it.icon ? `<img src="${it.icon}">` : (it.emoji ? `<span style="width:22px;display:inline-block;text-align:center">${it.emoji}</span>` : '');
+  const buildRow = (it) => `
+    <div class="build-item-row">
+      ${iconOrEmoji(it)}
+      <span>${it.name}</span>
+      <span class="score">score ${it.score}</span>
+    </div>`;
+  const histRow = (it) => {
+    // picks décroît en continu (décroissance temporelle, voir js/stats.js _decayAll) — arrondir
+    // seulement à l'affichage, comme pour la table "Objets" de la vue stats générale.
+    const picks = Math.round(it.picks);
+    return `
+    <div class="build-item-row">
+      ${iconOrEmoji(it)}
+      <span>${it.name}</span>
+      <span class="score">${it.winrate}% (${picks} partie${picks > 1 ? 's' : ''})</span>
+    </div>`;
+  };
+
+  // Décisions génériques apprises (voir js/bot.js _recordDecision/_decisionEV, exposées par
+  // server.js /api/simulations/hero/:typeId/build) — les "constantes" de combat qui s'adaptent au
+  // fil des parties, au même titre que les objets/runes ci-dessus mais pour le comportement en jeu
+  // (économie vs engagement, quel rôle cibler, distance d'engagement, quel sort ouvrir le combo...).
+  const DECISION_KEY_LABELS = {
+    economyVsEngage: 'Économie vs engagement',
+    focusRole: 'Rôle ciblé en priorité',
+    engageDistance: "Distance d'engagement",
+    comboFirstPick: 'Premier sort du combo',
+    roamPriority: 'Priorité du Roam (farm vs fight)',
+    wolfPriority: 'Priorité des loups (Noyala)',
+    starterSellPolicy: 'Politique de revente du starter',
+  };
+  const decisionKeyLabel = (key) => {
+    if (DECISION_KEY_LABELS[key]) return DECISION_KEY_LABELS[key];
+    if (key.startsWith('spellTiming:')) return 'Timing du sort — ' + key.slice('spellTiming:'.length);
+    return key;
+  };
+  const decisionGroup = (d) => `
+    <div class="decision-group">
+      <div class="decision-key">${decisionKeyLabel(d.key)}</div>
+      ${d.options.map(o => `
+        <div class="decision-option-row">
+          <span>${o.optionId}</span>
+          <span>${o.winrate}% (${o.picks}) · EV <span class="${o.ev >= 0 ? 'ev-pos' : 'ev-neg'}">${o.ev > 0 ? '+' : ''}${o.ev}</span> · regret <span class="${o.regret >= 0 ? 'ev-pos' : 'ev-neg'}">${o.regret > 0 ? '+' : ''}${o.regret}</span></span>
+        </div>
+      `).join('')}
+    </div>`;
+
+  container.innerHTML = `
+    <div class="hero-detail">
+      <div class="hero-detail-header">
+        ${portrait ? `<img src="${portrait}">` : ''}
+        <span class="name">${build.name}</span>
+        <button class="hero-detail-close" id="hero-detail-close">✕ Fermer</button>
+      </div>
+      <div class="hero-detail-cols">
+        <div class="hero-detail-col">
+          <div class="hero-detail-subtitle">Build recommandé maintenant (100% EV observée — winrate, rune équipée, synergie avec le reste du build)</div>
+          ${build.starter ? buildRow(build.starter) : ''}
+          ${build.boots ? buildRow(build.boots) : ''}
+          ${build.items.map(buildRow).join('')}
+        </div>
+        <div class="hero-detail-col">
+          <div class="hero-detail-subtitle">Objets déjà achetés sur ce héros — winrate réel observé</div>
+          ${build.historicalItems && build.historicalItems.length
+            ? build.historicalItems.map(histRow).join('')
+            : '<div class="build-item-row">Pas encore de données pour ce héros.</div>'}
+        </div>
+      </div>
+      <div class="hero-detail-cols" style="margin-top:20px;">
+        <div class="hero-detail-col">
+          <div class="hero-detail-subtitle">Tier list des runes pour ce héros (16/16, 100% EV observée)</div>
+          ${(build.runeTierList || []).map(buildRow).join('')}
+        </div>
+        <div class="hero-detail-col">
+          <div class="hero-detail-subtitle">Runes déjà utilisées sur ce héros — winrate réel observé</div>
+          ${build.historicalRunes && build.historicalRunes.length
+            ? build.historicalRunes.map(histRow).join('')
+            : '<div class="build-item-row">Pas encore de données pour ce héros.</div>'}
+        </div>
+      </div>
+      <div class="hero-detail-cols" style="margin-top:20px;">
+        <div class="hero-detail-col" style="flex: 1 1 100%;">
+          <div class="hero-detail-subtitle">Décisions de combat apprises — EV = partie entière + effet local combinés (voir js/bot.js _decisionEV)</div>
+          ${build.decisions && build.decisions.length
+            ? build.decisions.map(decisionGroup).join('')
+            : '<div class="build-item-row">Pas encore de données pour ce héros.</div>'}
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('hero-detail-close').addEventListener('click', () => { container.innerHTML = ''; });
+}
+</script>
+
+</body>
+</html>
