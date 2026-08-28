@@ -657,7 +657,29 @@ window.addEventListener('DOMContentLoaded', () => {
     // jamais vrai), obligeant à jouer les deux côtés du draft à la main. Même schéma que
     // window.game/window.renderer/window.input un peu plus haut, pour la même raison (`let` en
     // portée module ne crée pas de propriété sur window, contrairement à `var`).
-    window.bot = bot = new GameBot(game, () => { renderer.render(); renderer.updateUI(); });
+    // Ce callback tourne après CHAQUE action du bot, pendant le draft comme en partie — y compris
+    // quand le bot fait le DERNIER pick qui termine le draft (game.phase passe à 'playing'). Sans la
+    // vérification ci-dessous, ce cas précis restait bloqué sur l'écran de draft indéfiniment : le
+    // seul code qui bascule vers #game-screen vivait dans le clic humain (js/input.js _draftClick),
+    // jamais exécuté quand c'est le bot qui termine le draft de son côté (bot.js decideDraft appelle
+    // ce onSync, pas _draftClick). Le clic humain reste, lui, inchangé et gère toujours son propre cas.
+    window.bot = bot = new GameBot(game, () => {
+      if (game.phase === 'playing' && document.getElementById('draft-screen').classList.contains('active')) {
+        document.getElementById('draft-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+      }
+      // Toujours en draft après cette action du bot (round à 2 picks d'affilée, voir
+      // PICK_SEQUENCE) : renderDraft() re-déclenche window.bot.maybeAct() en fin de rendu (voir
+      // renderer.js _renderHeroPool) — sans passer par là, seule la PREMIÈRE des deux actions
+      // consécutives du bot se déclenchait automatiquement, la seconde restait en attente d'un
+      // tour qui ne se redéclenchait jamais tout seul.
+      if (game.phase === 'draft') {
+        renderer.renderDraft();
+      } else {
+        renderer.render();
+        renderer.updateUI();
+      }
+    });
 
     // Case "Faire jouer le bot par le réseau entraîné" (voir js/nn.js + sim/nn_train.js) : charge
     // les poids les plus récents depuis le serveur et bascule le bot en mode neuronal (mouvement +

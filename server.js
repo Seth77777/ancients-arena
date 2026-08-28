@@ -379,7 +379,7 @@ app.post('/api/nn/train/run', (req, res) => {
   // (mouvement+sorts+achats des deux côtés cherchés par clonage, voir sim/nn_train.js) — mesuré
   // ~300ms/tour de héros en moyenne contre quasi instantané pour l'ancien bot heuristique pur ; un
   // round à 20/20 prendrait potentiellement plus d'une heure.
-  const gamesPerRound = Math.max(2, Math.min(200, parseInt(req.body?.gamesPerRound, 10) || 4));
+  const gamesPerRound = Math.max(2, Math.min(200, parseInt(req.body?.gamesPerRound, 10) || 2));
   const evalGames = Math.max(2, Math.min(200, parseInt(req.body?.evalGames, 10) || 6));
   nnRun = {
     running: true, continuous, stopping: false, round: 0,

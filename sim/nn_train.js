@@ -3,13 +3,12 @@
 // ENTRAÎNEMENT DU RÉSEAU DE VALEUR (js/nn.js) + ÉVALUATION EN TÊTE-À-TÊTE
 //
 // Boucle par ROUNDS, chacun :
-//  1. Génère des parties FRAÎCHES jouées par le bot heuristique standard des deux côtés (comme
-//     sim/run.js) — c'est la partie "garder un exemple de comment la base joue" : on ne touche
-//     jamais à ce bot, on se contente d'observer ses parties pour construire les données
-//     d'entraînement. À chaque tour de héros, l'état est encodé (encodeState) et mis de côté ;
-//     une fois la partie terminée (hors égalités, ignorées comme partout ailleurs dans ce projet),
-//     chaque état est étiqueté par le résultat final (1 si ce camp a gagné, 0 sinon) — cible de
-//     type Monte-Carlo/TD(1), la plus simple qui existe pour apprendre une fonction de valeur.
+//  1. Génère des parties FRAÎCHES en SELF-PLAY — le réseau courant pilote les DEUX côtés (voir
+//     playAndCapture) — pour construire les données d'entraînement. À chaque tour de héros, l'état
+//     est encodé (encodeState) et mis de côté ; une fois la partie terminée (hors égalités, ignorées
+//     comme partout ailleurs dans ce projet), chaque état est étiqueté par le résultat final (1 si
+//     ce camp a gagné, 0 sinon) — cible de type Monte-Carlo/TD(1), la plus simple qui existe pour
+//     apprendre une fonction de valeur.
 //  2. Ajoute ces exemples à un jeu de données glissant (borné : les plus anciens sont écartés).
 //  3. Entraîne le réseau sur ce jeu de données (mini-batches, plusieurs époques).
 //  4. ÉVALUE : fait jouer le réseau tout juste entraîné (mouvement uniquement — voir
@@ -45,7 +44,11 @@ const ROUNDS = CONTINUOUS ? Infinity : Math.max(1, parseInt(process.argv[2], 10)
 // mesuré ~300ms/tour de héros en moyenne (contre quasi instantané pour l'ancien bot heuristique
 // pur), soit jusqu'à ~5 min pour une partie complète de 100 tours — un round à 20 parties/20 évals
 // serait passé de quelques minutes à potentiellement plus d'une heure.
-const GAMES_PER_ROUND = Math.max(2, parseInt(process.argv[3], 10) || 4);
+const GAMES_PER_ROUND = Math.max(2, parseInt(process.argv[3], 10) || 2);
+// Parties ancre heuristique-vs-heuristique, en plus des GAMES_PER_ROUND parties de self-play — voir
+// playHeuristicAndCapture. Fixe, pas paramétrable en argv : c'est un filet de sécurité interne, pas
+// un réglage de vitesse/qualité comme GAMES_PER_ROUND.
+const HEURISTIC_ANCHOR_GAMES = 2;
 const EVAL_GAMES = Math.max(2, Math.round((parseInt(process.argv[4], 10) || 6) / 2) * 2); // pair
 
 const MAX_DATASET_SIZE = 50000; // ~50k exemples × ~141 floats — fichier JSON encore raisonnable
@@ -145,13 +148,52 @@ async function playAndCapture(net) {
   return { examples, turns: game.globalTurn, winner: game.winner };
 }
 
-// ── Tête-à-tête : le réseau juste entraîné pilote le MOUVEMENT du joueur 0, le joueur 1 reste le
-// bot heuristique standard. Alterne les côtés sur la moitié des parties pour ne pas favoriser un
-// siège (léger avantage structurel de position, même souci que sim/tune.js). ──
-async function evaluate(net, nGames) {
+// ── PARTIES ANCRE : bot heuristique standard des DEUX côtés (comme sim/run.js), aucun réseau
+// impliqué — filet de sécurité contre un problème réel observé en pratique : un self-play entre
+// DEUX copies d'un réseau encore proche de l'initialisation aléatoire (mouvement quasi aléatoire
+// tant qu'il n'a rien appris) peut atterrir en égalité (100 tours, personne n'engage jamais
+// vraiment) sur la totalité des parties d'un round — auquel cas playAndCapture ne fournit AUCUN
+// exemple d'entraînement ce round-là (les égalités sont exclues), et l'entraînement stagne
+// indéfiniment (observé : 2 rounds d'affilée, ~51 min, zéro exemple, perte jamais recalculée). Ces
+// parties ancre garantissent TOUJOURS des parties décisives à apprendre, même quand le self-play
+// s'enlise, sans dépendre de la qualité actuelle du réseau.
+async function playHeuristicAndCapture() {
+  const game = new GameState();
+  const bots = [new GameBot(game, () => {}, 0), new GameBot(game, () => {}, 1)];
+  const captured = [];
+
+  let guard = 0;
+  const GUARD_MAX = 20000;
+  while (game.phase === 'draft') {
+    if (++guard > GUARD_MAX) throw new Error('Draft bloqué');
+    const pi = game.draftCurrentPlayer();
+    if (pi < 0) break;
+    bots[pi].decideDraft();
+  }
+  while (game.phase === 'playing') {
+    if (++guard > GUARD_MAX) throw new Error('Partie bloquée');
+    const hero = game.currentHero;
+    if (!hero) break;
+    captured.push({ input: encodeState(game, hero.playerIdx), playerIdx: hero.playerIdx });
+    await bots[hero.playerIdx].executeTurn();
+  }
+  if (game.phase !== 'gameover') game.endGame(game.winner ?? null);
+  game._stopTimer();
+
+  if (game.winner === null) return { examples: [], turns: game.globalTurn, winner: null };
+  const examples = captured.map(c => ({ input: c.input, target: c.playerIdx === game.winner ? 1 : 0 }));
+  return { examples, turns: game.globalTurn, winner: game.winner };
+}
+
+// ── Tête-à-tête : le réseau juste entraîné pilote un des deux camps (mouvement + sorts + achats),
+// l'autre reste le bot heuristique standard. Alterne les côtés sur la moitié des parties pour ne
+// pas favoriser un siège (léger avantage structurel de position, même souci que sim/tune.js). ──
+async function evaluate(net, nGames, stopRequested) {
   let neuralWins = 0, baselineWins = 0, draws = 0;
   const half = nGames / 2;
   for (let i = 0; i < nGames; i++) {
+    if (stopRequested()) return { neuralWins, baselineWins, draws, stopped: true };
+    const t = Date.now();
     const neuralIsP0 = i < half;
     const game = new GameState();
     const bots = [new GameBot(game, () => {}, 0), new GameBot(game, () => {}, 1)];
@@ -173,11 +215,13 @@ async function evaluate(net, nGames) {
     if (game.phase !== 'gameover') game.endGame(game.winner ?? null);
     game._stopTimer();
 
-    if (game.winner === null) { draws++; continue; }
+    const dt = ((Date.now() - t) / 1000).toFixed(1);
+    if (game.winner === null) { draws++; console.log(`  éval ${i + 1}/${nGames} — égalité (${game.globalTurn} tours, ${dt}s)`); continue; }
     const neuralWon = neuralIsP0 ? game.winner === 0 : game.winner === 1;
     if (neuralWon) neuralWins++; else baselineWins++;
+    console.log(`  éval ${i + 1}/${nGames} — réseau ${neuralWon ? 'GAGNE' : 'perd'} (${game.globalTurn} tours, ${dt}s)`);
   }
-  return { neuralWins, baselineWins, draws };
+  return { neuralWins, baselineWins, draws, stopped: false };
 }
 
 function trainOnDataset(net, dataset) {
@@ -207,35 +251,76 @@ function trainOnDataset(net, dataset) {
   const log = loadLog();
   console.log(`Reprise : ${dataset.length} exemples déjà en jeu de données, ${log.rounds.length} round(s) déjà loggé(s).\n`);
 
+  // Vérifie (et consomme) le fichier d'arrêt — appelé entre CHAQUE partie, pas seulement entre
+  // rounds : un round contient maintenant jusqu'à 2+2+6=10 parties (ancres+self-play+éval), et une
+  // seule partie de self-play peut prendre plusieurs minutes — vérifier seulement entre rounds
+  // laissait "⏸ pause" bloqué en apparence pendant potentiellement 10+ minutes après la demande.
+  function stopRequested() {
+    if (!CONTINUOUS || !fs.existsSync(STOP_FILE)) return false;
+    fs.unlinkSync(STOP_FILE);
+    return true;
+  }
+
   for (let r = 0; r < ROUNDS; r++) {
-    if (CONTINUOUS && fs.existsSync(STOP_FILE)) {
-      fs.unlinkSync(STOP_FILE);
+    if (stopRequested()) {
       console.log(`  pause demandée — arrêt après ${r} round(s).`);
       break;
     }
     const t0 = Date.now();
+    let stoppedMidRound = false;
 
-    // 1. Génération de données par SELF-PLAY (le réseau courant contre lui-même, voir
-    // playAndCapture) — la cible que le round suivant devra battre a donc changé dès que
-    // l'entraînement de CE round (étape 2) met net à jour, contrairement à un adversaire fixe.
+    // 1a. Parties ancre heuristique-vs-heuristique (voir HEURISTIC_ANCHOR_GAMES) : toujours
+    // décisives, garantissent des exemples même si le self-play ci-dessous s'enlise en égalités.
     let newExamples = 0, drawsGen = 0;
-    for (let i = 0; i < GAMES_PER_ROUND; i++) {
-      const { examples, winner } = await playAndCapture(net);
-      if (winner === null) { drawsGen++; continue; }
+    for (let i = 0; i < HEURISTIC_ANCHOR_GAMES && !stoppedMidRound; i++) {
+      if (stopRequested()) { stoppedMidRound = true; break; }
+      const t = Date.now();
+      const { examples, winner, turns } = await playHeuristicAndCapture();
+      if (winner === null) { drawsGen++; console.log(`  partie ancre ${i + 1}/${HEURISTIC_ANCHOR_GAMES} — égalité (${turns} tours, ${((Date.now() - t) / 1000).toFixed(1)}s)`); continue; }
       dataset.push(...examples);
       newExamples += examples.length;
+      console.log(`  partie ancre ${i + 1}/${HEURISTIC_ANCHOR_GAMES} — Joueur ${winner + 1} gagne (${turns} tours, +${examples.length} exemples, ${((Date.now() - t) / 1000).toFixed(1)}s)`);
     }
-    saveDataset(dataset);
-    log.totalGamesGenerated = (log.totalGamesGenerated || 0) + GAMES_PER_ROUND;
+
+    // 1b. Génération de données par SELF-PLAY (le réseau courant contre lui-même, voir
+    // playAndCapture) — la cible que le round suivant devra battre a donc changé dès que
+    // l'entraînement de CE round (étape 2) met net à jour, contrairement à un adversaire fixe.
+    for (let i = 0; i < GAMES_PER_ROUND && !stoppedMidRound; i++) {
+      if (stopRequested()) { stoppedMidRound = true; break; }
+      const t = Date.now();
+      const { examples, winner, turns } = await playAndCapture(net);
+      if (winner === null) { drawsGen++; console.log(`  partie self-play ${i + 1}/${GAMES_PER_ROUND} — égalité (${turns} tours, ${((Date.now() - t) / 1000).toFixed(1)}s)`); continue; }
+      dataset.push(...examples);
+      newExamples += examples.length;
+      console.log(`  partie self-play ${i + 1}/${GAMES_PER_ROUND} — Joueur ${winner + 1} gagne (${turns} tours, +${examples.length} exemples, ${((Date.now() - t) / 1000).toFixed(1)}s)`);
+    }
+    saveDataset(dataset); // les exemples déjà générés restent utiles même si on s'arrête ici
+
+    if (stoppedMidRound) {
+      console.log(`  pause demandée en cours de round — ${newExamples} exemple(s) déjà généré(s) conservé(s), round non comptabilisé (pas d'éval faite).`);
+      break;
+    }
+    log.totalGamesGenerated = (log.totalGamesGenerated || 0) + HEURISTIC_ANCHOR_GAMES + GAMES_PER_ROUND;
 
     // 2. Entraînement
+    console.log('  entraînement...');
     const loss = trainOnDataset(net, dataset);
+    console.log(`  perte : ${loss !== null ? loss.toFixed(3) : 'n/a (aucun exemple)'}`);
 
     // 3. Évaluation en tête-à-tête contre le bot standard
-    const { neuralWins, baselineWins, draws } = await evaluate(net, EVAL_GAMES);
+    console.log(`  évaluation (${EVAL_GAMES} parties)...`);
+    const { neuralWins, baselineWins, draws, stopped: stoppedDuringEval } = await evaluate(net, EVAL_GAMES, stopRequested);
 
-    // 4. Sauvegarde + log
+    // Poids sauvegardés dans tous les cas dès que l'entraînement (étape 2) a eu lieu — même si
+    // l'arrêt demandé interrompt l'éval en cours de route, ce serait dommage de perdre un
+    // entraînement déjà fait juste parce que l'éval qui le mesure n'a pas fini.
     writeJsonAtomic(WEIGHTS_FILE, net.toJSON());
+    if (stoppedDuringEval) {
+      console.log(`  pause demandée en cours d'évaluation — poids entraînés conservés, round non comptabilisé (éval incomplète : ${neuralWins}-${baselineWins}, ${draws} nulles sur ${EVAL_GAMES}).`);
+      break;
+    }
+
+    // 4. Log
     const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
     const entry = {
       round: log.rounds.length + 1,

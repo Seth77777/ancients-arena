@@ -1,3 +1,5 @@
 .claude/
 node_modules/
 simulations/
+server_out.log
+server_err.log
